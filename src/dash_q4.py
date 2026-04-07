@@ -670,8 +670,45 @@ html, body, [class*="css"] { font-family: 'Be Vietnam Pro', sans-serif !importan
     color: #cbd5e1;
     line-height: 1.45;
 }
+.trend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.2fr;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.trend-card {
+    background: #ffffff;
+    border: 1px solid #dbe7f2;
+    border-radius: 10px;
+    padding: 10px 11px;
+}
+.trend-kicker {
+    font-size: .58rem;
+    letter-spacing: .7px;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.trend-main {
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.15;
+}
+.trend-sub {
+    margin-top: 3px;
+    font-size: .63rem;
+    color: #64748b;
+}
+.trend-rank-line {
+    font-size: .66rem;
+    color: #334155;
+    line-height: 1.45;
+    margin-top: 3px;
+}
 @media (max-width: 1100px) {
     .iq-grid { grid-template-columns: 1fr; }
+    .trend-grid { grid-template-columns: 1fr; }
 }
 
 /* ════════════════════════════════
@@ -1059,6 +1096,16 @@ def ax(title=""):
 def chart_h(n_rows, min_h=260, row_h=24, max_h=560):
     return int(min(max_h, max(min_h, n_rows * row_h + 70)))
 
+def fmt_delta(curr, prev, unit=""):
+    if prev is None or pd.isna(prev):
+        return "Không đủ dữ liệu", "#64748b"
+    delta = curr - prev
+    if abs(delta) < 0.05:
+        return f"■ 0.0{unit}", "#64748b"
+    arrow = "▲" if delta > 0 else "▼"
+    color = "#dc2626" if delta > 0 else "#16a34a"
+    return f"{arrow} {delta:+.1f}{unit}", color
+
 # ═══════════════════════════════════════════════════════════════════
 # DATA
 # ═══════════════════════════════════════════════════════════════════
@@ -1242,6 +1289,51 @@ side_df = DF[
 ]
 st.sidebar.success(f"Dữ liệu đang xét: {len(side_df):,} bản ghi")
 
+if not side_df.empty:
+    side_avg_aqi = int(side_df["aqi"].mean())
+    side_health_hd, side_health_tx, side_health_color = aqi_health_guidance(side_avg_aqi)
+    st.sidebar.markdown(
+        f"""
+        <div class='sidebar-selection-summary'>
+            <div class='summary-count'>Khuyến nghị sức khỏe theo AQI hiện tại</div>
+            <div style='font-size:.84rem;font-weight:800;color:{side_health_color};margin-bottom:3px'>{side_health_hd} · AQI {side_avg_aqi}</div>
+            <div style='font-size:.7rem;color:#4c6a86;line-height:1.5'>{side_health_tx}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+quality_cols = [
+    c for c in ["aqi", "pm2_5", "pm10", "o3", "no2", "so2", "co", "temp", "humidity", "wind_speed", "rain"]
+    if c in side_df.columns
+]
+if quality_cols and not side_df.empty:
+    missing_rate = (side_df[quality_cols].isna().mean() * 100).sort_values(ascending=False)
+    top_missing = missing_rate.head(3)
+    missing_line = " · ".join([f"{k}: {v:.1f}%" for k, v in top_missing.items()])
+    latest_side = side_df["timestamp"].max().strftime("%H:%M · %d/%m/%Y")
+    st.sidebar.markdown(
+        f"""
+        <div class='sidebar-selection-summary'>
+            <div class='summary-count'>Chất lượng dữ liệu</div>
+            <div style='font-size:.68rem;color:#3f5f7c;line-height:1.45'>Cập nhật gần nhất: <strong>{latest_side}</strong></div>
+            <div style='font-size:.68rem;color:#3f5f7c;line-height:1.45'>Tỷ lệ thiếu cao nhất: {missing_line}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+csv_name = f"vietnam_aqi_filtered_{s_d.strftime('%Y%m%d')}_{e_d.strftime('%Y%m%d')}.csv"
+csv_bytes = side_df.to_csv(index=False).encode("utf-8-sig")
+st.sidebar.download_button(
+    "Tải CSV theo bộ lọc hiện tại",
+    data=csv_bytes,
+    file_name=csv_name,
+    mime="text/csv",
+    use_container_width=True,
+    help="Xuất toàn bộ dữ liệu sau khi lọc khu vực và thời gian.",
+)
+
 st.sidebar.markdown("<div class='sidebar-section-title'>Mật độ biểu đồ</div>", unsafe_allow_html=True)
 city_cap_max = max(1, len(selected_cities) if selected_cities else len(all_cities))
 city_cap_min = 1 if city_cap_max < 8 else 8
@@ -1300,6 +1392,53 @@ who_pm25_multi = round(max(avg_pm25, 0.1) / 5.0, 1)
 health_hd, health_tx, health_color = aqi_health_guidance(avg_aqi)
 polluted_html = rank_rows_html(polluted_rank)
 clean_html = rank_rows_html(clean_rank)
+
+daily_trend = (
+    df.groupby("date")[["aqi", "pm2_5"]]
+    .mean()
+    .sort_index()
+)
+if len(daily_trend) >= 2:
+    aqi_1d_text, aqi_1d_color = fmt_delta(daily_trend["aqi"].iloc[-1], daily_trend["aqi"].iloc[-2])
+    pm_1d_text, pm_1d_color = fmt_delta(daily_trend["pm2_5"].iloc[-1], daily_trend["pm2_5"].iloc[-2], " µg")
+else:
+    aqi_1d_text, aqi_1d_color = fmt_delta(0, None)
+    pm_1d_text, pm_1d_color = fmt_delta(0, None)
+
+if len(daily_trend) >= 14:
+    curr_7d = daily_trend.tail(7).mean()
+    prev_7d = daily_trend.iloc[-14:-7].mean()
+    aqi_7d_text, aqi_7d_color = fmt_delta(curr_7d["aqi"], prev_7d["aqi"])
+    pm_7d_text, pm_7d_color = fmt_delta(curr_7d["pm2_5"], prev_7d["pm2_5"], " µg")
+else:
+    aqi_7d_text, aqi_7d_color = fmt_delta(0, None)
+    pm_7d_text, pm_7d_color = fmt_delta(0, None)
+
+rank_up_line = "Chưa đủ dữ liệu để so sánh thứ hạng ngày gần nhất."
+rank_down_line = ""
+if len(daily_trend) >= 2:
+    last_date = daily_trend.index[-1]
+    prev_date = daily_trend.index[-2]
+    city_day = df.groupby(["date", "city"])["aqi"].mean().reset_index()
+    now_rank = city_day[city_day["date"] == last_date].sort_values("aqi", ascending=False)["city"].tolist()
+    prv_rank = city_day[city_day["date"] == prev_date].sort_values("aqi", ascending=False)["city"].tolist()
+    all_rank_cities = sorted(set(now_rank) | set(prv_rank))
+    fallback_rank = len(all_rank_cities) + 1
+    rank_now_map = {city: i + 1 for i, city in enumerate(now_rank)}
+    rank_prev_map = {city: i + 1 for i, city in enumerate(prv_rank)}
+
+    shift_rows = []
+    for city in all_rank_cities:
+        shift = rank_prev_map.get(city, fallback_rank) - rank_now_map.get(city, fallback_rank)
+        if shift != 0:
+            shift_rows.append((city, shift))
+
+    up_moves = sorted([r for r in shift_rows if r[1] > 0], key=lambda x: x[1], reverse=True)[:2]
+    down_moves = sorted([r for r in shift_rows if r[1] < 0], key=lambda x: x[1])[:2]
+    if up_moves:
+        rank_up_line = " · ".join([f"{c} (+{s})" for c, s in up_moves])
+    if down_moves:
+        rank_down_line = " · ".join([f"{c} ({s})" for c, s in down_moves])
 
 city_priority = df.groupby("city")["aqi"].mean().sort_values(ascending=False).index.tolist()
 plot_city_limit = min(city_cap, len(city_priority))
@@ -1374,6 +1513,26 @@ st.markdown(f"""
     <div class="kpi-val">{dangerp} <span class="u">%</span></div>
     <div class="kpi-sub">AQI > 150 (Kém → Nguy hại)</div>
   </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown(f"""
+<div class="trend-grid">
+    <div class="trend-card">
+        <div class="trend-kicker">Biến động 24 giờ</div>
+        <div class="trend-main" style="color:{aqi_1d_color}">AQI: {aqi_1d_text}</div>
+        <div class="trend-sub" style="color:{pm_1d_color}">PM2.5: {pm_1d_text}</div>
+    </div>
+    <div class="trend-card">
+        <div class="trend-kicker">Biến động 7 ngày</div>
+        <div class="trend-main" style="color:{aqi_7d_color}">AQI: {aqi_7d_text}</div>
+        <div class="trend-sub" style="color:{pm_7d_color}">PM2.5: {pm_7d_text}</div>
+    </div>
+    <div class="trend-card">
+        <div class="trend-kicker">Thay đổi thứ hạng ô nhiễm (so với ngày trước)</div>
+        <div class="trend-rank-line"><strong>Leo hạng:</strong> {rank_up_line}</div>
+        <div class="trend-rank-line"><strong>Hạ hạng:</strong> {rank_down_line if rank_down_line else "Không có biến động giảm rõ rệt."}</div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
