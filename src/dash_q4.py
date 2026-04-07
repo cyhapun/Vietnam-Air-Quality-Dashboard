@@ -5,6 +5,7 @@ import numpy as np
 import os
 from datetime import datetime
 import base64
+import textwrap
 
 def get_base64_image(image_path):
     try:
@@ -200,6 +201,8 @@ html, body, [class*="css"] { font-family: 'Be Vietnam Pro', sans-serif !importan
 .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px 10px; height: 100%; }
 .card-title { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: #334155; margin-bottom: 4px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }
 .card-sub { font-size: .62rem; color: #64748b; margin-bottom: 6px; line-height: 1.4; }
+.card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08); border-color: #bfdbfe; }
 .q-tag {
     display: inline-block;
     background: #e0f2fe; color: #0369a1;
@@ -257,6 +260,31 @@ html, body, [class*="css"] { font-family: 'Be Vietnam Pro', sans-serif !importan
 .ftr-txt { font-size: .63rem; color: #7da4c0; }
 .ftr-grp { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .ftr-member { background: rgba(255,255,255,.08); border-radius: 4px; padding: 2px 8px; font-size: .6rem; color: #93afc9; }
+.ftr-marquee {
+    width: min(760px, 100%);
+    overflow: hidden;
+    position: relative;
+    border-radius: 6px;
+}
+.ftr-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    width: max-content;
+    will-change: transform;
+    animation: ftr-scroll 24s linear infinite;
+}
+.ftr-track:hover { animation-play-state: paused; }
+@keyframes ftr-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+@media (max-width: 980px) {
+    .ftr { padding: 8px 12px; }
+    .ftr-txt { width: 100%; }
+    .ftr-marquee { width: 100%; }
+}
 
 /* ════════════════════════════════
    SIDEBAR CUSTOM COMPONENTS
@@ -450,6 +478,488 @@ html, body, [class*="css"] { font-family: 'Be Vietnam Pro', sans-serif !importan
     line-height: 1.45;
 }
 
+.sb-chip-wrap { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.sb-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(14,165,233,0.18);
+    border: 1px solid rgba(14,165,233,0.36);
+    color: #dbeafe;
+    font-size: .58rem;
+    font-weight: 700;
+}
+
+[data-testid="stSidebar"] .stButton > button {
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.05);
+    color: #dbeafe;
+    font-size: .67rem;
+    font-weight: 700;
+    min-height: 34px;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+    border-color: rgba(125, 211, 252, 0.55);
+    color: #e0f2fe;
+}
+[data-testid="stSidebar"] .stExpander {
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+}
+[data-testid="stSidebar"] .stExpander summary {
+    font-size: .72rem;
+    color: #cbd5e1;
+    font-weight: 700;
+}
+[data-testid="stSidebar"] .stMultiSelect [data-baseweb="tag"] {
+    display: none;
+}
+[data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"] > div {
+    min-height: 38px;
+    max-height: 38px;
+    overflow: hidden;
+    padding-right: 28px;
+}
+
+/* ── IQAIR-HYBRID STRIP ── */
+.iq-wrap {
+    background: linear-gradient(120deg, #f7fbff 0%, #fffaf0 55%, #fff5f5 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+.iq-live-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.iq-title {
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: #0f172a;
+}
+.iq-meta {
+    font-size: .62rem;
+    color: #475569;
+}
+.iq-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 10px;
+}
+.iq-card {
+    background: rgba(255,255,255,0.92);
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px;
+}
+.iq-card-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0c4a6e 100%);
+    border-color: rgba(255,255,255,0.2);
+}
+.iq-hero-kicker {
+    font-size: .58rem;
+    letter-spacing: .7px;
+    text-transform: uppercase;
+    color: #93c5fd;
+    font-weight: 700;
+}
+.iq-hero-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 5px 0 2px;
+}
+.iq-hero-aqi {
+    font-size: 2.05rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.iq-hero-status {
+    font-size: .72rem;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+.iq-hero-sub {
+    font-size: .64rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+}
+.iq-chip-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.iq-chip {
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: .58rem;
+    color: #e2e8f0;
+    font-weight: 700;
+}
+.iq-card-title {
+    font-size: .63rem;
+    font-weight: 800;
+    color: #334155;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+.iq-rank-row {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    border-bottom: 1px dashed #e2e8f0;
+    padding: 6px 0;
+}
+.iq-rank-row:last-child { border-bottom: none; padding-bottom: 1px; }
+.iq-rank-no {
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: #0f172a;
+    color: #ffffff;
+    font-size: .58rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+.iq-rank-city {
+    font-size: .69rem;
+    color: #1e293b;
+    font-weight: 600;
+}
+.iq-rank-aqi {
+    font-size: .7rem;
+    font-weight: 800;
+}
+.iq-rank-pm {
+    font-size: .56rem;
+    color: #64748b;
+}
+.iq-health-box {
+    margin-top: 8px;
+    border-left: 3px solid;
+    border-radius: 7px;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.08);
+}
+.iq-health-hd {
+    font-size: .62rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 2px;
+}
+.iq-health-tx {
+    font-size: .6rem;
+    color: #cbd5e1;
+    line-height: 1.45;
+}
+@media (max-width: 1100px) {
+    .iq-grid { grid-template-columns: 1fr; }
+}
+
+/* ════════════════════════════════
+   SIDEBAR WHITE MODE + COLLAPSE FIX
+════════════════════════════════ */
+section[data-testid="stSidebar"] {
+    background: #ffffff !important;
+    border-right: 1px solid #e2e8f0 !important;
+    box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.05), 0 12px 28px rgba(15, 23, 42, 0.06) !important;
+    transition: min-width .2s ease, max-width .2s ease, width .2s ease !important;
+}
+section[data-testid="stSidebar"] > div:first-child {
+    background: #ffffff !important;
+}
+section[data-testid="stSidebar"][aria-expanded="true"] {
+    min-width: 290px !important;
+    max-width: 290px !important;
+}
+section[data-testid="stSidebar"][aria-expanded="false"] {
+    min-width: 0 !important;
+    max-width: 0 !important;
+    width: 0 !important;
+    border-right: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+}
+section[data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
+    min-width: 0 !important;
+    max-width: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+}
+[data-testid="stSidebarCollapsedControl"] {
+    border: 1px solid #dbe3ee !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1) !important;
+}
+
+[data-testid="stSidebar"] ::-webkit-scrollbar-track { background: #f8fafc !important; }
+[data-testid="stSidebar"] ::-webkit-scrollbar-thumb { background: #cbd5e1 !important; }
+
+[data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"],
+[data-testid="stSidebar"] .stDateInput input,
+[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] {
+    background: #ffffff !important;
+    border: 1px solid #dbe3ee !important;
+    color: #0f172a !important;
+}
+[data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"] input,
+[data-testid="stSidebar"] .stDateInput input {
+    color: #0f172a !important;
+}
+[data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"]:hover,
+[data-testid="stSidebar"] .stDateInput input:hover {
+    border-color: #93c5fd !important;
+}
+[data-testid="stSidebar"] .stMultiSelect [data-baseweb="tag"] {
+    background: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+}
+[data-testid="stSidebar"] .stMultiSelect [data-baseweb="tag"] span {
+    color: #1d4ed8 !important;
+}
+[data-testid="stSidebar"] [data-baseweb="popover"],
+[data-testid="stSidebar"] [data-baseweb="menu"] {
+    background: #ffffff !important;
+    border: 1px solid #dbe3ee !important;
+}
+[data-testid="stSidebar"] [data-baseweb="menu"] li {
+    color: #1e293b !important;
+}
+[data-testid="stSidebar"] [data-baseweb="menu"] li:hover {
+    background: #f1f5f9 !important;
+}
+[data-testid="stSidebar"] .stButton > button {
+    background: #ffffff !important;
+    border: 1px solid #dbe3ee !important;
+    color: #334155 !important;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+    border-color: #93c5fd !important;
+    color: #1e40af !important;
+    background: #f8fbff !important;
+}
+[data-testid="stSidebar"] .stExpander {
+    background: #ffffff !important;
+    border: 1px solid #dbe3ee !important;
+}
+[data-testid="stSidebar"] .stExpander summary {
+    color: #334155 !important;
+}
+
+.sb-header {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+.sb-logo-circle {
+    background: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+}
+.sb-title { color: #0f172a !important; }
+.sb-subtitle { color: #64748b !important; }
+.sb-stat-box {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+.sb-stat-num { color: #0f172a !important; }
+.sb-stat-lbl { color: #64748b !important; }
+.sb-section-lbl { color: #475569 !important; }
+.sb-divider {
+    background: linear-gradient(90deg, transparent, rgba(148,163,184,0.28) 30%, rgba(148,163,184,0.28) 70%, transparent) !important;
+}
+.sb-filter-card {
+    background: #f8fbff !important;
+    border: 1px solid #dbeafe !important;
+}
+.sb-filter-title { color: #1d4ed8 !important; }
+.sb-filter-line { color: #334155 !important; }
+.sb-chip {
+    background: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+    color: #1e40af !important;
+}
+.sb-info-strip {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+.sb-info-txt { color: #334155 !important; }
+
+/* Sidebar classes from requested template - premium override */
+[data-testid="stSidebar"] .sidebar-header-card {
+    background:
+        radial-gradient(120px 70px at 100% -5%, rgba(14,165,233,.16), transparent 70%),
+        linear-gradient(160deg, #ffffff 0%, #f7fbff 65%, #f3f8ff 100%);
+    border: 1px solid #d7e4f1;
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+[data-testid="stSidebar"] .sidebar-header-title {
+    margin: 0;
+    font-size: 1rem;
+    letter-spacing: .3px;
+    color: #0f2940;
+    font-weight: 800;
+}
+[data-testid="stSidebar"] .sidebar-header-sub {
+    margin: 4px 0 10px;
+    font-size: .76rem;
+    color: #4f6b86;
+    line-height: 1.45;
+}
+[data-testid="stSidebar"] .sidebar-hero-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+[data-testid="stSidebar"] .hero-pill {
+    border: 1px solid #d7e8f7;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 6px 8px;
+    text-align: center;
+}
+[data-testid="stSidebar"] .hero-pill span {
+    display: block;
+    color: #0b4f86;
+    font-size: .95rem;
+    line-height: 1.1;
+    font-weight: 800;
+}
+[data-testid="stSidebar"] .hero-pill small {
+    display: block;
+    margin-top: 2px;
+    color: #607b96;
+    font-size: .62rem;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    font-weight: 700;
+}
+[data-testid="stSidebar"] .sidebar-section-title {
+    font-size: .76rem;
+    text-transform: uppercase;
+    letter-spacing: .75px;
+    color: #355673;
+    font-weight: 800;
+    margin: 10px 0 6px;
+    padding-left: 10px;
+    position: relative;
+}
+[data-testid="stSidebar"] .sidebar-section-title::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 4px;
+    height: 14px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #0ea5e9, #2563eb);
+}
+[data-testid="stSidebar"] .sidebar-selection-summary {
+    background: #ffffff;
+    border: 1px solid #d7e4f1;
+    border-radius: 12px;
+    padding: 9px 10px 7px 10px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
+}
+[data-testid="stSidebar"] .summary-count {
+    font-size: .74rem;
+    color: #3f5f7c;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+[data-testid="stSidebar"] .mini-city-chip {
+    display: inline-block;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    padding: 2px 8px;
+    font-size: .66rem;
+    border-radius: 999px;
+    border: 1px solid #c5dcf2;
+    color: #0b4f86;
+    background: #eef6fd;
+    font-weight: 700;
+}
+[data-testid="stSidebar"] .sidebar-hint {
+    font-size: .72rem;
+    color: #4c6a86;
+    margin-top: 2px;
+    margin-bottom: 4px;
+}
+
+[data-testid="stSidebar"] .stButton > button {
+    border-radius: 10px !important;
+    border: 1px solid #c7dbef !important;
+    background: linear-gradient(180deg, #ffffff 0%, #f5faff 100%) !important;
+    color: #18466f !important;
+    font-weight: 700 !important;
+    min-height: 38px !important;
+    transition: all .18s ease !important;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+    border-color: #88bee8 !important;
+    color: #0b5b9a !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12) !important;
+    transform: translateY(-1px);
+}
+[data-testid="stSidebar"] .stExpander {
+    border: 1px solid #d7e4f1 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+}
+[data-testid="stSidebar"] .stExpander summary {
+    color: #0f4f82 !important;
+    font-size: .8rem !important;
+    font-weight: 700 !important;
+}
+[data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"],
+[data-testid="stSidebar"] .stDateInput > div > div {
+    border-radius: 10px !important;
+    border: 1px solid #d3e2f0 !important;
+    background: #ffffff !important;
+}
+[data-testid="stSidebar"] .stSlider [data-baseweb="slider"] > div > div:nth-child(1) {
+    background: #dbeafe !important;
+}
+[data-testid="stSidebar"] .stSlider [role="slider"] {
+    box-shadow: 0 0 0 3px rgba(14,165,233,.15) !important;
+    border: 1px solid #7dd3fc !important;
+}
+[data-testid="stSidebar"] [data-testid="stNotificationContentSuccess"] {
+    border: 1px solid #c9e7d6 !important;
+    background: #f0fdf4 !important;
+    color: #166534 !important;
+    border-radius: 10px !important;
+}
+
+@media (max-width: 1100px) {
+    section[data-testid="stSidebar"][aria-expanded="true"] {
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -474,6 +984,30 @@ def band_lbl(v):
     for lo, hi, l, _ in AQI_DEF:
         if lo <= v <= hi: return l
     return "Nguy hại"
+
+def aqi_health_guidance(v):
+    if v <= 50:
+        return "Không khí tốt", "Nhóm nhạy cảm có thể sinh hoạt ngoài trời bình thường.", "#22c55e"
+    if v <= 100:
+        return "Mức trung bình", "Người có bệnh hô hấp nên giảm hoạt động kéo dài ngoài trời.", "#0ea5e9"
+    if v <= 150:
+        return "Bắt đầu ảnh hưởng", "Trẻ em, người già và người có bệnh nền nên hạn chế ra ngoài giờ cao điểm.", "#f59e0b"
+    if v <= 200:
+        return "Không tốt cho sức khỏe", "Nên đeo khẩu trang lọc bụi mịn và giảm vận động mạnh ngoài trời.", "#f97316"
+    return "Rất xấu", "Ưu tiên ở trong nhà, đóng cửa và dùng máy lọc nếu có.", "#ef4444"
+
+def rank_rows_html(rank_df):
+    rows = []
+    for i, row in enumerate(rank_df.itertuples(index=False), start=1):
+        lbl, clr = aqi_meta(row.aqi)
+        rows.append(
+            f"<div class='iq-rank-row'>"
+            f"<div class='iq-rank-no'>{i}</div>"
+            f"<div><div class='iq-rank-city'>{row.city}</div><div class='iq-rank-pm'>PM2.5: {row.pm2_5:.1f} µg/m³</div></div>"
+            f"<div class='iq-rank-aqi' style='color:{clr}'>{row.aqi:.0f}</div>"
+            f"</div>"
+        )
+    return "".join(rows)
 
 def hex_rgba(h, a=0.12):
     h = h.lstrip("#"); r,g,b = int(h[:2],16), int(h[2:4],16), int(h[4:],16)
@@ -522,6 +1056,9 @@ def ax(title=""):
         r["title"] = dict(text=title, font=dict(size=9, color="#64748b"))
     return r
 
+def chart_h(n_rows, min_h=260, row_h=24, max_h=560):
+    return int(min(max_h, max(min_h, n_rows * row_h + 70)))
+
 # ═══════════════════════════════════════════════════════════════════
 # DATA
 # ═══════════════════════════════════════════════════════════════════
@@ -567,203 +1104,164 @@ with st.spinner("Đang tải dữ liệu..."):
     DF = load_data()
 
 # ═══════════════════════════════════════════════════════════════════
-# SIDEBAR — REDESIGNED
+# SIDEBAR — TEMPLATE-STYLE FILTER
 # ═══════════════════════════════════════════════════════════════════
 all_cities = sorted(DF["city"].unique())
-mn_date    = DF["timestamp"].min().date()
-mx_date    = DF["timestamp"].max().date()
-total_recs = len(DF)
+mn_date = DF["timestamp"].min().date()
+mx_date = DF["timestamp"].max().date()
 
-with st.sidebar:
+if "selected_cities" not in st.session_state:
+    st.session_state.selected_cities = all_cities
+if "date_range" not in st.session_state:
+    st.session_state.date_range = [mn_date, mx_date]
+if "city_chart_limit" not in st.session_state:
+    st.session_state.city_chart_limit = min(18, len(all_cities))
 
-    # ── Header block ──
-    st.markdown(f"""
-    <div class="sb-header">
-      <div class="sb-logo-row">
-        <div class="sb-logo-circle">🌿</div>
-        <div>
-          <div class="sb-title">Vietnam AQI</div>
-          <div class="sb-subtitle">Bộ lọc & Điều hướng</div>
+st.sidebar.markdown(
+    f"""
+    <div class='sidebar-header-card'>
+        <p class='sidebar-header-title'>Bảng Điều Khiển</p>
+        <p class='sidebar-header-sub'>Lọc nhanh dữ liệu theo khu vực và khung thời gian.</p>
+        <div class='sidebar-hero-metrics'>
+            <div class='hero-pill'>
+                <span>{len(all_cities)}</span>
+                <small>Khu vực</small>
+            </div>
+            <div class='hero-pill'>
+                <span>{len(DF):,}</span>
+                <small>Bản ghi</small>
+            </div>
         </div>
-      </div>
-      <div class="sb-stats-row">
-        <div class="sb-stat-box">
-          <div class="sb-stat-num">{len(all_cities)}</div>
-          <div class="sb-stat-lbl">Khu vực</div>
-        </div>
-        <div class="sb-stat-box">
-          <div class="sb-stat-num">{total_recs:,}</div>
-          <div class="sb-stat-lbl">Bản ghi</div>
-        </div>
-      </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
-    # ── Section: Thời gian ──
-    st.markdown("""
-    <div class="sb-section">
-      <div class="sb-section-hd">
-        <div class="sb-section-dot"></div>
-        <span class="sb-section-lbl">Khoảng thời gian</span>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+st.sidebar.markdown("<div class='sidebar-section-title'>Khu vực quan trắc</div>", unsafe_allow_html=True)
 
-    st.markdown('<div style="padding: 0 18px;">', unsafe_allow_html=True)
-    dr = st.date_input(
-        "date_range",
-        [mn_date, mx_date],
-        min_value=mn_date,
-        max_value=mx_date,
-        label_visibility="collapsed"
-    )
-    s_d, e_d = (dr[0], dr[1]) if len(dr) == 2 else (mn_date, mx_date)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Quick-select pills (display only — reference)
-    st.markdown(f"""
-    <div style="padding: 6px 18px 0;">
-      <div class="sb-quick-pills">
-        <span class="sb-pill active">Toàn bộ</span>
-        <span class="sb-pill">6 tháng</span>
-        <span class="sb-pill">3 tháng</span>
-        <span class="sb-pill">30 ngày</span>
-        <span class="sb-pill">7 ngày</span>
-      </div>
-      <div style="font-size:.57rem;color:#475569;margin-top:6px;padding-left:2px;">
-        📅 {s_d.strftime('%d/%m/%Y')} → {e_d.strftime('%d/%m/%Y')}
-        &nbsp;·&nbsp; {(e_d - s_d).days + 1} ngày
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── Divider ──
-    st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
-
-    # ── Section: Mức AQI ──
-    st.markdown("""
-    <div class="sb-section">
-      <div class="sb-section-hd">
-                <div class="sb-section-dot" style="background:#f59e0b;"></div>
-        <span class="sb-section-lbl">Mức AQI quan tâm</span>
-      </div>
-            <div style="font-size:.58rem;color:#7da4c0;padding:0 18px 8px;">Không chọn mức AQI = hiển thị toàn bộ dữ liệu</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    aqi_opts = [b[2] for b in AQI_DEF]
-    st.markdown('<div style="padding: 0 18px;">', unsafe_allow_html=True)
-    sel_bands = st.multiselect(
-        "aqi_focus",
-        aqi_opts,
-        default=[],
-        label_visibility="collapsed",
-        placeholder="Không chọn = tất cả mức AQI"
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-    active_bands = sel_bands if sel_bands else aqi_opts
-
-    # ── Divider ──
-    st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
-
-    # ── Section: Khu vực ──
-    st.markdown(f"""
-    <div class="sb-section">
-      <div class="sb-section-hd">
-                <div class="sb-section-dot" style="background:#14b8a6;"></div>
-        <span class="sb-section-lbl">Khu vực / Thành phố</span>
-        <span class="sb-section-badge" id="city-badge">{len(all_cities)}</span>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown('<div style="padding: 0 18px;">', unsafe_allow_html=True)
-    sel = st.multiselect(
-        "cities",
-        all_cities,
-        default=[],
-        label_visibility="collapsed",
-        placeholder="Không chọn = tất cả thành phố"
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-    active_cities = sel if sel else all_cities
-
-    # AQI distribution bars for quick visual feedback in sidebar.
-    side_df = DF[
-        DF["city"].isin(active_cities) &
-        (DF["timestamp"].dt.date >= s_d) &
-        (DF["timestamp"].dt.date <= e_d)
-    ]
-    side_band_pct = side_df["band"].value_counts(normalize=True).mul(100).to_dict() if len(side_df) else {}
-    bar_html = '<div style="padding:8px 18px 2px;">'
-    for _, _, lbl, col in AQI_DEF:
-        pct = side_band_pct.get(lbl, 0)
-        bar_html += (
-            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
-            f'<span style="width:58px;font-size:.58rem;color:#c7d9ea;">{lbl}</span>'
-            '<div style="flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;">'
-            f'<div style="width:{pct:.1f}%;height:100%;background:{col};"></div>'
-            '</div>'
-            f'<span style="width:34px;text-align:right;font-size:.58rem;color:#9ec5e2;">{pct:.1f}%</span>'
-            '</div>'
+btn1, btn2, btn3 = st.sidebar.columns(3)
+with btn1:
+    if st.button("Tất cả", use_container_width=True, key="btn_all_cities"):
+        st.session_state.selected_cities = all_cities
+with btn2:
+    if st.button("AQI cao", use_container_width=True, key="btn_hotspot"):
+        top_cities = (
+            DF.groupby("city")["aqi"]
+            .mean()
+            .sort_values(ascending=False)
+            .head(min(8, len(all_cities)))
+            .index.tolist()
         )
-    bar_html += '</div>'
-    st.markdown(bar_html, unsafe_allow_html=True)
+        st.session_state.selected_cities = top_cities
+with btn3:
+    if st.button("Xóa", use_container_width=True, key="btn_clear_cities"):
+        st.session_state.selected_cities = []
 
-    # Selected count display
-    pct_sel = round(len(active_cities) / len(all_cities) * 100)
-    bar_w   = pct_sel
-    st.markdown(f"""
-    <div style="padding: 8px 18px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-        <span style="font-size:.58rem;color:#475569;text-transform:uppercase;letter-spacing:.5px;">Đã chọn</span>
-            <span style="font-size:.7rem;font-weight:700;color:#93c5fd;">{len(active_cities)} / {len(all_cities)}</span>
-      </div>
-      <div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;">
-                <div style="height:100%;width:{bar_w}%;background:linear-gradient(90deg,#0ea5e9,#0891b2);border-radius:2px;transition:width .3s;"></div>
-      </div>
+selected_count = len(st.session_state.selected_cities)
+preview_names = st.session_state.selected_cities[:4]
+preview_chips = "".join([f"<span class='mini-city-chip'>{c}</span>" for c in preview_names])
+if selected_count > 4:
+    preview_chips += f"<span class='mini-city-chip'>+{selected_count - 4} khu vực</span>"
+
+st.sidebar.markdown(
+    f"""
+    <div class='sidebar-selection-summary'>
+        <div class='summary-count'>Đã chọn {selected_count} khu vực</div>
+        <div>{preview_chips if preview_chips else "<span style='font-size:0.76rem;color:#64748b;'>Chưa chọn khu vực nào</span>"}</div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
-    st.markdown(f"""
-    <div class="sb-filter-card">
-        <div class="sb-filter-title">Tổng hợp bộ lọc</div>
-        <div class="sb-filter-line">Thời gian: <strong>{s_d.strftime('%d/%m/%Y')}</strong> → <strong>{e_d.strftime('%d/%m/%Y')}</strong></div>
-        <div class="sb-filter-line">Khu vực: <strong>{len(active_cities)}</strong> / {len(all_cities)} thành phố</div>
-        <div class="sb-filter-line">Mức AQI: <strong>{len(active_bands)}</strong> nhóm</div>
-    </div>
-    """, unsafe_allow_html=True)
+with st.sidebar.expander(f"Chỉnh khu vực ({selected_count})", expanded=False):
+    st.multiselect(
+        "Danh sách khu vực",
+        options=all_cities,
+        key="selected_cities",
+        label_visibility="collapsed",
+        placeholder="Tìm và chọn khu vực...",
+    )
 
-    # Empty selection means show all, to keep the sidebar clean by default.
-    sel = active_cities
-    sel_bands = active_bands
+selected_cities = st.session_state.selected_cities
+sel = selected_cities
 
-    # ── Divider ──
-    st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
+st.sidebar.markdown(
+    "<p class='sidebar-hint'>Gợi ý: bấm Chỉnh khu vực để cập nhật danh sách nhanh.</p>",
+    unsafe_allow_html=True,
+)
 
-    # ── Info strip ──
-    st.markdown(f"""
-    <div class="sb-info-strip">
-      <span class="sb-info-icon">💡</span>
-      <span class="sb-info-txt">
-        Dữ liệu từ <strong style="color:#93c5fd">{mn_date.strftime('%d/%m/%Y')}</strong>
-        đến <strong style="color:#93c5fd">{mx_date.strftime('%d/%m/%Y')}</strong>.
-        Cập nhật theo giờ. Nguồn: IQAir / OpenAQ.
-      </span>
-    </div>
-    """, unsafe_allow_html=True)
+if selected_cities:
+    city_scope_df = DF[DF["city"].isin(selected_cities)]
+else:
+    city_scope_df = DF
 
-    # ── Footer buttons ──
-    st.markdown("""
-    <div class="sb-footer">
-      <button class="sb-apply-btn" onclick="window.location.reload()">
-        ✦ &nbsp;Cập nhật Dashboard
-      </button>
-      <button class="sb-reset-btn" onclick="window.location.reload()">
-        Đặt lại mặc định
-      </button>
-    </div>
-    """, unsafe_allow_html=True)
+min_date = city_scope_df["timestamp"].min().date()
+max_date = city_scope_df["timestamp"].max().date()
+
+curr_start, curr_end = st.session_state.date_range
+curr_start = min(max(curr_start, min_date), max_date)
+curr_end = min(max(curr_end, min_date), max_date)
+if curr_start > curr_end:
+    curr_start, curr_end = min_date, max_date
+st.session_state.date_range = [curr_start, curr_end]
+
+st.sidebar.markdown("<div class='sidebar-section-title'>Khung thời gian</div>", unsafe_allow_html=True)
+t1, t2, t3, t4 = st.sidebar.columns(4)
+with t1:
+    if st.button("30N", use_container_width=True, key="date_30d"):
+        st.session_state.date_range = [max(min_date, max_date - pd.Timedelta(days=29)), max_date]
+with t2:
+    if st.button("90N", use_container_width=True, key="date_90d"):
+        st.session_state.date_range = [max(min_date, max_date - pd.Timedelta(days=89)), max_date]
+with t3:
+    if st.button("YTD", use_container_width=True, key="date_ytd"):
+        start_of_year = datetime(max_date.year, 1, 1).date()
+        st.session_state.date_range = [max(min_date, start_of_year), max_date]
+with t4:
+    if st.button("Full", use_container_width=True, key="date_full"):
+        st.session_state.date_range = [min_date, max_date]
+
+dr = st.sidebar.date_input(
+    "Chọn khoảng thời gian",
+    value=st.session_state.date_range,
+    min_value=min_date,
+    max_value=max_date,
+    key="date_range",
+)
+if isinstance(dr, (tuple, list)) and len(dr) == 2:
+    s_d, e_d = dr
+else:
+    s_d, e_d = min_date, max_date
+if s_d > e_d:
+    s_d, e_d = e_d, s_d
+
+side_df = DF[
+    DF["city"].isin(selected_cities if selected_cities else all_cities)
+    & (DF["timestamp"].dt.date >= s_d)
+    & (DF["timestamp"].dt.date <= e_d)
+]
+st.sidebar.success(f"Dữ liệu đang xét: {len(side_df):,} bản ghi")
+
+st.sidebar.markdown("<div class='sidebar-section-title'>Mật độ biểu đồ</div>", unsafe_allow_html=True)
+city_cap_max = max(1, len(selected_cities) if selected_cities else len(all_cities))
+city_cap_min = 1 if city_cap_max < 8 else 8
+city_cap_default = min(max(st.session_state.city_chart_limit, city_cap_min), city_cap_max)
+city_cap = st.sidebar.slider(
+    "Số khu vực tối đa trên biểu đồ dài",
+    min_value=city_cap_min,
+    max_value=city_cap_max,
+    value=city_cap_default,
+    step=1,
+    key="city_chart_limit",
+    help="Giảm số khu vực để tránh biểu đồ quá cao khi chọn nhiều thành phố.",
+)
+
+aqi_opts = [b[2] for b in AQI_DEF]
+sel_bands = aqi_opts
+
+if not sel:
+        st.warning("Vui lòng chọn ít nhất 1 khu vực để hiển thị.")
+        st.stop()
 
 # ── FILTER DATA ──
 df = DF[
@@ -788,6 +1286,26 @@ worst     = df.groupby("city")["aqi"].mean().idxmax()
 cig_n     = round(avg_pm25 / 22.0 * days, 1)
 _lbl, _col = aqi_meta(avg_aqi)
 who_exceed = {k: round((df[k] > POLLS[k]["who"]).mean() * 100, 1) for k in P_KEYS}
+
+latest_obs = df["timestamp"].max()
+city_rank = (
+    df.groupby("city")
+    .agg(aqi=("aqi", "mean"), pm2_5=("pm2_5", "mean"))
+    .round(1)
+    .reset_index()
+)
+polluted_rank = city_rank.sort_values("aqi", ascending=False).head(6)
+clean_rank = city_rank.sort_values("aqi", ascending=True).head(6)
+who_pm25_multi = round(max(avg_pm25, 0.1) / 5.0, 1)
+health_hd, health_tx, health_color = aqi_health_guidance(avg_aqi)
+polluted_html = rank_rows_html(polluted_rank)
+clean_html = rank_rows_html(clean_rank)
+
+city_priority = df.groupby("city")["aqi"].mean().sort_values(ascending=False).index.tolist()
+plot_city_limit = min(city_cap, len(city_priority))
+plot_cities = city_priority[:plot_city_limit]
+df_city = df[df["city"].isin(plot_cities)].copy()
+is_city_trimmed = len(city_priority) > plot_city_limit
 
 # ═══════════════════════════════════════════════════════════════════
 # HEADER
@@ -859,15 +1377,58 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+iqair_hybrid_html = textwrap.dedent(f"""
+<div class="iq-wrap">
+<div class="iq-live-head">
+<div class="iq-title">Live AQI Vietnam · IQAir Hybrid</div>
+<div class="iq-meta">Cập nhật gần nhất: {latest_obs.strftime('%H:%M · %d/%m/%Y')} · Dữ liệu từ bộ cảm biến nội bộ</div>
+</div>
+<div class="iq-grid">
+<div class="iq-card iq-card-hero">
+<div class="iq-hero-kicker">Chất lượng không khí tại Việt Nam</div>
+<div class="iq-hero-row">
+<div class="iq-hero-aqi" style="color:{_col}">{avg_aqi}</div>
+<div class="iq-hero-status">{_lbl}</div>
+</div>
+<div class="iq-hero-sub">PM2.5 trung bình hiện tại: <strong>{avg_pm25} µg/m³</strong></div>
+<div class="iq-hero-sub">Nồng độ PM2.5 đang cao gấp <strong>{who_pm25_multi} lần</strong> mức hướng dẫn năm của WHO (5 µg/m³).</div>
+<div class="iq-chip-row">
+<span class="iq-chip">{len(sel)} khu vực</span>
+<span class="iq-chip">{len(df):,} bản ghi</span>
+<span class="iq-chip">{dangerp}% giờ AQI > 150</span>
+</div>
+<div class="iq-health-box" style="border-left-color:{health_color}">
+<div class="iq-health-hd">Khuyến nghị sức khỏe: {health_hd}</div>
+<div class="iq-health-tx">{health_tx}</div>
+</div>
+</div>
+<div class="iq-card">
+<div class="iq-card-title">Xếp hạng thành phố ô nhiễm nhất</div>
+{polluted_html}
+</div>
+<div class="iq-card">
+<div class="iq-card-title">Xếp hạng thành phố sạch hơn</div>
+{clean_html}
+</div>
+</div>
+</div>
+""")
+st.markdown(iqair_hybrid_html, unsafe_allow_html=True)
+
+if is_city_trimmed:
+    st.caption(
+        f"Hiển thị Top {plot_city_limit}/{len(city_priority)} khu vực theo AQI trung bình cho các biểu đồ theo thành phố để giữ bố cục gọn."
+    )
+
 # ═══════════════════════════════════════════════════════════════════
 # TABS
 # ═══════════════════════════════════════════════════════════════════
 tabs = st.tabs([
     "🏠 Tổng quan",
-    "🔬 Q4 · Tác nhân ô nhiễm",
     "📈 Q1 · Xu hướng thời gian",
     "🗺️  Q2 · Địa lý & Thời tiết",
     "💨 Q3 · Gió & Mưa",
+    "🔬 Q4 · Tác nhân ô nhiễm",
     "📅 Q5&6 · Tần suất & Tuần",
 ])
 
@@ -1024,7 +1585,7 @@ with tabs[0]:
 # ══════════════════════════════════════════════
 # TAB 1 — Q4
 # ══════════════════════════════════════════════
-with tabs[1]:
+with tabs[4]:
     df_d = df[df["aqi"] > 100].copy()
     if df_d.empty:
         st.info("Không có dữ liệu AQI > 100.")
@@ -1038,6 +1599,11 @@ with tabs[1]:
     df_d["z_sum"] = df_d[z_cols].clip(lower=0).sum(axis=1).replace(0, np.nan)
     for k in P_KEYS:
         df_d[f"{k}_share"] = df_d[f"{k}_z"].clip(lower=0) / df_d["z_sum"] * 100
+
+    # Build city-limited slice after derived share columns exist.
+    df_d_city = df_d[df_d["city"].isin(plot_cities)].copy()
+    if df_d_city.empty:
+        df_d_city = df_d.copy()
 
     overall = {k: df_d[f"{k}_share"].mean() for k in P_KEYS}
     rank    = sorted(overall, key=overall.get, reverse=True)
@@ -1105,11 +1671,11 @@ with tabs[1]:
     with cA3:
         st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q4</span>Heatmap — % bất thường theo thành phố</div><div class="card-sub">Ô đậm = chất tăng bất thường mạnh · ● = thủ phạm chính</div>', unsafe_allow_html=True)
         city_sh = (
-            df_d.groupby("city")[[f"{k}_share" for k in P_KEYS]]
+            df_d_city.groupby("city")[[f"{k}_share" for k in P_KEYS]]
             .mean()
             .rename(columns={f"{k}_share": POLLS[k]["label"] for k in P_KEYS})
         )
-        cord    = df_d.groupby("city")["aqi"].mean().sort_values(ascending=False).index
+        cord    = df_d_city.groupby("city")["aqi"].mean().sort_values(ascending=False).index
         city_sh = city_sh.reindex([c for c in cord if c in city_sh.index])
         poll_ord= [POLLS[k]["label"] for k in rank]
         city_sh = city_sh[[p for p in poll_ord if p in city_sh.columns]]
@@ -1129,7 +1695,7 @@ with tabs[1]:
                           title=dict(text="%", font=dict(size=8)), outlinewidth=0),
             hovertemplate="<b>%{y}</b> · %{x}: %{z:.1f}%<extra></extra>",
         ))
-        h_h = max(240, len(yl)*28 + 50)
+        h_h = chart_h(len(yl), min_h=260, row_h=21, max_h=560)
         ml(fig_h, h=h_h)
         fig_h.update_xaxes(side="top", tickfont=TF, gridcolor="rgba(0,0,0,0)", linecolor=LC)
         fig_h.update_yaxes(tickfont=dict(color="#334155", size=9), gridcolor="rgba(0,0,0,0)", autorange="reversed", linecolor=LC)
@@ -1193,7 +1759,7 @@ with tabs[1]:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         top_k  = rank[0]; top_cfg = POLLS[top_k]
         st.markdown(f'<div class="card-title"><span class="q-tag">Q4</span>Scatter {top_cfg["label"]} ↔ AQI theo thành phố</div>', unsafe_allow_html=True)
-        sdf = df_d[[top_k,"aqi","city"]].dropna().sample(min(4000, len(df_d)), random_state=9)
+        sdf = df_d_city[[top_k,"aqi","city"]].dropna().sample(min(4000, len(df_d_city)), random_state=9)
         fig_sc = go.Figure()
         for city in sorted(sdf["city"].unique()):
             sub = sdf[sdf["city"]==city]
@@ -1217,9 +1783,9 @@ with tabs[1]:
         st.plotly_chart(fig_sc, use_container_width=True, config={"displayModeBar": False})
         st.markdown('</div>', unsafe_allow_html=True)
 
-    top4   = df_d.groupby("city")["aqi"].mean().nlargest(4).index.tolist()
+    top4   = df_d_city.groupby("city")["aqi"].mean().nlargest(4).index.tolist()
     z_mean = (
-        df_d[df_d["city"].isin(top4)]
+        df_d_city[df_d_city["city"].isin(top4)]
         .groupby("city")[[f"{k}_z" for k in P_KEYS]].mean()
         .rename(columns={f"{k}_z": POLLS[k]["label"] for k in P_KEYS})
         .clip(lower=0)
@@ -1231,7 +1797,7 @@ with tabs[1]:
         if city not in z_n.index: continue
         vals = z_n.loc[city].tolist(); vc = vals+[vals[0]]; tc = theta+[theta[0]]
         clr  = CITY_CLR.get(city, "#2563eb")
-        aqit = df_d[df_d["city"]==city]["aqi"].mean()
+        aqit = df_d_city[df_d_city["city"]==city]["aqi"].mean()
         main_p = z_mean.loc[city].idxmax() if city in z_mean.index else "—"
         fig_r = go.Figure(go.Scatterpolar(
             r=vc, theta=tc, fill="toself",
@@ -1306,8 +1872,8 @@ with tabs[1]:
 # ══════════════════════════════════════════════
 # TAB 2 — Q1
 # ══════════════════════════════════════════════
-with tabs[2]:
-    cT1, cT2, cT3 = st.columns([2.5,1.5,2.5], gap="small")
+with tabs[1]:
+    cT1, cT2 = st.columns([1.7, 1.1], gap="small")
 
     with cT1:
         st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q1</span>PM2.5 theo tháng & thời điểm</div><div class="card-sub">T10–T3 (mùa khô) PM2.5 thường cao hơn T4–T9 (mùa mưa)</div>', unsafe_allow_html=True)
@@ -1347,38 +1913,38 @@ with tabs[2]:
         st.plotly_chart(fig_hr, use_container_width=True, config={"displayModeBar": False})
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with cT3:
-        st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q1</span>AQI hàng ngày — Rolling 7 ngày</div><div class="card-sub">Xám = từng ngày · Đỏ = trung bình trượt 7 ngày</div>', unsafe_allow_html=True)
-        daily = df.groupby("date")["aqi"].mean().reset_index().sort_values("date")
-        daily["r7"] = daily["aqi"].rolling(7, min_periods=1).mean()
-        fig_day = go.Figure()
-        for lo, hi, l, c in AQI_DEF:
-            fig_day.add_hrect(y0=lo, y1=min(hi,310), fillcolor=c, opacity=0.04, line_width=0)
-        fig_day.add_trace(go.Scatter(
-            x=daily["date"], y=daily["aqi"].round(1), name="Hàng ngày",
-            mode="lines", line=dict(color="#cbd5e1", width=1)
-        ))
-        fig_day.add_trace(go.Scatter(
-            x=daily["date"], y=daily["r7"].round(1), name="TB 7 ngày",
-            mode="lines", line=dict(color="#dc2626", width=2.5)
-        ))
-        ml(fig_day, h=290,
-           xaxis=dict(**ax()),
-           yaxis=dict(**ax("AQI")),
-           legend=dict(bgcolor="rgba(0,0,0,0)", font_size=9, orientation="h",
-                       yanchor="bottom", y=1.02, xanchor="left", x=0))
-        st.plotly_chart(fig_day, use_container_width=True, config={"displayModeBar": False})
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q1</span>AQI hàng ngày — Rolling 7 ngày</div><div class="card-sub">Xám = từng ngày · Đỏ = trung bình trượt 7 ngày</div>', unsafe_allow_html=True)
+    daily = df.groupby("date")["aqi"].mean().reset_index().sort_values("date")
+    daily["r7"] = daily["aqi"].rolling(7, min_periods=1).mean()
+    fig_day = go.Figure()
+    for lo, hi, l, c in AQI_DEF:
+        fig_day.add_hrect(y0=lo, y1=min(hi,310), fillcolor=c, opacity=0.04, line_width=0)
+    fig_day.add_trace(go.Scatter(
+        x=daily["date"], y=daily["aqi"].round(1), name="Hàng ngày",
+        mode="lines", line=dict(color="#cbd5e1", width=1)
+    ))
+    fig_day.add_trace(go.Scatter(
+        x=daily["date"], y=daily["r7"].round(1), name="TB 7 ngày",
+        mode="lines", line=dict(color="#dc2626", width=2.5)
+    ))
+    ml(fig_day, h=310,
+       xaxis=dict(**ax()),
+       yaxis=dict(**ax("AQI")),
+       legend=dict(bgcolor="rgba(0,0,0,0)", font_size=9, orientation="h",
+                   yanchor="bottom", y=1.02, xanchor="left", x=0))
+    st.plotly_chart(fig_day, use_container_width=True, config={"displayModeBar": False})
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════
 # TAB 3 — Q2
 # ══════════════════════════════════════════════
-with tabs[3]:
-    cG1, cG2, cG3 = st.columns([2,2.5,2], gap="small")
+with tabs[2]:
+    cG1, cG2 = st.columns([1.15, 1.85], gap="small")
 
     with cG1:
         st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q2</span>AQI trung bình theo thành phố</div>', unsafe_allow_html=True)
-        ca = df.groupby("city")["aqi"].mean().sort_values(ascending=True).reset_index()
+        ca = df_city.groupby("city")["aqi"].mean().sort_values(ascending=True).reset_index()
         ca["clr"] = ca["aqi"].apply(lambda x: aqi_meta(x)[1])
         fig_ca = go.Figure(go.Bar(
             x=ca["aqi"].round(1), y=ca["city"], orientation="h",
@@ -1387,7 +1953,7 @@ with tabs[3]:
             textfont=dict(size=9, color="#334155"),
             hovertemplate="%{y}: AQI %{x:.0f}<extra></extra>"
         ))
-        ml(fig_ca, h=max(260, len(ca)*30+50),
+        ml(fig_ca, h=chart_h(len(ca), min_h=280, row_h=20, max_h=580),
            xaxis=dict(**ax("AQI")),
            yaxis=dict(tickfont=dict(color="#334155", size=9), gridcolor=GC, linecolor=LC))
         st.plotly_chart(fig_ca, use_container_width=True, config={"displayModeBar": False})
@@ -1395,7 +1961,7 @@ with tabs[3]:
 
     with cG2:
         st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q2</span>Nhiệt độ × Độ ẩm → AQI</div><div class="card-sub">Kích thước bong bóng = PM2.5</div>', unsafe_allow_html=True)
-        sc2 = df.groupby("city").agg(
+        sc2 = df_city.groupby("city").agg(
             temp=("temp","mean"), humidity=("humidity","mean"),
             aqi=("aqi","mean"), pm2_5=("pm2_5","mean")
         ).reset_index()
@@ -1416,50 +1982,51 @@ with tabs[3]:
                     f"PM2.5: {row['pm2_5']:.1f}<extra></extra>"
                 )
             ))
-        ml(fig_bb, h=max(260, len(ca)*30+50),
+        ml(fig_bb, h=chart_h(len(ca), min_h=280, row_h=20, max_h=580),
            xaxis=dict(**ax("Nhiệt độ (°C)")),
            yaxis=dict(**ax("Độ ẩm (%)")))
         st.plotly_chart(fig_bb, use_container_width=True, config={"displayModeBar": False})
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with cG3:
-        st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q2</span>Phân phối mức AQI theo thành phố</div>', unsafe_allow_html=True)
-        lc = df.groupby(["city","aqi_lbl"]).size().reset_index(name="n")
-        lc["pct"] = (lc["n"] / lc.groupby("city")["n"].transform("sum") * 100).round(1)
-        lclr = {
-            "Tốt":       "#16a34a",
-            "Trung bình":"#d97706",
-            "Kém":       "#ea580c",
-            "Xấu":       "#dc2626",
-            "Rất xấu":  "#9333ea",
-            "Nguy hại":  "#7f1d1d",
-        }
-        fig_lv = go.Figure()
-        for lv in ["Tốt","Trung bình","Kém","Xấu","Rất xấu","Nguy hại"]:
-            sub = lc[lc["aqi_lbl"]==lv]
-            if sub.empty: continue
-            fig_lv.add_trace(go.Bar(
-                name=lv, x=sub["city"], y=sub["pct"],
-                marker_color=lclr[lv],
-                hovertemplate=f"<b>%{{x}}</b> {lv}: %{{y:.1f}}%<extra></extra>"
-            ))
-        ml(fig_lv, h=max(260, len(ca)*30+50), barmode="stack",
-           xaxis=dict(tickfont=dict(color="#334155", size=9), tickangle=-35, gridcolor=GC, linecolor=LC),
-           yaxis=dict(**ax("%"), range=[0,105]),
-           legend=dict(bgcolor="rgba(0,0,0,0)", font_size=8, orientation="h",
-                       yanchor="bottom", y=1.02, xanchor="left", x=0))
-        st.plotly_chart(fig_lv, use_container_width=True, config={"displayModeBar": False})
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q2</span>Phân phối mức AQI theo thành phố</div>', unsafe_allow_html=True)
+    lc = df_city.groupby(["city","aqi_lbl"]).size().reset_index(name="n")
+    lc["pct"] = (lc["n"] / lc.groupby("city")["n"].transform("sum") * 100).round(1)
+    lclr = {
+        "Tốt":       "#16a34a",
+        "Trung bình":"#d97706",
+        "Kém":       "#ea580c",
+        "Xấu":       "#dc2626",
+        "Rất xấu":  "#9333ea",
+        "Nguy hại":  "#7f1d1d",
+    }
+    fig_lv = go.Figure()
+    for lv in ["Tốt","Trung bình","Kém","Xấu","Rất xấu","Nguy hại"]:
+        sub = lc[lc["aqi_lbl"]==lv]
+        if sub.empty:
+            continue
+        fig_lv.add_trace(go.Bar(
+            name=lv, x=sub["city"], y=sub["pct"],
+            marker_color=lclr[lv],
+            hovertemplate=f"<b>%{{x}}</b> {lv}: %{{y:.1f}}%<extra></extra>"
+        ))
+    ml(fig_lv, h=chart_h(len(ca), min_h=340, row_h=18, max_h=620), barmode="stack",
+       xaxis=dict(tickfont=dict(color="#334155", size=9), tickangle=-25, gridcolor=GC, linecolor=LC),
+       yaxis=dict(**ax("%"), range=[0,105]),
+       legend=dict(bgcolor="rgba(0,0,0,0)", font_size=8, orientation="h",
+                   yanchor="bottom", y=1.02, xanchor="left", x=0))
+    st.plotly_chart(fig_lv, use_container_width=True, config={"displayModeBar": False})
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════
 # TAB 4 — Q3
 # ══════════════════════════════════════════════
-with tabs[4]:
+with tabs[3]:
     cW1, cW2 = st.columns(2, gap="small")
 
     with cW1:
         st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q3</span>PM2.5 theo tốc độ gió</div><div class="card-sub">Đường dốc xuống = gió làm giảm bụi mịn hiệu quả</div>', unsafe_allow_html=True)
-        wc = df.groupby(["city","wind_bin"])["pm2_5"].mean().reset_index().dropna()
+        wc = df_city.groupby(["city","wind_bin"])["pm2_5"].mean().reset_index().dropna()
         fig_w = go.Figure()
         for city in sorted(wc["city"].unique()):
             sub = wc[wc["city"]==city]
@@ -1483,7 +2050,7 @@ with tabs[4]:
     with cW2:
         st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q3</span>Hiệu quả rửa không khí khi mưa</div><div class="card-sub">Xanh = mưa giảm bụi · Đỏ = mưa không hiệu quả</div>', unsafe_allow_html=True)
         rr = (
-            df.groupby(["city","is_raining"])["pm2_5"].mean()
+            df_city.groupby(["city","is_raining"])["pm2_5"].mean()
             .unstack().rename(columns={False:"no_rain", True:"rain"}).dropna()
         )
         rr["drop"] = ((rr["no_rain"]-rr["rain"]) / rr["no_rain"] * 100).round(1)
@@ -1507,12 +2074,12 @@ with tabs[4]:
 # TAB 5 — Q5 & Q6
 # ══════════════════════════════════════════════
 with tabs[5]:
-    cQ1, cQ2, cQ3 = st.columns([2,2,1.5], gap="small")
+    cQ1, cQ2 = st.columns([1.35, 1.65], gap="small")
 
     with cQ1:
         st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q5</span>% giờ AQI nguy hiểm (>150) theo thành phố</div>', unsafe_allow_html=True)
         dc = (
-            df.groupby("city").apply(lambda x: (x["aqi"]>150).mean()*100)
+            df_city.groupby("city").apply(lambda x: (x["aqi"]>150).mean()*100)
             .sort_values(ascending=False).round(1).reset_index()
         )
         dc.columns = ["city","pct"]
@@ -1524,7 +2091,7 @@ with tabs[5]:
             textposition="outside", textfont=dict(size=9, color="#334155"),
             hovertemplate="%{y}: %{x:.1f}% giờ AQI>150<extra></extra>"
         ))
-        ml(fig_dc, h=max(290, len(dc)*30+50),
+        ml(fig_dc, h=chart_h(len(dc), min_h=300, row_h=20, max_h=580),
            xaxis=dict(**ax("% giờ quan trắc")),
            yaxis=dict(tickfont=dict(color="#334155", size=9), gridcolor=GC, linecolor=LC))
         st.plotly_chart(fig_dc, use_container_width=True, config={"displayModeBar": False})
@@ -1533,7 +2100,7 @@ with tabs[5]:
     with cQ2:
         st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q6</span>PM2.5 — Ngày thường vs Cuối tuần</div>', unsafe_allow_html=True)
         wd = (
-            df.groupby(["city","is_weekend"])["pm2_5"].mean()
+            df_city.groupby(["city","is_weekend"])["pm2_5"].mean()
             .unstack().fillna(0)
         )
         wd.columns = ["Ngày thường","Cuối tuần"]
@@ -1545,7 +2112,7 @@ with tabs[5]:
                 marker_color=clr,
                 hovertemplate=f"<b>%{{x}}</b> {col}: %{{y:.1f}} µg/m³<extra></extra>"
             ))
-        ml(fig_wd, h=max(290, len(dc)*30+50), barmode="group",
+        ml(fig_wd, h=chart_h(len(wd), min_h=300, row_h=20, max_h=580), barmode="group",
            xaxis=dict(tickfont=dict(color="#334155", size=9), tickangle=-30, gridcolor=GC, linecolor=LC),
            yaxis=dict(**ax("PM2.5 µg/m³")),
            legend=dict(bgcolor="rgba(0,0,0,0)", font_size=9, orientation="h",
@@ -1553,37 +2120,44 @@ with tabs[5]:
         st.plotly_chart(fig_wd, use_container_width=True, config={"displayModeBar": False})
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with cQ3:
-        st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q6</span>PM2.5 theo thứ trong tuần</div>', unsafe_allow_html=True)
-        DOW = {0:"T2",1:"T3",2:"T4",3:"T5",4:"T6",5:"T7",6:"CN"}
-        dow = df.groupby("dow")["pm2_5"].mean().reset_index()
-        dow["name"] = dow["dow"].map(DOW)
-        dow["clr"]  = dow["dow"].apply(lambda x: "#16a34a" if x >= 5 else "#2563eb")
-        fig_dw = go.Figure(go.Bar(
-            x=dow["name"], y=dow["pm2_5"].round(1),
-            marker_color=dow["clr"],
-            text=dow["pm2_5"].round(1),
-            textposition="outside", textfont=dict(size=9, color="#334155"),
-            hovertemplate="%{x}: %{y:.1f} µg/m³<extra></extra>"
-        ))
-        ml(fig_dw, h=max(290, len(dc)*30+50),
-           xaxis=dict(tickfont=dict(color="#334155", size=9), gridcolor=GC, linecolor=LC),
-           yaxis=dict(**ax("PM2.5 µg/m³")))
-        st.plotly_chart(fig_dw, use_container_width=True, config={"displayModeBar": False})
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q6</span>PM2.5 theo thứ trong tuần</div>', unsafe_allow_html=True)
+    DOW = {0:"T2",1:"T3",2:"T4",3:"T5",4:"T6",5:"T7",6:"CN"}
+    dow = df.groupby("dow")["pm2_5"].mean().reset_index()
+    dow["name"] = dow["dow"].map(DOW)
+    dow["clr"]  = dow["dow"].apply(lambda x: "#16a34a" if x >= 5 else "#2563eb")
+    fig_dw = go.Figure(go.Bar(
+        x=dow["name"], y=dow["pm2_5"].round(1),
+        marker_color=dow["clr"],
+        text=dow["pm2_5"].round(1),
+        textposition="outside", textfont=dict(size=9, color="#334155"),
+        hovertemplate="%{x}: %{y:.1f} µg/m³<extra></extra>"
+    ))
+    ml(fig_dw, h=320,
+       xaxis=dict(tickfont=dict(color="#334155", size=9), gridcolor=GC, linecolor=LC),
+       yaxis=dict(**ax("PM2.5 µg/m³")))
+    st.plotly_chart(fig_dw, use_container_width=True, config={"displayModeBar": False})
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ── FOOTER ──
+members = [
+        "23120283 · Phạm Quốc Khánh",
+        "23120301 · Phạm Thành Nam",
+        "23120318 · Trương Quang Phát",
+        "23120329 · Châu Huỳnh Phúc",
+        "23120334 · Huỳnh Tấn Phước",
+]
+member_chips = "".join([f'<span class="ftr-member">{m}</span>' for m in members])
+
 st.markdown(f"""
 <div class="ftr">
   <div class="ftr-txt">Vietnam AQI Analytics · ĐH Khoa học Tự nhiên TP.HCM · GVHD: Bùi Tiến Lên · {datetime.now().strftime('%d/%m/%Y')}</div>
-  <div class="ftr-grp">
-    <span class="ftr-member">23120283 · Phạm Quốc Khánh</span>
-    <span class="ftr-member">23120301 · Phạm Thành Nam</span>
-    <span class="ftr-member">23120318 · Trương Quang Phát</span>
-    <span class="ftr-member">23120329 · Châu Huỳnh Phúc</span>
-    <span class="ftr-member">23120334 · Huỳnh Tấn Phước</span>
+    <div class="ftr-marquee">
+        <div class="ftr-track">
+            {member_chips}{member_chips}
+        </div>
   </div>
 </div>
 """, unsafe_allow_html=True)
