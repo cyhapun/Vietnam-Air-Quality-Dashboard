@@ -997,6 +997,272 @@ section[data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
     }
 }
 
+/* ════════════════════════════════
+   MODERN VISUAL REFRESH
+   Inspired by IQAir clarity + Linear density + Stripe depth
+════════════════════════════════ */
+:root {
+    --ux-bg-0: #f3f7fb;
+    --ux-bg-1: #eef4ff;
+    --ux-bg-2: #fffdf8;
+    --ux-card: rgba(255,255,255,0.88);
+    --ux-card-solid: #ffffff;
+    --ux-border: rgba(148, 163, 184, 0.24);
+    --ux-border-soft: rgba(148, 163, 184, 0.18);
+    --ux-ink: #0f172a;
+    --ux-sub: #5b7089;
+    --ux-pri: #0ea5e9;
+    --ux-pri-deep: #0369a1;
+    --ux-warm: #f59e0b;
+    --ux-shadow: 0 18px 42px rgba(15, 23, 42, 0.09);
+}
+
+.stApp {
+    background:
+        radial-gradient(1200px 420px at 8% -10%, rgba(14,165,233,0.18), transparent 65%),
+        radial-gradient(920px 380px at 92% 3%, rgba(245,158,11,0.14), transparent 62%),
+        linear-gradient(180deg, var(--ux-bg-1) 0%, var(--ux-bg-0) 45%, #f8fbff 100%) !important;
+}
+
+.block-container {
+    padding-top: 2.2rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+.hdr {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.5);
+    background:
+        linear-gradient(140deg, rgba(11,37,64,0.9) 0%, rgba(17,58,93,0.88) 60%, rgba(12,79,134,0.82) 100%) !important;
+    box-shadow: 0 16px 40px rgba(2, 6, 23, 0.22);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    margin-bottom: 10px;
+}
+
+.hdr-title {
+    font-size: 1.15rem;
+    letter-spacing: .1px;
+}
+
+.hdr-sub,
+.hdr-school,
+.hdr-stat-lbl,
+.hdr-badge-lbl {
+    color: #b7cce0 !important;
+}
+
+.main-wrap {
+    background: transparent !important;
+    padding: 4px 4px 10px;
+}
+
+.kpi-strip {
+    gap: 12px;
+}
+
+.kpi-box,
+.trend-card,
+.card,
+.iq-wrap,
+.ins-item {
+    background: var(--ux-card) !important;
+    border: 1px solid var(--ux-border) !important;
+    box-shadow: var(--ux-shadow);
+}
+
+.kpi-box,
+.trend-card,
+.card,
+.ins-item {
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-box::before,
+.trend-card::before,
+.card::before,
+.ins-item::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(125deg, rgba(14,165,233,0.055), transparent 46%, rgba(245,158,11,0.045));
+    pointer-events: none;
+}
+
+.card-title {
+    color: var(--ux-ink);
+    font-size: .72rem;
+}
+
+.card-sub,
+.kpi-sub,
+.trend-sub,
+.iq-meta,
+.ins-foot {
+    color: var(--ux-sub) !important;
+}
+
+.kpi-lbl,
+.trend-kicker,
+.ins-tag {
+    letter-spacing: .82px;
+}
+
+.kpi-val,
+.trend-main,
+.iq-hero-aqi {
+    color: var(--ux-ink);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+}
+
+.iq-wrap {
+    border-radius: 14px;
+    background:
+        radial-gradient(130px 80px at 6% -8%, rgba(14,165,233,0.12), transparent 70%),
+        radial-gradient(190px 88px at 100% 0%, rgba(245,158,11,0.11), transparent 72%),
+        var(--ux-card) !important;
+}
+
+.iq-card {
+    border: 1px solid var(--ux-border-soft);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+}
+
+.iq-card-hero {
+    background: linear-gradient(138deg, #0f172a 0%, #102d49 54%, #0b5b9a 100%) !important;
+    border-color: rgba(255,255,255,0.2) !important;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+    background: transparent !important;
+    border-bottom: 0 !important;
+    gap: 10px;
+    padding: 2px 0 8px !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    height: 36px;
+    border-radius: 999px;
+    padding: 0 16px;
+    border: 1px solid var(--ux-border-soft);
+    background: rgba(255,255,255,0.58) !important;
+    color: #35516d;
+    font-size: .7rem;
+    font-weight: 700;
+    transition: all .2s ease;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    border-color: rgba(14,165,233,0.38);
+    color: #0f4f82;
+    transform: translateY(-1px);
+}
+
+.stTabs [aria-selected="true"] {
+    color: #ffffff !important;
+    border-color: transparent !important;
+    background: linear-gradient(140deg, #0ea5e9 0%, #2563eb 100%) !important;
+    box-shadow: 0 9px 20px rgba(37, 99, 235, 0.26);
+}
+
+section[data-testid="stSidebar"] {
+    border-right: 1px solid rgba(148,163,184,0.22) !important;
+    background:
+        radial-gradient(180px 86px at 100% -2%, rgba(14,165,233,.1), transparent 74%),
+        linear-gradient(180deg, #ffffff 0%, #f8fbff 56%, #f5f9ff 100%) !important;
+}
+
+[data-testid="stSidebar"] .sidebar-header-card,
+[data-testid="stSidebar"] .sidebar-selection-summary,
+[data-testid="stSidebar"] .stExpander {
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06) !important;
+}
+
+[data-testid="stSidebar"] .stButton > button,
+[data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"],
+[data-testid="stSidebar"] .stDateInput > div > div {
+    min-height: 37px !important;
+    border-radius: 11px !important;
+}
+
+[data-testid="stSidebar"] .stButton > button {
+    background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%) !important;
+}
+
+.ftr {
+    border-radius: 12px;
+    margin-top: 12px;
+    background: linear-gradient(140deg, rgba(11,37,64,0.96) 0%, rgba(14,57,89,0.94) 55%, rgba(9,80,124,0.9) 100%) !important;
+    border: 1px solid rgba(148,163,184,0.18);
+    box-shadow: 0 16px 34px rgba(2, 6, 23, 0.18);
+}
+
+.ftr-member {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+}
+
+@keyframes riseIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.kpi-box,
+.trend-card,
+.iq-wrap,
+.card,
+.ins-item {
+    animation: riseIn .45s ease both;
+}
+
+.kpi-box:nth-child(2) { animation-delay: .04s; }
+.kpi-box:nth-child(3) { animation-delay: .08s; }
+.kpi-box:nth-child(4) { animation-delay: .12s; }
+.kpi-box:nth-child(5) { animation-delay: .16s; }
+
+@media (max-width: 1200px) {
+    .hdr {
+        position: static;
+    }
+    .kpi-strip {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 780px) {
+    .kpi-strip {
+        grid-template-columns: 1fr;
+    }
+    .trend-grid,
+    .ins-row,
+    .iq-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .hdr {
+        padding: 10px 12px;
+        border-radius: 10px;
+    }
+    .hdr-right {
+        width: 100%;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .hdr-badge {
+        padding: 6px 10px;
+    }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1106,6 +1372,156 @@ def fmt_delta(curr, prev, unit=""):
     color = "#dc2626" if delta > 0 else "#16a34a"
     return f"{arrow} {delta:+.1f}{unit}", color
 
+UI_MODES = ["Premium Sky", "Bloomberg Pro", "Apple Clean"]
+
+def set_plot_theme(mode: str):
+    global PT, GC, LC, TF
+    if mode == "Bloomberg Pro":
+        PT = dict(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Be Vietnam Pro", color="#334155", size=10),
+            margin=dict(l=4, r=4, t=24, b=4),
+        )
+        GC = "rgba(51,65,85,0.09)"
+        LC = "#cbd5e1"
+        TF = dict(color="#475569", size=9)
+    elif mode == "Apple Clean":
+        PT = dict(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Be Vietnam Pro", color="#1f2937", size=10),
+            margin=dict(l=4, r=4, t=24, b=4),
+        )
+        GC = "rgba(148,163,184,0.15)"
+        LC = "#e2e8f0"
+        TF = dict(color="#64748b", size=9)
+    else:
+        PT = dict(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Be Vietnam Pro", color="#334155", size=10),
+            margin=dict(l=4, r=4, t=24, b=4),
+        )
+        GC = "rgba(0,0,0,0.04)"
+        LC = "#e2e8f0"
+        TF = dict(color="#64748b", size=9)
+
+def ui_mode_css(mode: str, reduce_motion: bool) -> str:
+    if mode == "Bloomberg Pro":
+        css = """
+        .stApp {
+            background:
+                linear-gradient(180deg, #eef2f7 0%, #f5f7fb 40%, #f8fafc 100%) !important;
+        }
+        .hdr {
+            border-radius: 8px !important;
+            background: linear-gradient(132deg, #0b1320 0%, #1e293b 55%, #1f3c5b 100%) !important;
+            border: 1px solid rgba(148,163,184,0.35) !important;
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.22) !important;
+        }
+        .hdr-badge {
+            border-color: rgba(251,191,36,0.46) !important;
+            background: rgba(245,158,11,0.16) !important;
+        }
+        .kpi-box, .trend-card, .card, .ins-item, .iq-wrap {
+            border-radius: 8px !important;
+            border-color: #c7d3e2 !important;
+            box-shadow: 0 8px 18px rgba(15,23,42,0.08) !important;
+            background: rgba(255,255,255,0.96) !important;
+        }
+        .card:hover {
+            transform: none !important;
+            box-shadow: 0 10px 22px rgba(15,23,42,0.1) !important;
+        }
+        .stTabs [data-baseweb=\"tab\"] {
+            border-radius: 6px !important;
+            border: 1px solid #cbd5e1 !important;
+            background: #f8fafc !important;
+            color: #334155 !important;
+        }
+        .stTabs [aria-selected=\"true\"] {
+            background: linear-gradient(150deg, #0f172a, #1e293b) !important;
+            color: #f8fafc !important;
+            border-color: #334155 !important;
+            box-shadow: 0 6px 14px rgba(15,23,42,0.24) !important;
+        }
+        .ftr {
+            border-radius: 8px !important;
+            background: linear-gradient(140deg, #0f172a 0%, #1e293b 100%) !important;
+        }
+        section[data-testid=\"stSidebar\"] {
+            background:
+                linear-gradient(180deg, #ffffff 0%, #f3f6fa 100%) !important;
+        }
+        """
+    elif mode == "Apple Clean":
+        css = """
+        .stApp {
+            background:
+                radial-gradient(900px 300px at 15% -10%, rgba(2,132,199,0.09), transparent 70%),
+                radial-gradient(720px 260px at 95% 0%, rgba(14,165,233,0.08), transparent 65%),
+                linear-gradient(180deg, #f8fbff 0%, #f4f8fd 55%, #f8fafc 100%) !important;
+        }
+        .hdr {
+            background: rgba(255,255,255,0.8) !important;
+            border: 1px solid rgba(148,163,184,0.25) !important;
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .hdr-school, .hdr-sub, .hdr-stat-lbl, .hdr-badge-lbl {
+            color: #64748b !important;
+        }
+        .hdr-title, .hdr-stat-val {
+            color: #0f172a !important;
+        }
+        .hdr-badge {
+            background: #f8fafc !important;
+            border: 1px solid #dbeafe !important;
+        }
+        .kpi-box, .trend-card, .card, .ins-item, .iq-wrap {
+            border-radius: 16px !important;
+            border-color: rgba(148,163,184,0.2) !important;
+            box-shadow: 0 16px 34px rgba(15,23,42,0.08) !important;
+            background: rgba(255,255,255,0.88) !important;
+        }
+        .stTabs [data-baseweb=\"tab\"] {
+            border-radius: 999px !important;
+            border: 1px solid #dbeafe !important;
+            background: rgba(255,255,255,0.85) !important;
+        }
+        .stTabs [aria-selected=\"true\"] {
+            background: linear-gradient(140deg, #0ea5e9 0%, #2563eb 100%) !important;
+            color: #ffffff !important;
+            border-color: transparent !important;
+        }
+        section[data-testid=\"stSidebar\"] {
+            background:
+                linear-gradient(180deg, #ffffff 0%, #f8fbff 60%, #f5f8fd 100%) !important;
+        }
+        """
+    else:
+        css = """
+        .stApp {
+            background:
+                radial-gradient(1200px 420px at 8% -10%, rgba(14,165,233,0.18), transparent 65%),
+                radial-gradient(920px 380px at 92% 3%, rgba(245,158,11,0.14), transparent 62%),
+                linear-gradient(180deg, #eef4ff 0%, #f3f7fb 45%, #f8fbff 100%) !important;
+        }
+        """
+
+    if reduce_motion:
+        css += """
+        *, *::before, *::after {
+            animation: none !important;
+            transition: none !important;
+            scroll-behavior: auto !important;
+        }
+        """
+
+    return f"<style>{css}</style>"
+
 # ═══════════════════════════════════════════════════════════════════
 # DATA
 # ═══════════════════════════════════════════════════════════════════
@@ -1125,27 +1541,41 @@ def load_data():
         st.stop()
 
     df["timestamp"]  = pd.to_datetime(df["timestamp"], errors="coerce")
+    df["date_ts"]    = df["timestamp"].dt.normalize()
+    df["date"]       = df["date_ts"].dt.date
     df["month"]      = df["timestamp"].dt.month
     df["hour"]       = df["timestamp"].dt.hour
-    df["date"]       = df["timestamp"].dt.date
     df["dow"]        = df["timestamp"].dt.dayofweek
     df["is_weekend"] = df["dow"] >= 5
     df["is_raining"] = df["rain"] > 0
-    df["aqi_lbl"]    = df["aqi"].apply(lambda x: aqi_meta(x)[0])
-    df["band"]       = df["aqi"].apply(band_lbl)
 
-    def time_slot(h):
-        if h < 6:  return "Đêm (0–6h)"
-        if h < 12: return "Sáng (6–12h)"
-        if h < 18: return "Chiều (12–18h)"
-        return "Tối (18–24h)"
+    aqi_labels = [x[2] for x in AQI_DEF]
+    df["aqi_lbl"] = pd.cut(
+        df["aqi"],
+        bins=[-np.inf, 50, 100, 150, 200, 300, np.inf],
+        labels=aqi_labels,
+        include_lowest=True,
+    ).fillna("Nguy hại")
+    df["band"] = df["aqi_lbl"]
 
-    df["time_slot"] = df["hour"].apply(time_slot)
-    df["wind_bin"]  = pd.cut(
-        df["wind_speed"], bins=[0,5,10,20,200],
-        labels=["0–5","5–10","10–20",">20"]
+    slot_labels = ["Đêm (0–6h)", "Sáng (6–12h)", "Chiều (12–18h)", "Tối (18–24h)"]
+    df["time_slot"] = pd.cut(
+        df["hour"],
+        bins=[-1, 5, 11, 17, 24],
+        labels=slot_labels,
+    ).fillna(slot_labels[-1])
+
+    df["wind_bin"] = pd.cut(
+        df["wind_speed"],
+        bins=[0, 5, 10, 20, 200],
+        labels=["0–5", "5–10", "10–20", ">20"],
+        include_lowest=True,
     )
     return df
+
+@st.cache_data(show_spinner=False)
+def to_csv_bytes(frame: pd.DataFrame) -> bytes:
+    return frame.to_csv(index=False).encode("utf-8-sig")
 
 with st.spinner("Đang tải dữ liệu..."):
     DF = load_data()
@@ -1163,6 +1593,26 @@ if "date_range" not in st.session_state:
     st.session_state.date_range = [mn_date, mx_date]
 if "city_chart_limit" not in st.session_state:
     st.session_state.city_chart_limit = min(18, len(all_cities))
+if "ui_mode" not in st.session_state:
+    st.session_state.ui_mode = UI_MODES[0]
+if "reduce_motion" not in st.session_state:
+    st.session_state.reduce_motion = False
+
+st.sidebar.markdown("<div class='sidebar-section-title'>Phong cách hiển thị</div>", unsafe_allow_html=True)
+st.sidebar.selectbox(
+    "Chọn phong cách",
+    options=UI_MODES,
+    key="ui_mode",
+    label_visibility="collapsed",
+)
+st.sidebar.toggle(
+    "Giảm hiệu ứng chuyển động",
+    key="reduce_motion",
+    help="Phù hợp khi trình chiếu lâu hoặc muốn giao diện tĩnh.",
+)
+
+set_plot_theme(st.session_state.ui_mode)
+st.markdown(ui_mode_css(st.session_state.ui_mode, st.session_state.reduce_motion), unsafe_allow_html=True)
 
 st.sidebar.markdown(
     f"""
@@ -1282,10 +1732,13 @@ else:
 if s_d > e_d:
     s_d, e_d = e_d, s_d
 
+start_date_ts = pd.Timestamp(s_d)
+end_date_ts = pd.Timestamp(e_d)
+
 side_df = DF[
     DF["city"].isin(selected_cities if selected_cities else all_cities)
-    & (DF["timestamp"].dt.date >= s_d)
-    & (DF["timestamp"].dt.date <= e_d)
+    & (DF["date_ts"] >= start_date_ts)
+    & (DF["date_ts"] <= end_date_ts)
 ]
 st.sidebar.success(f"Dữ liệu đang xét: {len(side_df):,} bản ghi")
 
@@ -1324,7 +1777,7 @@ if quality_cols and not side_df.empty:
     )
 
 csv_name = f"vietnam_aqi_filtered_{s_d.strftime('%Y%m%d')}_{e_d.strftime('%Y%m%d')}.csv"
-csv_bytes = side_df.to_csv(index=False).encode("utf-8-sig")
+csv_bytes = to_csv_bytes(side_df)
 st.sidebar.download_button(
     "Tải CSV theo bộ lọc hiện tại",
     data=csv_bytes,
@@ -1359,8 +1812,8 @@ if not sel:
 df = DF[
     DF["city"].isin(sel) &
     DF["band"].isin(sel_bands) &
-    (DF["timestamp"].dt.date >= s_d) &
-    (DF["timestamp"].dt.date <= e_d)
+    (DF["date_ts"] >= start_date_ts) &
+    (DF["date_ts"] <= end_date_ts)
 ].copy()
 
 days = max(1, (e_d - s_d).days + 1)
@@ -1370,11 +1823,12 @@ if df.empty:
 
 P_KEYS   = [k for k in POLLS if k in df.columns]
 CITY_CLR = {c: CITY_PALETTE[i % len(CITY_PALETTE)] for i, c in enumerate(sorted(df["city"].unique()))}
+city_aqi_mean = df.groupby("city")["aqi"].mean().sort_values(ascending=False)
 
 avg_aqi   = int(df["aqi"].mean())
 avg_pm25  = round(df["pm2_5"].mean(), 1)
 dangerp   = round((df["aqi"] > 150).mean() * 100, 1)
-worst     = df.groupby("city")["aqi"].mean().idxmax()
+worst     = city_aqi_mean.index[0]
 cig_n     = round(avg_pm25 / 22.0 * days, 1)
 _lbl, _col = aqi_meta(avg_aqi)
 who_exceed = {k: round((df[k] > POLLS[k]["who"]).mean() * 100, 1) for k in P_KEYS}
@@ -1440,7 +1894,7 @@ if len(daily_trend) >= 2:
     if down_moves:
         rank_down_line = " · ".join([f"{c} ({s})" for c, s in down_moves])
 
-city_priority = df.groupby("city")["aqi"].mean().sort_values(ascending=False).index.tolist()
+city_priority = city_aqi_mean.index.tolist()
 plot_city_limit = min(city_cap, len(city_priority))
 plot_cities = city_priority[:plot_city_limit]
 df_city = df[df["city"].isin(plot_cities)].copy()
@@ -1611,8 +2065,13 @@ with tabs[0]:
             .reset_index()
             .dropna(subset=["lat", "lon"])
         )
-        city_geo["aqi_lbl"] = city_geo["aqi"].apply(lambda x: aqi_meta(x)[0])
-        city_geo["marker_size"] = city_geo["pm2_5"].clip(lower=8).apply(lambda v: min(28, max(8, v * 0.7)))
+        city_geo["aqi_lbl"] = pd.cut(
+            city_geo["aqi"],
+            bins=[-np.inf, 50, 100, 150, 200, 300, np.inf],
+            labels=[x[2] for x in AQI_DEF],
+            include_lowest=True,
+        ).fillna("Nguy hại")
+        city_geo["marker_size"] = (city_geo["pm2_5"].clip(lower=8) * 0.7).clip(lower=8, upper=28)
 
         fig_map = go.Figure(go.Scattermapbox(
             lat=city_geo["lat"],
@@ -1662,8 +2121,8 @@ with tabs[0]:
 
     with cO2:
         st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Overview</span>Tổng quan nhanh</div>', unsafe_allow_html=True)
-        top_city = df.groupby("city")["aqi"].mean().sort_values(ascending=False).head(5).round(1)
-        low_city = df.groupby("city")["aqi"].mean().sort_values(ascending=True).head(3).round(1)
+        top_city = city_aqi_mean.head(5).round(1)
+        low_city = city_aqi_mean.sort_values(ascending=True).head(3).round(1)
         top_who = sorted(who_exceed.items(), key=lambda x: x[1], reverse=True)[:3]
         top_who_txt = " · ".join([f"{POLLS[k]['label']}: {v}%" for k, v in top_who])
 
@@ -1763,6 +2222,7 @@ with tabs[4]:
     df_d_city = df_d[df_d["city"].isin(plot_cities)].copy()
     if df_d_city.empty:
         df_d_city = df_d.copy()
+    df_d_city_aqi_mean = df_d_city.groupby("city")["aqi"].mean().sort_values(ascending=False)
 
     overall = {k: df_d[f"{k}_share"].mean() for k in P_KEYS}
     rank    = sorted(overall, key=overall.get, reverse=True)
@@ -1834,7 +2294,7 @@ with tabs[4]:
             .mean()
             .rename(columns={f"{k}_share": POLLS[k]["label"] for k in P_KEYS})
         )
-        cord    = df_d_city.groupby("city")["aqi"].mean().sort_values(ascending=False).index
+        cord    = df_d_city_aqi_mean.index
         city_sh = city_sh.reindex([c for c in cord if c in city_sh.index])
         poll_ord= [POLLS[k]["label"] for k in rank]
         city_sh = city_sh[[p for p in poll_ord if p in city_sh.columns]]
@@ -1942,7 +2402,7 @@ with tabs[4]:
         st.plotly_chart(fig_sc, use_container_width=True, config={"displayModeBar": False})
         st.markdown('</div>', unsafe_allow_html=True)
 
-    top4   = df_d_city.groupby("city")["aqi"].mean().nlargest(4).index.tolist()
+    top4   = df_d_city_aqi_mean.head(4).index.tolist()
     z_mean = (
         df_d_city[df_d_city["city"].isin(top4)]
         .groupby("city")[[f"{k}_z" for k in P_KEYS]].mean()
@@ -1956,7 +2416,7 @@ with tabs[4]:
         if city not in z_n.index: continue
         vals = z_n.loc[city].tolist(); vc = vals+[vals[0]]; tc = theta+[theta[0]]
         clr  = CITY_CLR.get(city, "#2563eb")
-        aqit = df_d_city[df_d_city["city"]==city]["aqi"].mean()
+        aqit = df_d_city_aqi_mean.get(city, np.nan)
         main_p = z_mean.loc[city].idxmax() if city in z_mean.index else "—"
         fig_r = go.Figure(go.Scatterpolar(
             r=vc, theta=tc, fill="toself",
@@ -2238,10 +2698,14 @@ with tabs[5]:
     with cQ1:
         st.markdown('<div class="card"><div class="card-title"><span class="q-tag">Q5</span>% giờ AQI nguy hiểm (>150) theo thành phố</div>', unsafe_allow_html=True)
         dc = (
-            df_city.groupby("city").apply(lambda x: (x["aqi"]>150).mean()*100)
-            .sort_values(ascending=False).round(1).reset_index()
+            df_city.assign(aqi_danger=df_city["aqi"] > 150)
+            .groupby("city")["aqi_danger"]
+            .mean()
+            .mul(100)
+            .sort_values(ascending=False)
+            .round(1)
+            .reset_index(name="pct")
         )
-        dc.columns = ["city","pct"]
         dc["clr"]  = dc["pct"].apply(lambda x: "#dc2626" if x>20 else "#ea580c" if x>10 else "#d97706")
         fig_dc = go.Figure(go.Bar(
             x=dc["pct"], y=dc["city"], orientation="h",
