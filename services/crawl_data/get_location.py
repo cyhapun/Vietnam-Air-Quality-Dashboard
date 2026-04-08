@@ -45,7 +45,7 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
 }
 
-geolocator = OpenCage("YOUR_API_KEY")
+geolocator = OpenCage("a5a903a0c9b04cffb85bdf5492b3a4fd")
 extracted_data_by_province = {}
 
 # Bước đầu tiên Thực hiện quét dữ liệu từ các trang web
