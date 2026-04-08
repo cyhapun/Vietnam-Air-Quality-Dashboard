@@ -32,13 +32,13 @@ os.makedirs("../data", exist_ok=True)
 
 # 1. KHAI BÁO DANH SÁCH URL
 sources = [
-    {"province": "Đà Nẵng", "url": "https://thuvienphapluat.vn/phap-luat-nha-dat/danh-sach-cac-xa-phuong-moi-tai-thanh-pho-da-nang-sau-khi-sap-nhap-tinh-bang-gia-dat-tai-thanh-pho--5140.html"},
-    {"province": "Quảng Ngãi", "url": "https://thuvienphapluat.vn/phap-luat/danh-sach-96-xa-phuong-tinh-quang-ngai-moi-sau-sap-nhap-the-nao-viec-dat-ten-xa-phuong-sau-sap-nhap-302384-224103.html"},
-    {"province": "Gia Lai", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-135-phuong-xa-gia-lai-chinh-thuc-sau-sap-nhap-tu-172025-toan-bo-danh-sach-phuong-xa-moi-gia-224001.html"},
-    {"province": "Khánh Hòa", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/danh-sach-65-xa-phuong-dac-khu-moi-cua-tinh-khanh-hoa-tu-172025-sau-sap-nhap-khanh-hoa-ninh-thuan-c-223249.html"},
-    {"province": "Lâm Đồng", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/bang-tra-cuu-day-du-124-xa-phuong-moi-tinh-lam-dong-sau-sap-nhap-chi-tiet-day-du-danh-sach-xa-phuon-159611-223978.html"},
-    {"province": "Đắk Lắk", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/bang-tra-cuu-day-du-102-xa-phuong-moi-tinh-dak-lak-sau-sap-nhap-chi-tiet-day-du-danh-sach-xa-phuong-223979.html"},
-    {"province": "Cao Bằng", "url": "https://thuvienphapluat.vn/ma-so-thue/phap-luat-thue/tra-cuu-ten-goi-moi-cac-xa-phuong-tinh-cao-bang-sau-sap-nhap-dvhc-2025-danh-sach-cac-thue-co-so-thu-254199-207850.html"}
+    {"province": "Lâm Đồng", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-lam-dong-sau-sap-nhap-tu-0172025-chi-tiet-xem-bang-ma-so-don-vi-hanh-chinh-xa--225800.html"},
+    {"province": "Đà Nẵng", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tp-da-nang-sau-sap-nhap-2025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-phuong-330007-228096.html"},
+    {"province": "Cao Bằng", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-cao-bang-sau-sap-nhap-2025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-phuong-t-203526-229657.html"},
+    {"province": "Quảng Ngãi", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-quang-ngai-sau-sap-nhap-tu-0172025-chi-tiet-xem-bang-ma-so-don-vi-hanh-chinh-x-224865.html"},
+    {"province": "Gia Lai", "url": "https://thuvienphapluat.vn/phap-luat/tra-cuu-ma-so-don-vi-hanh-chinh-135-xa-phuong-tinh-gia-lai-bang-tra-cuu-ma-so-don-vi-hanh-chinh-tin-133660-219453.html"},
+    {"province": "Khánh Hòa", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-dac-khu-tinh-khanh-hoa-sau-sap-nhap-tu-172025-ma-tinh-xa-phuong-dac-khu-tinh-k-226467.html"},
+    {"province": "Đắk Lắk", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-dak-lak-sau-sap-nhap-2025-bang-ma-so-don-vi-hanh-chinh-xa-phuong-tinh-678665-228383.html"}
 ]
 
 headers = {
@@ -66,7 +66,7 @@ for idx, item in enumerate(sources):
         response.encoding = 'utf-8'
         
         tables = pd.read_html(StringIO(response.text))
-        target_keywords = ['mới', 'sau sáp nhập', 'đổi tên', 'sau sắp xếp', 'thành lập']
+        target_keywords = ['tên đơn vị hành chính']
         
         for df_table in tables:
             target_col_idx = -1
