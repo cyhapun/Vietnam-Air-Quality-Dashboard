@@ -28,24 +28,18 @@ def format_filename(province_name):
     return f"{name}.csv"
 
 # Kiểm tra và tạo thư mục lưu trữ dữ liệu nếu chưa có
-os.makedirs("./data/location", exist_ok=True)
+os.makedirs("../../data/location", exist_ok=True)
 
 # Danh sách các nguồn dữ liệu cần thu thập
 sources = [
-    {"province": "Lạng Sơn", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-lang-son-sau-sap-nhap-2025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-phuong-t-503395-229522.html"},
-    {"province": "Nghệ An", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-nghe-an-sau-sap-nhap-tu-0172025-chi-tiet-bang-ma-so-don-vi-hanh-chinh-225805.html"},
-    {"province": "Quảng Ninh", "url": "https://thuvienphapluat.vn/phap-luat/tra-cuu-ma-xa-phuong-tinh-quang-ninh-sau-sap-nhap-danh-sach-ma-so-don-vi-hanh-chinh-xa-phuong-tinh--334562-228118.html"},
-    {"province": "Thanh Hóa", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-thanh-hoa-sau-sap-nhap-2025-bang-ma-so-don-vi-hanh-chinh-xa-phuong-ti-928111-228580.html"},
-    {"province": "Sơn La", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-son-la-sau-sap-nhap-tu-0172025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-228386.html"},
-    {"province": "Tuyên Quang", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-tuyen-quang-sau-sap-nhap-2025-bang-ma-so-don-vi-hanh-chinh-xa-phuong--892829-228451.html"},
-    {"province": "Lào Cai", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-lao-cai-sau-sap-nhap-2025-ma-so-don-vi-hanh-chinh-xa-phuong-tinh-lao--797386-228453.html"}
+    {"province": "Quảng Trị", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-quang-tri-sau-sap-nhap-tu-0172025-chi-tiet-xem-bang-ma-don-vi-hanh-chinh-xa-ph-228563.html"},
 ]
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
 }
 
-geolocator = OpenCage("3af8a984ce824ed0912dd64810c91219")
+geolocator = OpenCage("463ebb9169564a7bab4caea9311901d0")
 extracted_data_by_province = {}
 
 # Bước đầu tiên Thực hiện quét dữ liệu từ các trang web
