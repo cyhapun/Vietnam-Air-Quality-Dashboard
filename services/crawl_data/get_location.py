@@ -32,13 +32,13 @@ os.makedirs("../../data/location", exist_ok=True)
 
 # Danh sách các nguồn dữ liệu cần thu thập
 sources = [
-    {"province": "Lạng Sơn", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-lang-son-sau-sap-nhap-2025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-phuong-t-503395-229522.html"},
-    {"province": "Nghệ An", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-nghe-an-sau-sap-nhap-tu-0172025-chi-tiet-bang-ma-so-don-vi-hanh-chinh-225805.html"},
-    {"province": "Quảng Ninh", "url": "https://thuvienphapluat.vn/phap-luat/tra-cuu-ma-xa-phuong-tinh-quang-ninh-sau-sap-nhap-danh-sach-ma-so-don-vi-hanh-chinh-xa-phuong-tinh--334562-228118.html"},
-    {"province": "Thanh Hóa", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-thanh-hoa-sau-sap-nhap-2025-bang-ma-so-don-vi-hanh-chinh-xa-phuong-ti-928111-228580.html"},
-    {"province": "Sơn La", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-son-la-sau-sap-nhap-tu-0172025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-228386.html"},
-    {"province": "Tuyên Quang", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-tuyen-quang-sau-sap-nhap-2025-bang-ma-so-don-vi-hanh-chinh-xa-phuong--892829-228451.html"},
-    {"province": "Lào Cai", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-lao-cai-sau-sap-nhap-2025-ma-so-don-vi-hanh-chinh-xa-phuong-tinh-lao--797386-228453.html"}
+    {"province": "Thái Nguyên", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-thai-nguyen-sau-sap-nhap-2025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-phuon-798627-229335.html"},
+    {"province": "Phú Thọ", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-phu-tho-sau-sap-nhap-2025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-phuong-ti-317666-229076.html"},
+    {"province": "Bắc Ninh", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-bac-ninh-sau-sap-nhap-voi-tinh-bac-giang-tu-0172025-nhu-the-nao-229660.html"},
+    {"province": "Hưng Yên", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-hung-yen-sau-sap-nhap-voi-tinh-thai-binh-tu-0172025-nhu-the-nao-229784.html"},
+    {"province": "Hải Phòng", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tp-hai-phong-sau-sap-nhap-2025-bang-ma-so-don-vi-hanh-chinh-xa-phuong-tp-h-417123-228207.html"},
+    {"province": "Ninh Bình", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-ninh-binh-sau-sap-nhap-2025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-phuong--366620-229781.html"},
+    {"province": "Quảng Trị", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-quang-tri-sau-sap-nhap-tu-0172025-chi-tiet-xem-bang-ma-don-vi-hanh-chinh-xa-ph-228563.html"},
 ]
 
 headers = {

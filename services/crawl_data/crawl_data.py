@@ -7,16 +7,20 @@ from datetime import date, timedelta
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from tqdm import tqdm
+import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 START_DATE = "2025-01-01"
 END_DATE = (date.today() - timedelta(days=5)).strftime("%Y-%m-%d")
 LOCATION_FILE = "data/raw/vietnam_locations.csv"
 OUTPUT_FILE = "data/raw/vietnam_air_quality.csv"
 
-session = requests.Session()
-retries = Retry(total=10, backoff_factor=10, status_forcelist=[429, 500, 502, 503, 504])
-session.mount("http://", HTTPAdapter(max_retries=retries))
-session.mount("https://", HTTPAdapter(max_retries=retries))
+def build_session():
+    s = requests.Session()
+    retries = Retry(total=10, backoff_factor=10, status_forcelist=[429, 500, 502, 503, 504])
+    s.mount("http://", HTTPAdapter(max_retries=retries))
+    s.mount("https://", HTTPAdapter(max_retries=retries))
+    return s
 
 # Time Skeleton
 full_time_range = pd.date_range(start=START_DATE, end=END_DATE, freq="h")
@@ -40,7 +44,7 @@ def get_pollution_class(aqi):
     elif aqi <= 300: return 4
     else: return 5
 
-def fetch_data(city_info):
+def fetch_data(city_info, session: requests.Session):
     city_name = city_info["name"]
     lat = city_info["lat"]
     lon = city_info["lon"]
@@ -90,21 +94,48 @@ def fetch_data(city_info):
     df_final["lon"] = lon
     return df_final
 
+def _worker(city):
+    # Session per-thread để an toàn khi chạy song song
+    sess = build_session()
+    return fetch_data(city, sess)
+
 def main():
+    parser = argparse.ArgumentParser(description="Crawl Vietnam air quality data from Open-Meteo.")
+    parser.add_argument("--max-workers", type=int, default=1, help="Số luồng chạy song song (mặc định: 1).")
+    parser.add_argument("--sleep", type=float, default=10.0, help="Nghỉ (giây) giữa các city khi chạy tuần tự (mặc định: 10s).")
+    parser.add_argument("--throttle", type=float, default=1.0, help="Giãn cách (giây) giữa các lần submit job khi chạy song song.")
+    parser.add_argument("--limit", type=int, default=0, help="Giới hạn số city để test nhanh (0 = không giới hạn).")
+    args = parser.parse_args()
+
     if not os.path.exists(LOCATION_FILE):
         print(f"Error: File '{LOCATION_FILE}' not found. Please run the coordinate generation step first.")
         return
 
     locations = pd.read_csv(LOCATION_FILE).to_dict("records")
+    if args.limit and args.limit > 0:
+        locations = locations[: args.limit]
     all_data = []
 
     print(f"Starting data crawl for {len(locations)} cities")
     print(f"Time range: {START_DATE} to {END_DATE}")
     
-    for city in tqdm(locations, desc="Crawling Data", unit="city"):
-        df = fetch_data(city)
-        all_data.append(df)
-        time.sleep(10.0)
+    if args.max_workers <= 1:
+        sess = build_session()
+        for city in tqdm(locations, desc="Crawling Data", unit="city"):
+            df = fetch_data(city, sess)
+            all_data.append(df)
+            time.sleep(max(0.0, float(args.sleep)))
+    else:
+        max_workers = max(1, int(args.max_workers))
+        throttle = max(0.0, float(args.throttle))
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            futures = []
+            for city in locations:
+                futures.append(ex.submit(_worker, city))
+                if throttle:
+                    time.sleep(throttle)
+            for fut in tqdm(as_completed(futures), total=len(futures), desc="Crawling Data", unit="city"):
+                all_data.append(fut.result())
 
     if all_data:
         print("Processing and merging data...")
