@@ -28,7 +28,7 @@ def format_filename(province_name):
     return f"{name}.csv"
 
 # Kiểm tra và tạo thư mục lưu trữ dữ liệu nếu chưa có
-os.makedirs("../../data/location", exist_ok=True)
+os.makedirs("./data/location", exist_ok=True)
 
 # Danh sách các nguồn dữ liệu cần thu thập
 sources = [
