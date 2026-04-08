@@ -83,7 +83,7 @@ def render_tab_or_blank(tab_module, df):
 tabs = st.tabs(
     [
         "Tổng quan",
-        "Ví Trí",
+        "Vị Trí",
         "Thời Gian",
         "Khí Tượng & Môi Trường",
     ]
