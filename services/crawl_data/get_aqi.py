@@ -6,6 +6,7 @@ import glob
 import numpy as np
 import unicodedata
 import re
+import argparse
 from datetime import date, timedelta
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -13,8 +14,8 @@ from tqdm import tqdm
 
 START_DATE = "2025-01-01"
 END_DATE = (date.today() - timedelta(days=5)).strftime("%Y-%m-%d")
-LOCATION_DIR = "data/location"
-OUTPUT_DIR = "data/aqi" 
+LOCATION_DIR = "../../data/location"
+OUTPUT_DIR = "../../data/aqi" 
 
 session = requests.Session()
 retries = Retry(
@@ -150,12 +151,27 @@ def process_and_save(df_raw, folder_name, province_name, unit_name, lat, lon):
     df.to_csv(out_file, index=False, encoding="utf-8-sig")
 
 def main():
+    parser = argparse.ArgumentParser(description="Script crawl dữ liệu AQI cho các tỉnh/thành")
+    parser.add_argument(
+        '--provinces', 
+        nargs='*', 
+        help="Danh sách tên các file tỉnh/thành cần chạy, không có đuôi .csv (vd: --provinces ha_noi ho_chi_minh). Nếu không truyền sẽ chạy tất cả."
+    )
+    args = parser.parse_args()
+
     if not os.path.exists(LOCATION_DIR):
         print(f"Lỗi: Không tìm thấy thư mục '{LOCATION_DIR}'.")
         return
         
     csv_files = glob.glob(os.path.join(LOCATION_DIR, "*.csv"))
     
+    if args.provinces:
+        selected_files = [f"{p.lower().replace('.csv', '')}.csv" for p in args.provinces]
+        csv_files = [f for f in csv_files if os.path.basename(f).lower() in selected_files]
+        if not csv_files:
+            print(f"Lỗi: Không tìm thấy file dữ liệu nào khớp với danh sách chỉ định: {args.provinces}")
+            return
+            
     if not csv_files:
         print(f"Lỗi: Không tìm thấy file CSV nào trong '{LOCATION_DIR}'.")
         return
