@@ -32,20 +32,20 @@ os.makedirs("../../data/location", exist_ok=True)
 
 # Danh sách các nguồn dữ liệu cần thu thập
 sources = [
-    {"province": "Lâm Đồng", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-lam-dong-sau-sap-nhap-tu-0172025-chi-tiet-xem-bang-ma-so-don-vi-hanh-chinh-xa--225800.html"},
-    {"province": "Đà Nẵng", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tp-da-nang-sau-sap-nhap-2025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-phuong-330007-228096.html"},
-    {"province": "Cao Bằng", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-cao-bang-sau-sap-nhap-2025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-phuong-t-203526-229657.html"},
-    {"province": "Quảng Ngãi", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-quang-ngai-sau-sap-nhap-tu-0172025-chi-tiet-xem-bang-ma-so-don-vi-hanh-chinh-x-224865.html"},
-    {"province": "Gia Lai", "url": "https://thuvienphapluat.vn/phap-luat/tra-cuu-ma-so-don-vi-hanh-chinh-135-xa-phuong-tinh-gia-lai-bang-tra-cuu-ma-so-don-vi-hanh-chinh-tin-133660-219453.html"},
-    {"province": "Khánh Hòa", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-dac-khu-tinh-khanh-hoa-sau-sap-nhap-tu-172025-ma-tinh-xa-phuong-dac-khu-tinh-k-226467.html"},
-    {"province": "Đắk Lắk", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-dak-lak-sau-sap-nhap-2025-bang-ma-so-don-vi-hanh-chinh-xa-phuong-tinh-678665-228383.html"}
+    {"province": "Lạng Sơn", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-lang-son-sau-sap-nhap-2025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-phuong-t-503395-229522.html"},
+    {"province": "Nghệ An", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-nghe-an-sau-sap-nhap-tu-0172025-chi-tiet-bang-ma-so-don-vi-hanh-chinh-225805.html"},
+    {"province": "Quảng Ninh", "url": "https://thuvienphapluat.vn/phap-luat/tra-cuu-ma-xa-phuong-tinh-quang-ninh-sau-sap-nhap-danh-sach-ma-so-don-vi-hanh-chinh-xa-phuong-tinh--334562-228118.html"},
+    {"province": "Thanh Hóa", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-thanh-hoa-sau-sap-nhap-2025-bang-ma-so-don-vi-hanh-chinh-xa-phuong-ti-928111-228580.html"},
+    {"province": "Sơn La", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-son-la-sau-sap-nhap-tu-0172025-ra-sao-bang-ma-so-don-vi-hanh-chinh-xa-228386.html"},
+    {"province": "Tuyên Quang", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-tuyen-quang-sau-sap-nhap-2025-bang-ma-so-don-vi-hanh-chinh-xa-phuong--892829-228451.html"},
+    {"province": "Lào Cai", "url": "https://thuvienphapluat.vn/phap-luat/ho-tro-phap-luat/tra-cuu-ma-xa-phuong-cua-tinh-lao-cai-sau-sap-nhap-2025-ma-so-don-vi-hanh-chinh-xa-phuong-tinh-lao--797386-228453.html"}
 ]
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
 }
 
-geolocator = OpenCage("a5a903a0c9b04cffb85bdf5492b3a4fd")
+geolocator = OpenCage("3af8a984ce824ed0912dd64810c91219")
 extracted_data_by_province = {}
 
 # Bước đầu tiên Thực hiện quét dữ liệu từ các trang web
