@@ -6,8 +6,7 @@ import streamlit as st
 
 from utils.helpers import AQI_DEF
 
-
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_data():
     import glob
     base = os.path.dirname(__file__)
