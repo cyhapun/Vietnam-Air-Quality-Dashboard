@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 import numpy as np
 import pandas as pd
@@ -6,21 +6,50 @@ import streamlit as st
 
 from utils.helpers import AQI_DEF
 
-
-@st.cache_data
+@st.cache_data(ttl=3600)
 def load_data():
+    import glob
     base = os.path.dirname(__file__)
-    for p in [
-        os.path.join(base, "..", "data", "vietnam_air_quality.csv"),
-        os.path.join(base, "data", "vietnam_air_quality.csv"),
-        os.path.join(base, "vietnam_air_quality.csv"),
-    ]:
-        if os.path.exists(p):
-            df = pd.read_csv(p)
-            break
-    else:
-        st.error("Không tìm thấy file vietnam_air_quality.csv")
+    
+    # Xác định thư mục data/aqi (hỗ trợ nhiều cấp độ chạy script)
+    data_dir = os.path.join(base, "..", "data", "aqi")
+    if not os.path.exists(data_dir):
+        data_dir = os.path.join(base, "data", "aqi")
+    if not os.path.exists(data_dir):
+        data_dir = os.path.join(base, "aqi")
+        
+    if not os.path.exists(data_dir):
+        st.error("Không tìm thấy thư mục 'data/aqi'")
         st.stop()
+
+    # Tìm tất cả các file CSV trong các thư mục con
+    all_files = glob.glob(os.path.join(data_dir, "**", "*.csv"), recursive=True)
+    
+    if not all_files:
+        st.error(f"Không tìm thấy file CSV nào trong thư mục {data_dir}")
+        st.stop()
+
+    # Đọc và nối tất cả các tiến trình lại với nhau
+    df_list = []
+    for p in all_files:
+        try:
+            temp_df = pd.read_csv(p)
+            if not temp_df.empty:
+                df_list.append(temp_df)
+        except Exception as e:
+            print(f"Lỗi đọc file {p}: {e}")
+            
+    if not df_list:
+        st.error("Không có file CSV nào chứa dữ liệu hợp lệ.")
+        st.stop()
+        
+    df = pd.concat(df_list, ignore_index=True)
+    
+    # Tạo cột 'city' để tương thích với các phần còn lại của ứng dụng vốn dùng 'city' thay vì 'province'/'location'
+    if "province" in df.columns and "location" in df.columns:
+        df["city"] = df["province"] + " - " + df["location"]
+    elif "province" in df.columns:
+        df["city"] = df["province"]
 
     df["timestamp"]  = pd.to_datetime(df["timestamp"], errors="coerce")
     df["date_ts"]    = df["timestamp"].dt.normalize()
