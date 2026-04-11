@@ -1,4 +1,4 @@
-﻿import pandas as pd
+import pandas as pd
 import streamlit as st
 from datetime import datetime
 
@@ -82,10 +82,10 @@ def render_sidebar(DF):
 
     btn1, btn2, btn3 = st.sidebar.columns(3)
     with btn1:
-        if st.button("Tất cả", use_container_width=True, key="btn_all_cities"):
+        if st.button("Tất cả", width="stretch", key="btn_all_cities"):
             st.session_state.selected_cities = all_cities
     with btn2:
-        if st.button("AQI cao", use_container_width=True, key="btn_hotspot"):
+        if st.button("AQI cao", width="stretch", key="btn_hotspot"):
             top_cities = (
                 DF.groupby("city")["aqi"]
                 .mean()
@@ -95,7 +95,7 @@ def render_sidebar(DF):
             )
             st.session_state.selected_cities = top_cities
     with btn3:
-        if st.button("Xóa", use_container_width=True, key="btn_clear_cities"):
+        if st.button("Xóa", width="stretch", key="btn_clear_cities"):
             st.session_state.selected_cities = []
 
     selected_count = len(st.session_state.selected_cities)
@@ -156,28 +156,27 @@ def render_sidebar(DF):
     )
     t1, t2, t3, t4 = st.sidebar.columns(4)
     with t1:
-        if st.button("30N", use_container_width=True, key="date_30d"):
+        if st.button("30N", width="stretch", key="date_30d"):
             st.session_state.date_range = [
                 max(min_date, max_date - pd.Timedelta(days=29)),
                 max_date,
             ]
     with t2:
-        if st.button("90N", use_container_width=True, key="date_90d"):
+        if st.button("90N", width="stretch", key="date_90d"):
             st.session_state.date_range = [
                 max(min_date, max_date - pd.Timedelta(days=89)),
                 max_date,
             ]
     with t3:
-        if st.button("YTD", use_container_width=True, key="date_ytd"):
+        if st.button("YTD", width="stretch", key="date_ytd"):
             start_of_year = datetime(max_date.year, 1, 1).date()
             st.session_state.date_range = [max(min_date, start_of_year), max_date]
     with t4:
-        if st.button("Full", use_container_width=True, key="date_full"):
+        if st.button("Full", width="stretch", key="date_full"):
             st.session_state.date_range = [min_date, max_date]
 
     dr = st.sidebar.date_input(
         "Chọn khoảng thời gian",
-        value=st.session_state.date_range,
         min_value=min_date,
         max_value=max_date,
         key="date_range",
@@ -259,7 +258,7 @@ def render_sidebar(DF):
         data=csv_bytes,
         file_name=csv_name,
         mime="text/csv",
-        use_container_width=True,
+        width="stretch",
         help="Xuất toàn bộ dữ liệu sau khi lọc khu vực và thời gian.",
     )
 
@@ -272,11 +271,11 @@ def render_sidebar(DF):
     city_cap_default = min(
         max(st.session_state.city_chart_limit, city_cap_min), city_cap_max
     )
+    st.session_state.city_chart_limit = city_cap_default
     city_cap = st.sidebar.slider(
         "Số khu vực tối đa trên biểu đồ dài",
         min_value=city_cap_min,
         max_value=city_cap_max,
-        value=city_cap_default,
         step=1,
         key="city_chart_limit",
         help="Giảm số khu vực để tránh biểu đồ quá cao khi chọn nhiều thành phố.",

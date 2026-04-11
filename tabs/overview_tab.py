@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -92,7 +92,7 @@ def render(df):
             font=dict(family="Be Vietnam Pro", size=10, color="#334155"),
         )
         st.plotly_chart(
-            fig_map, use_container_width=True, config={"displayModeBar": False}
+            fig_map, width="stretch", config={"displayModeBar": False}
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -122,7 +122,7 @@ def render(df):
         top_tbl = pd.DataFrame(
             {"Thành phố AQI cao": top_city.index, "AQI TB": top_city.values}
         )
-        st.dataframe(top_tbl, use_container_width=True, hide_index=True)
+        st.dataframe(top_tbl, width="stretch", hide_index=True)
         best_txt = " · ".join([f"{c} ({v:.1f})" for c, v in low_city.items()])
         st.markdown(
             f'<div class="card-sub" style="margin-top:6px"><strong>Khu vực sạch hơn:</strong> {best_txt}</div>',
@@ -158,7 +158,7 @@ def render(df):
         )
         ml(fig_dn, h=265, margin=dict(l=4, r=4, t=14, b=2), showlegend=False)
         st.plotly_chart(
-            fig_dn, use_container_width=True, config={"displayModeBar": False}
+            fig_dn, width="stretch", config={"displayModeBar": False}
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -218,7 +218,7 @@ def render(df):
             ),
         )
         st.plotly_chart(
-            fig_ov, use_container_width=True, config={"displayModeBar": False}
+            fig_ov, width="stretch", config={"displayModeBar": False}
         )
         st.markdown("</div>", unsafe_allow_html=True)
 

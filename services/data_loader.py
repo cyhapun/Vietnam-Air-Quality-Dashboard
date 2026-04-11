@@ -22,8 +22,8 @@ def load_data():
         st.error("Không tìm thấy thư mục 'data/aqi'")
         st.stop()
 
-    # Tìm tất cả các file CSV trong các thư mục con
-    all_files = glob.glob(os.path.join(data_dir, "**", "*.csv"), recursive=True)
+    # Tìm tất cả các file CSV trong các thư mục con (chỉ lấy file all.csv)
+    all_files = glob.glob(os.path.join(data_dir, "**", "all.csv"), recursive=True)
     
     if not all_files:
         st.error(f"Không tìm thấy file CSV nào trong thư mục {data_dir}")
