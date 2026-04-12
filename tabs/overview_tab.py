@@ -106,7 +106,6 @@ def render(df):
             ),
             showlegend=False,
         )
-<<<<<<< HEAD
     )
     fig_map.update_layout(
         mapbox=dict(
@@ -124,16 +123,10 @@ def render(df):
     )
     st.plotly_chart(
         fig_map,
-        use_container_width=True,
+        width="stretch",
         config={"displayModeBar": False, "scrollZoom": True},
     )
     st.markdown("</div>", unsafe_allow_html=True)
-=======
-        st.plotly_chart(
-            fig_map, width="stretch", config={"displayModeBar": False}
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
->>>>>>> feature/datetime
 
     rank_now = city_geo.sort_values("aqi", ascending=False).head(8).copy()
     rank_clean = city_geo.sort_values("aqi", ascending=True).head(8).copy()
@@ -143,7 +136,6 @@ def render(df):
         badge_text = "#ffffff" if float(val) >= 151 else "#0f172a"
         return badge_col, badge_text
 
-<<<<<<< HEAD
     def _rows_html(rank_df):
         rows = []
         for idx, row in enumerate(rank_df.itertuples(index=False), start=1):
@@ -157,50 +149,7 @@ def render(df):
                 "</div>"
             )
         return "".join(rows)
-=======
-        top_tbl = pd.DataFrame(
-            {"Thành phố AQI cao": top_city.index, "AQI TB": top_city.values}
-        )
-        st.dataframe(top_tbl, width="stretch", hide_index=True)
-        best_txt = " · ".join([f"{c} ({v:.1f})" for c, v in low_city.items()])
-        st.markdown(
-            f'<div class="card-sub" style="margin-top:6px"><strong>Khu vực sạch hơn:</strong> {best_txt}</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
 
-    cO3, cO4 = st.columns([1.55, 2.45], gap="small")
-    with cO3:
-        st.markdown(
-            '<div class="card"><div class="card-title"><span class="q-tag">Overview</span>Cơ cấu mức AQI</div>',
-            unsafe_allow_html=True,
-        )
-        band_dist = (
-            df["aqi_lbl"]
-            .value_counts(normalize=True)
-            .reindex([x[2] for x in AQI_DEF])
-            .fillna(0)
-            * 100
-        )
-        fig_dn = go.Figure(
-            go.Pie(
-                labels=band_dist.index,
-                values=band_dist.round(2),
-                hole=0.56,
-                marker=dict(
-                    colors=[x[3] for x in AQI_DEF], line=dict(width=1, color="#fff")
-                ),
-                textinfo="label+percent",
-                textfont=dict(size=9),
-                hovertemplate="%{label}: %{value:.1f}%<extra></extra>",
-            )
-        )
-        ml(fig_dn, h=265, margin=dict(l=4, r=4, t=14, b=2), showlegend=False)
-        st.plotly_chart(
-            fig_dn, width="stretch", config={"displayModeBar": False}
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
->>>>>>> feature/datetime
 
     year_city = (
         df.assign(year=df["timestamp"].dt.year)
@@ -411,7 +360,7 @@ def render(df):
         )
         ml(fig_dn, h=310, margin=dict(l=10, r=10, t=14, b=10), showlegend=False)
         st.plotly_chart(
-            fig_dn, use_container_width=True, config={"displayModeBar": False}
+            fig_dn, width="stretch", config={"displayModeBar": False}
         )
         legend_items = "".join(
             f"<span class='donut-legend-item'><span class='donut-legend-dot' style='background:{c}'></span>{lbl}</span>"
