@@ -4,7 +4,7 @@ from components.footer import render_footer
 from components.header import render_header
 from components.overview import render_overview
 from components.sidebar import render_sidebar
-from services.data_loader import load_data
+from services.data_loader import load_province_overview_data
 from tabs import overview_tab, location_tab, datetime_tab, atmos_tab
 from utils.css import inject_css
 from utils.helpers import (
@@ -43,8 +43,15 @@ if logo_base64:
 else:
     logo_html = "🌿"
 
-with st.spinner("Đang tải dữ liệu..."):
-    DF = load_data()
+with st.spinner("Đang tải tổng quan toàn quốc..."):
+    DF = load_province_overview_data()
+
+if "loaded_province_details" not in st.session_state:
+    st.session_state["loaded_province_details"] = {}
+if "nav_mode" not in st.session_state:
+    st.session_state["nav_mode"] = "overview"
+if "selected_wards" not in st.session_state:
+    st.session_state["selected_wards"] = []
 
 state = render_sidebar(DF)
 state.update(

@@ -4,6 +4,29 @@ import plotly.graph_objects as go
 import streamlit as st
 
 
+PROVINCE_PLACEHOLDER = "-- Chọn tỉnh để tải chi tiết --"
+
+
+def _estimate_zoom(lat_span: float, lon_span: float, detail_mode: bool) -> float:
+    span = max(float(lat_span), float(lon_span))
+    if detail_mode:
+        if span <= 0.08:
+            return 11.6
+        if span <= 0.15:
+            return 10.8
+        if span <= 0.30:
+            return 9.8
+        if span <= 0.60:
+            return 8.8
+        if span <= 1.20:
+            return 7.8
+        return 6.8
+
+    if span <= 2.0:
+        return 5.8
+    return 4.5
+
+
 def render(df):
     ctx = st.session_state.get("dashboard_context")
     if ctx is None:
@@ -17,6 +40,7 @@ def render(df):
             '<div class="card"><div class="card-title"><span class="q-tag">Overview</span>Bản đồ AQI theo khu vực</div><div class="card-sub">Kích thước điểm = PM2.5 trung bình · Màu điểm = AQI trung bình</div>',
             unsafe_allow_html=True,
         )
+
         city_geo = (
             df.groupby("city")
             .agg(
@@ -38,6 +62,17 @@ def render(df):
         city_geo["marker_size"] = (city_geo["pm2_5"].clip(lower=8) * 0.7).clip(
             lower=8, upper=28
         )
+
+        selected_province = st.session_state.get("selected_province")
+        detail_mode = bool(
+            st.session_state.get("nav_mode") == "province_detail"
+            and selected_province
+            and selected_province != PROVINCE_PLACEHOLDER
+        )
+
+        lat_span = city_geo["lat"].max() - city_geo["lat"].min()
+        lon_span = city_geo["lon"].max() - city_geo["lon"].min()
+        map_zoom = _estimate_zoom(lat_span, lon_span, detail_mode)
 
         fig_map = go.Figure(
             go.Scattermapbox(
@@ -83,7 +118,7 @@ def render(df):
                 center=dict(
                     lat=float(city_geo["lat"].mean()), lon=float(city_geo["lon"].mean())
                 ),
-                zoom=4.5,
+                zoom=map_zoom,
             ),
             margin=dict(l=2, r=2, t=6, b=2),
             height=430,

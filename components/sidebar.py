@@ -2,7 +2,10 @@
 import streamlit as st
 from datetime import datetime
 
-from services.data_loader import to_csv_bytes
+from services.data_loader import (
+    load_province_detail_data,
+    merge_overview_with_loaded_details,
+)
 from utils.helpers import (
     AQI_DEF,
     CITY_PALETTE,
@@ -17,36 +20,133 @@ from utils.helpers import (
 )
 
 
-def render_sidebar(DF):
-    all_cities = sorted(DF["city"].unique())
-    mn_date = DF["timestamp"].min().date()
-    mx_date = DF["timestamp"].max().date()
+PROVINCE_PLACEHOLDER = "Chọn tỉnh"
+NAV_OVERVIEW = "overview"
+NAV_PROVINCE_DETAIL = "province_detail"
 
-    if "selected_cities" not in st.session_state:
-        st.session_state.selected_cities = all_cities
-    if "date_range" not in st.session_state:
-        st.session_state.date_range = [mn_date, mx_date]
-    if "city_chart_limit" not in st.session_state:
-        st.session_state.city_chart_limit = min(18, len(all_cities))
+
+def _extract_ward_options(detail_df: pd.DataFrame) -> list[str]:
+    if detail_df is None or detail_df.empty:
+        return []
+
+    if "location" in detail_df.columns:
+        wards = (
+            detail_df["location"]
+            .dropna()
+            .astype(str)
+            .str.strip()
+            .replace("", pd.NA)
+            .dropna()
+            .unique()
+            .tolist()
+        )
+        return sorted(wards)
+
+    city_series = detail_df.get("city", pd.Series(dtype=str)).dropna().astype(str)
+    wards = []
+    for city in city_series.unique().tolist():
+        if " - " in city:
+            wards.append(city.split(" - ", 1)[1].strip())
+    return sorted(set([w for w in wards if w]))
+
+
+def _display_city_name(city_name: str, province: str | None = None) -> str:
+    text = str(city_name).strip()
+    if not text:
+        return text
+    if " - " in text:
+        return text.split(" - ", 1)[1].strip()
+    if province:
+        prefix = f"{province} - "
+        if text.startswith(prefix):
+            return text[len(prefix) :].strip()
+    return text
+
+
+def _normalize_selected_wards(selected: list[str], options: list[str]) -> list[str]:
+    if not selected:
+        return []
+
+    normalized = [str(x).strip() for x in selected if str(x).strip()]
+    return [x for x in normalized if x in options]
+
+
+def render_sidebar(DF):
+    province_options = sorted(DF["province"].dropna().unique().tolist())
+    province_select_options = [PROVINCE_PLACEHOLDER, *province_options]
+
+    if "selected_province" not in st.session_state:
+        st.session_state.selected_province = None
+
+    if (
+        "overview_selected_province_ui" not in st.session_state
+        or st.session_state.overview_selected_province_ui not in province_select_options
+    ):
+        st.session_state.overview_selected_province_ui = PROVINCE_PLACEHOLDER
+
+    if st.session_state.selected_province not in province_options:
+        st.session_state.selected_province = None
+
+    if "loaded_province_details" not in st.session_state:
+        st.session_state.loaded_province_details = {}
+    if "nav_mode" not in st.session_state:
+        st.session_state.nav_mode = NAV_OVERVIEW
+    if st.session_state.nav_mode not in [NAV_OVERVIEW, NAV_PROVINCE_DETAIL]:
+        st.session_state.nav_mode = NAV_OVERVIEW
+    if "selected_wards" not in st.session_state:
+        st.session_state.selected_wards = []
+    if "selected_wards_custom_ui" not in st.session_state:
+        st.session_state.selected_wards_custom_ui = []
+    if "ward_select_mode" not in st.session_state:
+        st.session_state.ward_select_mode = "all"
+    if "ward_select_all_checkbox" not in st.session_state:
+        st.session_state.ward_select_all_checkbox = True
     if "ui_mode" not in st.session_state:
         st.session_state.ui_mode = UI_MODES[0]
     if "reduce_motion" not in st.session_state:
         st.session_state.reduce_motion = False
 
+    nav_mode = st.session_state.nav_mode
+    requested_province = st.session_state.get("selected_province")
+
+    if nav_mode == NAV_PROVINCE_DETAIL and not requested_province:
+        st.session_state.nav_mode = NAV_OVERVIEW
+        st.session_state.selected_wards = []
+        st.session_state.selected_wards_custom_ui = []
+        st.session_state.ward_select_mode = "all"
+        st.session_state.ward_select_all_checkbox = True
+        nav_mode = NAV_OVERVIEW
+
     st.sidebar.markdown(
-        "<div class='sidebar-section-title'>Phong cách hiển thị</div>",
+        """
+        <style>
+        .sidebar-dashboard-top {
+            border-radius: 18px;
+            padding: 12px;
+            margin: 0 0 12px 0;
+            background: linear-gradient(155deg, #f7fbff 0%, #e7f1ff 100%);
+            border: 1px solid #cbdff9;
+            box-shadow: 0 8px 18px rgba(15, 76, 129, 0.08);
+        }
+        .sidebar-dashboard-title {
+            margin: 0 0 9px 0;
+            color: #18334e;
+            font-size: 1.16rem;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+        }
+        </style>
+        """,
         unsafe_allow_html=True,
     )
-    st.sidebar.selectbox(
-        "Chọn phong cách",
-        options=UI_MODES,
-        key="ui_mode",
-        label_visibility="collapsed",
-    )
-    st.sidebar.toggle(
-        "Giảm hiệu ứng chuyển động",
-        key="reduce_motion",
-        help="Phù hợp khi trình chiếu lâu hoặc muốn giao diện tĩnh.",
+
+    st.sidebar.markdown(
+        f"""
+        <div class='sidebar-dashboard-top'>
+            <p class='sidebar-dashboard-title'>Bảng Điều Khiển</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     set_plot_theme(st.session_state.ui_mode)
@@ -55,90 +155,290 @@ def render_sidebar(DF):
         unsafe_allow_html=True,
     )
 
-    st.sidebar.markdown(
-        f"""
-        <div class='sidebar-header-card'>
-            <p class='sidebar-header-title'>Bảng Điều Khiển</p>
-            <p class='sidebar-header-sub'>Lọc nhanh dữ liệu theo khu vực và khung thời gian.</p>
-            <div class='sidebar-hero-metrics'>
-                <div class='hero-pill'>
-                    <span>{len(all_cities)}</span>
-                    <small>Khu vực</small>
-                </div>
-                <div class='hero-pill'>
-                    <span>{len(DF):,}</span>
-                    <small>Bản ghi</small>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    if nav_mode == NAV_OVERVIEW:
+        st.sidebar.markdown(
+            "<div class='sidebar-section-title'>Điều hướng dữ liệu</div>",
+            unsafe_allow_html=True,
+        )
+        selected_overview = st.sidebar.selectbox(
+            "Chọn tỉnh",
+            options=province_select_options,
+            key="overview_selected_province_ui",
+            help="Chọn tỉnh để nạp dữ liệu xã/phường của tỉnh đó.",
+        )
+        if selected_overview in province_options:
+            st.session_state.selected_province = selected_overview
+            requested_province = selected_overview
+            st.session_state.nav_mode = NAV_PROVINCE_DETAIL
+            nav_mode = NAV_PROVINCE_DETAIL
+            st.session_state.selected_wards = []
+            st.session_state.selected_wards_custom_ui = []
+            st.session_state.ward_select_mode = "all"
+            st.session_state.ward_select_all_checkbox = True
+        else:
+            st.session_state.selected_province = None
+    if nav_mode == NAV_PROVINCE_DETAIL and requested_province:
+        cached_detail = st.session_state.loaded_province_details.get(requested_province)
+        need_load_detail = (
+            requested_province not in st.session_state.loaded_province_details
+            or not isinstance(cached_detail, pd.DataFrame)
+            or cached_detail.empty
+        )
+        if need_load_detail:
+            with st.spinner(f"Đang tải chi tiết {requested_province}..."):
+                st.session_state.loaded_province_details[requested_province] = (
+                    load_province_detail_data(requested_province)
+                )
+
+    merged_df = merge_overview_with_loaded_details(
+        DF,
+        st.session_state.loaded_province_details,
     )
 
-    st.sidebar.markdown(
-        "<div class='sidebar-section-title'>Khu vực quan trắc</div>",
-        unsafe_allow_html=True,
-    )
+    if nav_mode == NAV_PROVINCE_DETAIL and requested_province:
+        # In detail mode, lock all downstream filtering to the selected province only.
+        active_df = merged_df[merged_df["province"] == requested_province].copy()
+    else:
+        active_df = DF
 
-    btn1, btn2, btn3 = st.sidebar.columns(3)
-    with btn1:
-        if st.button("Tất cả", use_container_width=True, key="btn_all_cities"):
-            st.session_state.selected_cities = all_cities
-    with btn2:
-        if st.button("AQI cao", use_container_width=True, key="btn_hotspot"):
-            top_cities = (
-                DF.groupby("city")["aqi"]
-                .mean()
-                .sort_values(ascending=False)
-                .head(min(8, len(all_cities)))
-                .index.tolist()
+    all_cities = sorted(active_df["city"].unique())
+    mn_date = active_df["timestamp"].min().date()
+    mx_date = active_df["timestamp"].max().date()
+
+    if "selected_cities" not in st.session_state:
+        st.session_state.selected_cities = all_cities
+
+    if "date_range" not in st.session_state:
+        st.session_state.date_range = [mn_date, mx_date]
+
+    loaded_provinces = sorted(
+        [
+            p
+            for p, d in st.session_state.loaded_province_details.items()
+            if isinstance(d, pd.DataFrame) and not d.empty
+        ]
+    )
+    if nav_mode == NAV_OVERVIEW and loaded_provinces:
+        st.sidebar.caption(f"Đã tải chi tiết: {len(loaded_provinces)} tỉnh")
+
+    if nav_mode == NAV_PROVINCE_DETAIL and requested_province:
+        p1, p2 = st.sidebar.columns([2.6, 1.4])
+        with p1:
+            st.markdown(f"**{requested_province}**")
+        with p2:
+            if st.button("Quay lại", use_container_width=True, key="btn_back_overview"):
+                st.session_state.nav_mode = NAV_OVERVIEW
+                st.session_state.selected_province = None
+                st.session_state.overview_selected_province_ui = PROVINCE_PLACEHOLDER
+                st.session_state.selected_wards = []
+                st.session_state.selected_wards_custom_ui = []
+                st.session_state.ward_select_mode = "all"
+                st.session_state.ward_select_all_checkbox = True
+                st.session_state.selected_cities = []
+                st.rerun()
+
+        detail_df = st.session_state.loaded_province_details.get(
+            requested_province, pd.DataFrame()
+        )
+        ward_options = _extract_ward_options(detail_df)
+        st.session_state.selected_wards = [
+            w for w in st.session_state.selected_wards if w in ward_options
+        ]
+        st.session_state.selected_wards_custom_ui = [
+            w for w in st.session_state.selected_wards_custom_ui if w in ward_options
+        ]
+
+        if st.session_state.ward_select_mode not in ["all", "custom"]:
+            st.session_state.ward_select_mode = (
+                "custom" if st.session_state.selected_wards else "all"
             )
-            st.session_state.selected_cities = top_cities
-    with btn3:
-        if st.button("Xóa", use_container_width=True, key="btn_clear_cities"):
-            st.session_state.selected_cities = []
 
-    selected_count = len(st.session_state.selected_cities)
-    preview_names = st.session_state.selected_cities[:4]
-    preview_chips = "".join(
-        [f"<span class='mini-city-chip'>{c}</span>" for c in preview_names]
-    )
-    if selected_count > 4:
-        preview_chips += (
-            f"<span class='mini-city-chip'>+{selected_count - 4} khu vực</span>"
+        if st.session_state.ward_select_mode == "custom":
+            st.session_state.selected_wards = _normalize_selected_wards(
+                st.session_state.selected_wards_custom_ui,
+                ward_options,
+            )
+
+            if ward_options and len(st.session_state.selected_wards) >= len(
+                ward_options
+            ):
+                st.session_state.ward_select_mode = "all"
+                st.session_state.selected_wards = []
+                st.session_state.selected_wards_custom_ui = []
+                st.session_state.ward_select_all_checkbox = True
+
+        selected_wards_effective = _normalize_selected_wards(
+            st.session_state.selected_wards,
+            ward_options,
+        )
+        total_wards = len(ward_options)
+
+        if st.session_state.ward_select_mode == "all" or not selected_wards_effective:
+            ward_counter_text = "Tất cả"
+        else:
+            ward_counter_text = f"{len(selected_wards_effective)}/{total_wards}"
+
+        st.sidebar.markdown(
+            f"""
+            <div style='display:flex;justify-content:space-between;align-items:center;margin:6px 0 4px;'>
+                <div class='sidebar-section-title' style='margin:0;'>Xã/Phường</div>
+                <span style='font-size:.72rem;font-weight:700;color:#0f4c81;background:rgba(14,165,233,.12);border:1px solid rgba(14,165,233,.35);padding:2px 8px;border-radius:999px;'>
+                    {ward_counter_text}
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
-    st.sidebar.markdown(
-        f"""
-        <div class='sidebar-selection-summary'>
-            <div class='summary-count'>Đã chọn {selected_count} khu vực</div>
-            <div>{preview_chips if preview_chips else "<span style='font-size:0.76rem;color:#64748b;'>Chưa chọn khu vực nào</span>"}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    with st.sidebar.expander(f"Chỉnh khu vực ({selected_count})", expanded=False):
-        st.multiselect(
-            "Danh sách khu vực",
-            options=all_cities,
-            key="selected_cities",
-            label_visibility="collapsed",
-            placeholder="Tìm và chọn khu vực...",
+        select_all_checked = st.sidebar.checkbox(
+            f"Tất cả xã/phường ({total_wards})",
+            key="ward_select_all_checkbox",
+            disabled=(total_wards == 0),
         )
+
+        ward_mode = "all" if select_all_checked else "custom"
+        st.session_state.ward_select_mode = ward_mode
+
+        if ward_mode == "all":
+            st.session_state.selected_wards = []
+            st.session_state.selected_wards_custom_ui = []
+            selected_wards_effective = []
+        else:
+            selected_wards_raw = st.sidebar.multiselect(
+                "Danh sách xã/phường",
+                options=ward_options,
+                key="selected_wards_custom_ui",
+                label_visibility="collapsed",
+            )
+            selected_wards_effective = _normalize_selected_wards(
+                selected_wards_raw,
+                ward_options,
+            )
+            st.session_state.selected_wards = selected_wards_effective
+
+        province_scope_df = active_df
+        if selected_wards_effective:
+            if "location" in province_scope_df.columns:
+                province_scope_df = province_scope_df[
+                    province_scope_df["location"]
+                    .fillna("")
+                    .astype(str)
+                    .isin(selected_wards_effective)
+                ]
+            else:
+                province_scope_df = province_scope_df[
+                    province_scope_df["city"]
+                    .astype(str)
+                    .apply(
+                        lambda x: (" - " in x)
+                        and (x.split(" - ", 1)[1] in selected_wards_effective)
+                    )
+                ]
+
+        selected_cities = sorted(province_scope_df["city"].dropna().unique().tolist())
+        st.session_state.selected_cities = selected_cities
+
+        selected_count = len(selected_cities)
+        preview_names = selected_cities[:3]
+        preview_chips = "".join(
+            [
+                f"<span class='mini-city-chip'>{_display_city_name(c, requested_province)}</span>"
+                for c in preview_names
+            ]
+        )
+        if selected_count > 3:
+            preview_chips += (
+                f"<span class='mini-city-chip'>+{selected_count - 3} khu vực</span>"
+            )
+
+        st.sidebar.markdown(
+            f"""
+            <div class='sidebar-selection-summary sidebar-selection-summary-soft'>
+                <div class='summary-count summary-count-soft'>Đang xem {selected_count} khu vực thuộc {requested_province}</div>
+                <div>{preview_chips if preview_chips else "<span style='font-size:0.76rem;color:#64748b;'>Không có khu vực phù hợp</span>"}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.sidebar.markdown(
+            "<div class='sidebar-section-title'>Lọc khu vực</div>",
+            unsafe_allow_html=True,
+        )
+        st.session_state.selected_wards = []
+        st.session_state.selected_wards_custom_ui = []
+        st.session_state.ward_select_mode = "all"
+        st.session_state.ward_select_all_checkbox = True
+        st.session_state.selected_cities = [
+            c for c in st.session_state.selected_cities if c in all_cities
+        ]
+        if not st.session_state.selected_cities:
+            st.session_state.selected_cities = all_cities
+
+        st.sidebar.markdown(
+            "<div class='sidebar-inline-label'>Lọc nhanh:</div>",
+            unsafe_allow_html=True,
+        )
+        btn1, btn2, btn3 = st.sidebar.columns([1.0, 1.0, 1.0])
+        with btn1:
+            if st.button("Tất cả", use_container_width=True, key="btn_all_cities"):
+                st.session_state.selected_cities = all_cities
+        with btn2:
+            if st.button("AQI cao", use_container_width=True, key="btn_hotspot"):
+                top_cities = (
+                    active_df.groupby("city")["aqi"]
+                    .mean()
+                    .sort_values(ascending=False)
+                    .head(min(8, len(all_cities)))
+                    .index.tolist()
+                )
+                st.session_state.selected_cities = top_cities
+        with btn3:
+            if st.button("×", use_container_width=True, key="btn_clear_cities"):
+                st.session_state.selected_cities = []
+
+        selected_count = len(st.session_state.selected_cities)
+        preview_names = st.session_state.selected_cities[:3]
+        preview_chips = "".join(
+            [f"<span class='mini-city-chip'>{c}</span>" for c in preview_names]
+        )
+        if selected_count > 3:
+            preview_chips += (
+                f"<span class='mini-city-chip'>+{selected_count - 3} khu vực</span>"
+            )
+
+        st.sidebar.markdown(
+            "<div class='sidebar-hint' style='margin-top:4px;margin-bottom:4px;'>Đang xem:</div>",
+            unsafe_allow_html=True,
+        )
+        st.sidebar.markdown(
+            f"""
+            <div class='sidebar-selection-summary'>
+                <div class='summary-count'>{selected_count} khu vực</div>
+                <div>{preview_chips if preview_chips else "<span style='font-size:0.76rem;color:#64748b;'>Chưa chọn khu vực nào</span>"}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        with st.sidebar.expander(f"Chỉnh khu vực ({selected_count})", expanded=False):
+            st.multiselect(
+                "Danh sách khu vực",
+                options=all_cities,
+                key="selected_cities",
+                label_visibility="collapsed",
+                placeholder="Tìm và chọn khu vực...",
+            )
 
     selected_cities = st.session_state.selected_cities
     sel = selected_cities
 
-    st.sidebar.markdown(
-        "<p class='sidebar-hint'>Gợi ý: bấm Chỉnh khu vực để cập nhật danh sách nhanh.</p>",
-        unsafe_allow_html=True,
-    )
-
     if selected_cities:
-        city_scope_df = DF[DF["city"].isin(selected_cities)]
+        city_scope_df = active_df[active_df["city"].isin(selected_cities)]
+    elif nav_mode == NAV_PROVINCE_DETAIL and requested_province:
+        city_scope_df = active_df[active_df["province"] == requested_province]
     else:
-        city_scope_df = DF
+        city_scope_df = active_df
 
     min_date = city_scope_df["timestamp"].min().date()
     max_date = city_scope_df["timestamp"].max().date()
@@ -177,7 +477,6 @@ def render_sidebar(DF):
 
     dr = st.sidebar.date_input(
         "Chọn khoảng thời gian",
-        value=st.session_state.date_range,
         min_value=min_date,
         max_value=max_date,
         key="date_range",
@@ -192,110 +491,39 @@ def render_sidebar(DF):
     start_date_ts = pd.Timestamp(s_d)
     end_date_ts = pd.Timestamp(e_d)
 
-    side_df = DF[
-        DF["city"].isin(selected_cities if selected_cities else all_cities)
-        & (DF["date_ts"] >= start_date_ts)
-        & (DF["date_ts"] <= end_date_ts)
-    ]
-    st.sidebar.success(f"Dữ liệu đang xét: {len(side_df):,} bản ghi")
-
-    if not side_df.empty:
-        side_avg_aqi = int(side_df["aqi"].mean())
-        side_health_hd, side_health_tx, side_health_color = aqi_health_guidance(
-            side_avg_aqi
-        )
-        st.sidebar.markdown(
-            f"""
-            <div class='sidebar-selection-summary'>
-                <div class='summary-count'>Khuyến nghị sức khỏe theo AQI hiện tại</div>
-                <div style='font-size:.84rem;font-weight:800;color:{side_health_color};margin-bottom:3px'>{side_health_hd} · AQI {side_avg_aqi}</div>
-                <div style='font-size:.7rem;color:#4c6a86;line-height:1.5'>{side_health_tx}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    quality_cols = [
-        c
-        for c in [
-            "aqi",
-            "pm2_5",
-            "pm10",
-            "o3",
-            "no2",
-            "so2",
-            "co",
-            "temp",
-            "humidity",
-            "wind_speed",
-            "rain",
-        ]
-        if c in side_df.columns
-    ]
-    if quality_cols and not side_df.empty:
-        missing_rate = (side_df[quality_cols].isna().mean() * 100).sort_values(
-            ascending=False
-        )
-        top_missing = missing_rate.head(3)
-        missing_line = " · ".join([f"{k}: {v:.1f}%" for k, v in top_missing.items()])
-        latest_side = side_df["timestamp"].max().strftime("%H:%M · %d/%m/%Y")
-        st.sidebar.markdown(
-            f"""
-            <div class='sidebar-selection-summary'>
-                <div class='summary-count'>Chất lượng dữ liệu</div>
-                <div style='font-size:.68rem;color:#3f5f7c;line-height:1.45'>Cập nhật gần nhất: <strong>{latest_side}</strong></div>
-                <div style='font-size:.68rem;color:#3f5f7c;line-height:1.45'>Tỷ lệ thiếu cao nhất: {missing_line}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    csv_name = (
-        f"vietnam_aqi_filtered_{s_d.strftime('%Y%m%d')}_{e_d.strftime('%Y%m%d')}.csv"
-    )
-    csv_bytes = to_csv_bytes(side_df)
-    st.sidebar.download_button(
-        "Tải CSV theo bộ lọc hiện tại",
-        data=csv_bytes,
-        file_name=csv_name,
-        mime="text/csv",
-        use_container_width=True,
-        help="Xuất toàn bộ dữ liệu sau khi lọc khu vực và thời gian.",
-    )
-
-    st.sidebar.markdown(
-        "<div class='sidebar-section-title'>Mật độ biểu đồ</div>",
-        unsafe_allow_html=True,
-    )
-    city_cap_max = max(1, len(selected_cities) if selected_cities else len(all_cities))
-    city_cap_min = 1 if city_cap_max < 8 else 8
-    city_cap_default = min(
-        max(st.session_state.city_chart_limit, city_cap_min), city_cap_max
-    )
-    city_cap = st.sidebar.slider(
-        "Số khu vực tối đa trên biểu đồ dài",
-        min_value=city_cap_min,
-        max_value=city_cap_max,
-        value=city_cap_default,
-        step=1,
-        key="city_chart_limit",
-        help="Giảm số khu vực để tránh biểu đồ quá cao khi chọn nhiều thành phố.",
-    )
-
     aqi_opts = [b[2] for b in AQI_DEF]
     sel_bands = aqi_opts
+
+    if not sel and nav_mode == NAV_PROVINCE_DETAIL and requested_province:
+        sel = sorted(
+            active_df.loc[active_df["province"] == requested_province, "city"]
+            .dropna()
+            .unique()
+            .tolist()
+        )
 
     if not sel:
         st.warning("Vui lòng chọn ít nhất 1 khu vực để hiển thị.")
         st.stop()
 
+    # Fixed cap after removing sidebar density control.
+    city_cap = min(18, max(1, len(sel)))
+
     # ── FILTER DATA ──
-    df = DF[
-        DF["city"].isin(sel)
-        & DF["band"].isin(sel_bands)
-        & (DF["date_ts"] >= start_date_ts)
-        & (DF["date_ts"] <= end_date_ts)
+    df = active_df[
+        active_df["city"].isin(sel)
+        & active_df["band"].isin(sel_bands)
+        & (active_df["date_ts"] >= start_date_ts)
+        & (active_df["date_ts"] <= end_date_ts)
     ].copy()
+
+    if nav_mode == NAV_PROVINCE_DETAIL and requested_province and "city" in df.columns:
+        # Keep internal selection keys unchanged; only simplify names for UI rendering.
+        df["city"] = (
+            df["city"]
+            .astype(str)
+            .apply(lambda c: _display_city_name(c, requested_province))
+        )
 
     days = max(1, (e_d - s_d).days + 1)
     if df.empty:
@@ -395,6 +623,12 @@ def render_sidebar(DF):
     plot_cities = city_priority[:plot_city_limit]
     df_city = df[df["city"].isin(plot_cities)].copy()
     is_city_trimmed = len(city_priority) > plot_city_limit
+
+    loaded_detail_rows = sum(
+        len(d)
+        for d in st.session_state.loaded_province_details.values()
+        if isinstance(d, pd.DataFrame)
+    )
 
     # ═══════════════════════════════════════════════════════════════════
     return locals()
