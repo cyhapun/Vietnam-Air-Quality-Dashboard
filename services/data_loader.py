@@ -23,7 +23,7 @@ def load_data():
         st.stop()
 
     # Tìm tất cả các file CSV trong các thư mục con
-    all_files = glob.glob(os.path.join(data_dir, "**", "*.csv"), recursive=True)
+    all_files = glob.glob(os.path.join(data_dir, "**", "all.csv"), recursive=True)
     
     if not all_files:
         st.error(f"Không tìm thấy file CSV nào trong thư mục {data_dir}")
@@ -66,7 +66,7 @@ def load_data():
         bins=[-np.inf, 50, 100, 150, 200, 300, np.inf],
         labels=aqi_labels,
         include_lowest=True,
-    ).fillna("Nguy hại")
+    ).fillna(AQI_DEF[-1][2])
     df["band"] = df["aqi_lbl"]
 
     slot_labels = ["Đêm (0–6h)", "Sáng (6–12h)", "Chiều (12–18h)", "Tối (18–24h)"]

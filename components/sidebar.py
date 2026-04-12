@@ -10,6 +10,7 @@ from utils.helpers import (
     UI_MODES,
     aqi_health_guidance,
     aqi_meta,
+    apply_colorblind,
     fmt_delta,
     rank_rows_html,
     set_plot_theme,
@@ -48,7 +49,13 @@ def render_sidebar(DF):
         key="reduce_motion",
         help="Phù hợp khi trình chiếu lâu hoặc muốn giao diện tĩnh.",
     )
+    st.sidebar.toggle(
+        "Chế độ mù màu",
+        key="colorblind_mode",
+        help="Chuyển sang bảng màu thân thiện với người mù màu (Okabe-Ito).",
+    )
 
+    apply_colorblind(st.session_state.get("colorblind_mode", False))
     set_plot_theme(st.session_state.ui_mode)
     st.markdown(
         ui_mode_css(st.session_state.ui_mode, st.session_state.reduce_motion),
@@ -177,7 +184,6 @@ def render_sidebar(DF):
 
     dr = st.sidebar.date_input(
         "Chọn khoảng thời gian",
-        value=st.session_state.date_range,
         min_value=min_date,
         max_value=max_date,
         key="date_range",
@@ -197,7 +203,9 @@ def render_sidebar(DF):
         & (DF["date_ts"] >= start_date_ts)
         & (DF["date_ts"] <= end_date_ts)
     ]
-    st.sidebar.success(f"Dữ liệu đang xét: {len(side_df):,} bản ghi")
+    st.sidebar.success(
+        f"Dữ liệu đang xét: {len(side_df):,}/{len(DF):,} bản ghi (sau lọc/tổng)"
+    )
 
     if not side_df.empty:
         side_avg_aqi = int(side_df["aqi"].mean())

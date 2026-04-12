@@ -10,14 +10,56 @@ def get_base64_image(image_path):
         return None
 
 
-AQI_DEF = [
-    (0,   50,  "Tốt",        "#14b8a6"),
-    (51,  100, "Trung bình", "#0ea5e9"),
-    (101, 150, "Kém",        "#f59e0b"),
-    (151, 200, "Xấu",        "#f97316"),
-    (201, 300, "Rất xấu",    "#ef4444"),
-    (301, 500, "Nguy hại",   "#b91c1c"),
+AQI_DEF_NORMAL = [
+    (0,   50,  "Tốt",                                 "#0f9d6c"),
+    (51,  100, "Vừa phải",                            "#f2d22e"),
+    (101, 150, "Không lành mạnh cho nhóm nhạy cảm",  "#f79332"),
+    (151, 200, "Không khỏe mạnh",                     "#e40046"),
+    (201, 300, "Rất không tốt cho sức khỏe",          "#6f0ea8"),
+    (301, 500, "Nguy hiểm",                           "#97002e"),
 ]
+
+AQI_DEF_CB = [
+    (0,   50,  "Tốt",                                 "#0072B2"),
+    (51,  100, "Vừa phải",                            "#E69F00"),
+    (101, 150, "Không lành mạnh cho nhóm nhạy cảm",  "#56B4E9"),
+    (151, 200, "Không khỏe mạnh",                     "#D55E00"),
+    (201, 300, "Rất không tốt cho sức khỏe",          "#CC79A7"),
+    (301, 500, "Nguy hiểm",                           "#882255"),
+]
+
+POLLS_NORMAL = {
+    "pm2_5": dict(label="PM2.5", unit="µg/m³", who=15,   color="#ef4444", desc="Bụi mịn < 2.5µm"),
+    "pm10":  dict(label="PM10",  unit="µg/m³", who=45,   color="#f97316", desc="Bụi thô < 10µm"),
+    "o3":    dict(label="O₃",    unit="µg/m³", who=100,  color="#0ea5e9", desc="Ozone mặt đất"),
+    "no2":   dict(label="NO₂",   unit="µg/m³", who=25,   color="#14b8a6", desc="Khí thải giao thông"),
+    "co":    dict(label="CO",    unit="µg/m³", who=4000, color="#0369a1", desc="Đốt cháy không hoàn toàn"),
+    "so2":   dict(label="SO₂",   unit="µg/m³", who=40,   color="#f59e0b", desc="Công nghiệp & nhiệt điện"),
+}
+
+POLLS_CB = {
+    "pm2_5": dict(label="PM2.5", unit="µg/m³", who=15,   color="#D55E00", desc="Bụi mịn < 2.5µm"),
+    "pm10":  dict(label="PM10",  unit="µg/m³", who=45,   color="#E69F00", desc="Bụi thô < 10µm"),
+    "o3":    dict(label="O₃",    unit="µg/m³", who=100,  color="#56B4E9", desc="Ozone mặt đất"),
+    "no2":   dict(label="NO₂",   unit="µg/m³", who=25,   color="#009E73", desc="Khí thải giao thông"),
+    "co":    dict(label="CO",    unit="µg/m³", who=4000, color="#0072B2", desc="Đốt cháy không hoàn toàn"),
+    "so2":   dict(label="SO₂",   unit="µg/m³", who=40,   color="#CC79A7", desc="Công nghiệp & nhiệt điện"),
+}
+
+AQI_DEF = list(AQI_DEF_NORMAL)
+
+def get_active_palette():
+    import streamlit as _st
+    return _st.session_state.get("colorblind_mode", False)
+
+def apply_colorblind(on: bool):
+    global AQI_DEF, POLLS
+    if on:
+        AQI_DEF[:] = AQI_DEF_CB
+        POLLS.update(POLLS_CB)
+    else:
+        AQI_DEF[:] = AQI_DEF_NORMAL
+        POLLS.update(POLLS_NORMAL)
 
 def aqi_meta(v):
     for lo, hi, lbl, col in AQI_DEF:
@@ -63,14 +105,7 @@ CITY_PALETTE = [
     "#f59e0b", "#f97316", "#ef4444", "#b45309", "#1d4ed8",
 ]
 
-POLLS = {
-    "pm2_5": dict(label="PM2.5", unit="µg/m³", who=15,   color="#ef4444", desc="Bụi mịn < 2.5µm"),
-    "pm10":  dict(label="PM10",  unit="µg/m³", who=45,   color="#f97316", desc="Bụi thô < 10µm"),
-    "o3":    dict(label="O₃",    unit="µg/m³", who=100,  color="#0ea5e9", desc="Ozone mặt đất"),
-    "no2":   dict(label="NO₂",   unit="µg/m³", who=25,   color="#14b8a6", desc="Khí thải giao thông"),
-    "co":    dict(label="CO",    unit="µg/m³", who=4000, color="#0369a1", desc="Đốt cháy không hoàn toàn"),
-    "so2":   dict(label="SO₂",   unit="µg/m³", who=40,   color="#f59e0b", desc="Công nghiệp & nhiệt điện"),
-}
+POLLS = dict(POLLS_NORMAL)
 
 SLOT_CLR = {
     "Sáng (6–12h)":  "#0284c7",

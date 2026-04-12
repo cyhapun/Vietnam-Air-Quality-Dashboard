@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 
 from components.footer import render_footer
 from components.header import render_header
@@ -38,6 +38,7 @@ st.set_page_config(
 inject_css("styles/main.css")
 
 logo_base64 = get_base64_image("data/hcmus_logo.png")
+vietnam_svg_base64 = get_base64_image("components/vietnam.svg")
 if logo_base64:
     logo_html = f'<img src="data:image/png;base64,{logo_base64}" style="width:100%;height:100%;object-fit:contain;padding:2px;">'
 else:
@@ -65,6 +66,7 @@ state.update(
         "ax": ax,
         "chart_h": chart_h,
         "fmt_delta": fmt_delta,
+        "vietnam_svg_base64": vietnam_svg_base64,
     }
 )
 
