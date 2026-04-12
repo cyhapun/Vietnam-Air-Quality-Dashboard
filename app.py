@@ -1,4 +1,6 @@
 ﻿import streamlit as st
+import logging
+from time import perf_counter
 
 from components.footer import render_footer
 from components.header import render_header
@@ -28,6 +30,15 @@ from utils.helpers import (
 )
 
 
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(message)s",
+    )
+logger = logging.getLogger("aqi_dashboard")
+logger.setLevel(logging.INFO)
+
+
 st.set_page_config(
     layout="wide",
     page_title="Vietnam AQI Dashboard",
@@ -43,8 +54,17 @@ if logo_base64:
 else:
     logo_html = "🌿"
 
-with st.spinner("Đang tải tổng quan toàn quốc..."):
-    DF = load_province_overview_data()
+overview_load_start = perf_counter()
+DF = load_province_overview_data()
+overview_load_elapsed = perf_counter() - overview_load_start
+if not st.session_state.get("_overview_load_logged", False):
+    logger.info(
+        "[DATA LOAD] overview_initial | rows=%d | provinces=%d | time=%.3fs",
+        len(DF),
+        int(DF["province"].nunique()) if "province" in DF.columns else 0,
+        overview_load_elapsed,
+    )
+    st.session_state["_overview_load_logged"] = True
 
 if "loaded_province_details" not in st.session_state:
     st.session_state["loaded_province_details"] = {}

@@ -1,6 +1,8 @@
 ﻿import pandas as pd
 import streamlit as st
+import logging
 from datetime import datetime
+from time import perf_counter
 
 from services.data_loader import (
     load_province_detail_data,
@@ -23,6 +25,8 @@ from utils.helpers import (
 PROVINCE_PLACEHOLDER = "Chọn tỉnh"
 NAV_OVERVIEW = "overview"
 NAV_PROVINCE_DETAIL = "province_detail"
+
+logger = logging.getLogger("aqi_dashboard")
 
 
 def _extract_ward_options(detail_df: pd.DataFrame) -> list[str]:
@@ -78,7 +82,9 @@ def render_sidebar(DF):
     if "selected_province" not in st.session_state:
         st.session_state.selected_province = None
 
-    if (
+    if st.session_state.pop("_reset_overview_select_ui", False):
+        st.session_state.overview_selected_province_ui = PROVINCE_PLACEHOLDER
+    elif (
         "overview_selected_province_ui" not in st.session_state
         or st.session_state.overview_selected_province_ui not in province_select_options
     ):
@@ -120,20 +126,35 @@ def render_sidebar(DF):
     st.sidebar.markdown(
         """
         <style>
+        section[data-testid="stSidebar"] > div:first-child {
+            padding-top: 0 !important;
+        }
+        section[data-testid="stSidebar"] div.block-container {
+            padding-top: 0.2rem !important;
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+        }
+        section.main > div.block-container {
+            padding-top: 3.1rem !important;
+        }
         .sidebar-dashboard-top {
-            border-radius: 18px;
-            padding: 12px;
-            margin: 0 0 12px 0;
+            border-radius: 20px;
+            padding: 16px 14px;
+            min-height: 76px;
+            margin: -24px 0 14px 0;
             background: linear-gradient(155deg, #f7fbff 0%, #e7f1ff 100%);
             border: 1px solid #cbdff9;
             box-shadow: 0 8px 18px rgba(15, 76, 129, 0.08);
+            display: flex;
+            align-items: center;
         }
         .sidebar-dashboard-title {
-            margin: 0 0 9px 0;
+            margin: 0;
             color: #18334e;
-            font-size: 1.16rem;
+            font-size: 1.48rem;
             font-weight: 800;
-            letter-spacing: 0.2px;
+            line-height: 1.15;
+            letter-spacing: 0.15px;
         }
         </style>
         """,
@@ -155,28 +176,32 @@ def render_sidebar(DF):
         unsafe_allow_html=True,
     )
 
-    if nav_mode == NAV_OVERVIEW:
-        st.sidebar.markdown(
-            "<div class='sidebar-section-title'>Điều hướng dữ liệu</div>",
-            unsafe_allow_html=True,
-        )
-        selected_overview = st.sidebar.selectbox(
-            "Chọn tỉnh",
-            options=province_select_options,
-            key="overview_selected_province_ui",
-            help="Chọn tỉnh để nạp dữ liệu xã/phường của tỉnh đó.",
-        )
-        if selected_overview in province_options:
-            st.session_state.selected_province = selected_overview
-            requested_province = selected_overview
-            st.session_state.nav_mode = NAV_PROVINCE_DETAIL
-            nav_mode = NAV_PROVINCE_DETAIL
+    st.sidebar.markdown(
+        "<div class='sidebar-section-title'>Điều hướng dữ liệu</div>",
+        unsafe_allow_html=True,
+    )
+    previous_province = st.session_state.get("selected_province")
+    selected_overview = st.sidebar.selectbox(
+        "Chọn tỉnh",
+        options=province_select_options,
+        key="overview_selected_province_ui",
+        help="Chọn tỉnh để nạp dữ liệu xã/phường của tỉnh đó.",
+    )
+    if selected_overview in province_options:
+        st.session_state.selected_province = selected_overview
+        requested_province = selected_overview
+        st.session_state.nav_mode = NAV_PROVINCE_DETAIL
+        nav_mode = NAV_PROVINCE_DETAIL
+        if previous_province != selected_overview:
             st.session_state.selected_wards = []
             st.session_state.selected_wards_custom_ui = []
             st.session_state.ward_select_mode = "all"
             st.session_state.ward_select_all_checkbox = True
-        else:
-            st.session_state.selected_province = None
+    else:
+        st.session_state.selected_province = None
+        requested_province = None
+        st.session_state.nav_mode = NAV_OVERVIEW
+        nav_mode = NAV_OVERVIEW
     if nav_mode == NAV_PROVINCE_DETAIL and requested_province:
         cached_detail = st.session_state.loaded_province_details.get(requested_province)
         need_load_detail = (
@@ -185,10 +210,27 @@ def render_sidebar(DF):
             or cached_detail.empty
         )
         if need_load_detail:
-            with st.spinner(f"Đang tải chi tiết {requested_province}..."):
-                st.session_state.loaded_province_details[requested_province] = (
-                    load_province_detail_data(requested_province)
+            load_start = perf_counter()
+            detail_loaded_df = load_province_detail_data(requested_province)
+            load_elapsed = perf_counter() - load_start
+            st.session_state.loaded_province_details[requested_province] = (
+                detail_loaded_df
+            )
+            ward_count = (
+                detail_loaded_df["location"].dropna().astype(str).nunique()
+                if (
+                    "location" in detail_loaded_df.columns
+                    and not detail_loaded_df.empty
                 )
+                else 0
+            )
+            logger.info(
+                "[DATA LOAD] province_detail | province=%s | rows=%d | wards=%d | time=%.3fs",
+                requested_province,
+                len(detail_loaded_df),
+                ward_count,
+                load_elapsed,
+            )
 
     merged_df = merge_overview_with_loaded_details(
         DF,
@@ -226,10 +268,10 @@ def render_sidebar(DF):
         with p1:
             st.markdown(f"**{requested_province}**")
         with p2:
-            if st.button("Quay lại", use_container_width=True, key="btn_back_overview"):
+            if st.button("Quay lại", width="stretch", key="btn_back_overview"):
                 st.session_state.nav_mode = NAV_OVERVIEW
                 st.session_state.selected_province = None
-                st.session_state.overview_selected_province_ui = PROVINCE_PLACEHOLDER
+                st.session_state._reset_overview_select_ui = True
                 st.session_state.selected_wards = []
                 st.session_state.selected_wards_custom_ui = []
                 st.session_state.ward_select_mode = "all"
@@ -381,10 +423,10 @@ def render_sidebar(DF):
         )
         btn1, btn2, btn3 = st.sidebar.columns([1.0, 1.0, 1.0])
         with btn1:
-            if st.button("Tất cả", use_container_width=True, key="btn_all_cities"):
+            if st.button("Tất cả", width="stretch", key="btn_all_cities"):
                 st.session_state.selected_cities = all_cities
         with btn2:
-            if st.button("AQI cao", use_container_width=True, key="btn_hotspot"):
+            if st.button("AQI cao", width="stretch", key="btn_hotspot"):
                 top_cities = (
                     active_df.groupby("city")["aqi"]
                     .mean()
@@ -394,7 +436,7 @@ def render_sidebar(DF):
                 )
                 st.session_state.selected_cities = top_cities
         with btn3:
-            if st.button("×", use_container_width=True, key="btn_clear_cities"):
+            if st.button("Xóa", width="stretch", key="btn_clear_cities"):
                 st.session_state.selected_cities = []
 
         selected_count = len(st.session_state.selected_cities)
@@ -456,23 +498,23 @@ def render_sidebar(DF):
     )
     t1, t2, t3, t4 = st.sidebar.columns(4)
     with t1:
-        if st.button("30N", use_container_width=True, key="date_30d"):
+        if st.button("30N", width="stretch", key="date_30d"):
             st.session_state.date_range = [
                 max(min_date, max_date - pd.Timedelta(days=29)),
                 max_date,
             ]
     with t2:
-        if st.button("90N", use_container_width=True, key="date_90d"):
+        if st.button("90N", width="stretch", key="date_90d"):
             st.session_state.date_range = [
                 max(min_date, max_date - pd.Timedelta(days=89)),
                 max_date,
             ]
     with t3:
-        if st.button("YTD", use_container_width=True, key="date_ytd"):
+        if st.button("YTD", width="stretch", key="date_ytd"):
             start_of_year = datetime(max_date.year, 1, 1).date()
             st.session_state.date_range = [max(min_date, start_of_year), max_date]
     with t4:
-        if st.button("Full", use_container_width=True, key="date_full"):
+        if st.button("Full", width="stretch", key="date_full"):
             st.session_state.date_range = [min_date, max_date]
 
     dr = st.sidebar.date_input(

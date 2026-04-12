@@ -129,7 +129,7 @@ def _read_csv_files(paths: list[str]) -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_province_overview_data() -> pd.DataFrame:
     data_dir = _resolve_aqi_data_dir()
     overview_files = glob.glob(os.path.join(data_dir, "*", "all.csv"))
@@ -145,7 +145,7 @@ def load_province_overview_data() -> pd.DataFrame:
     return _prepare_common_columns(df)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_province_detail_data(province: str) -> pd.DataFrame:
     if not province:
         return pd.DataFrame()
@@ -192,7 +192,7 @@ def merge_overview_with_loaded_details(
     return merged_df
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_data():
     # Backward-compatible full load used by older code paths.
     data_dir = _resolve_aqi_data_dir()
