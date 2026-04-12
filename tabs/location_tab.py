@@ -212,7 +212,7 @@ def _render_region_filter_boxes(options: list[str], state_key: str) -> str:
         clicked = cols[i].button(
             label,
             key=f"{state_key}_btn_{i}",
-            use_container_width=True,
+            width="stretch",
             type="primary" if is_active else "secondary",
         )
         if clicked and not is_active:
@@ -439,9 +439,7 @@ def render(df: pd.DataFrame):
                 ),
                 showlegend=False,
             )
-        st.plotly_chart(
-            fig_aqi, use_container_width=True, config={"displayModeBar": False}
-        )
+        st.plotly_chart(fig_aqi, width="stretch", config={"displayModeBar": False})
 
     with c2:
         fig_pm = go.Figure(
@@ -503,9 +501,7 @@ def render(df: pd.DataFrame):
                 ),
                 showlegend=False,
             )
-        st.plotly_chart(
-            fig_pm, use_container_width=True, config={"displayModeBar": False}
-        )
+        st.plotly_chart(fig_pm, width="stretch", config={"displayModeBar": False})
 
     req_cols = ["pm2_5", "o3", "no2", "temp", "humidity", "aqi", "region_7"]
     if all(col in work.columns for col in req_cols):
@@ -655,7 +651,7 @@ def render(df: pd.DataFrame):
                     )
                 st.plotly_chart(
                     fig_who,
-                    use_container_width=True,
+                    width="stretch",
                     config={"displayModeBar": False},
                 )
 
@@ -778,5 +774,5 @@ def render(df: pd.DataFrame):
                         ),
                     )
                 st.plotly_chart(
-                    fig_met, use_container_width=True, config={"displayModeBar": False}
+                    fig_met, width="stretch", config={"displayModeBar": False}
                 )
