@@ -16,8 +16,30 @@ CITY_FOLDERS = {
     "Lâm Đồng": "lam_dong", "Lạng Sơn": "lang_son", "Lào Cai": "lao_cai", "Nghệ An": "nghe_an",
     "Ninh Bình": "ninh_binh", "Phú Thọ": "phu_tho", "Quảng Ngãi": "quang_ngai", "Quảng Ninh": "quang_ninh",
     "Quảng Trị": "quang_tri", "Sơn La": "son_la", "Tây Ninh": "tay_ninh", "Thái Nguyên": "thai_nguyen",
-    "Thanh Hóa": "thanh_hoa", "Tuyên Quang": "tuyen_quang", "Vĩnh Long": "vinh_long"
 }
+
+@st.cache_data(ttl=3600*24, show_spinner=False)
+def get_location_map(dir_path):
+    mapping = {}
+    if not os.path.exists(dir_path):
+        return mapping
+    for f in os.listdir(dir_path):
+        if f.endswith(".csv") and f != "all.csv":
+            clean_name = f.replace(".csv", "")
+            try:
+                # Read just the first row, only the 'location' column to be extra fast
+                df_loc = pd.read_csv(os.path.join(dir_path, f), usecols=["location"], nrows=1)
+                if not df_loc.empty and pd.notna(df_loc.iloc[0, 0]):
+                    loc_val = str(df_loc.iloc[0, 0]).strip()
+                    # Resolve duplicates if any
+                    if loc_val in mapping.values():
+                        loc_val = f"{loc_val} ({clean_name})"
+                    mapping[f] = loc_val
+                else:
+                    mapping[f] = clean_name
+            except Exception:
+                mapping[f] = clean_name
+    return mapping
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_tier2_data(city_folder, filename):
@@ -59,6 +81,13 @@ def render(global_df):
         
     c1, c2, c3, c4, c5 = st.columns([1.6, 1.6, 1.2, 1.0, 1.0])
     
+    def on_city_change():
+        new_city = st.session_state["aqi_city_select"]
+        st.session_state["aqi_selected_city"] = new_city
+        st.session_state["aqi_selected_tier2"] = f"Tổng quan ({new_city})"
+        if "aqi_tier2_select" in st.session_state:
+            del st.session_state["aqi_tier2_select"]
+
     with c1:
         # Safe fallback for index
         idx_city = 0
@@ -69,12 +98,9 @@ def render(global_df):
             "Thành phố / Tỉnh", 
             options=cities, 
             index=idx_city,
-            key="aqi_city_select"
+            key="aqi_city_select",
+            on_change=on_city_change
         )
-        if selected_city != st.session_state["aqi_selected_city"]:
-            st.session_state["aqi_selected_city"] = selected_city
-            st.session_state["aqi_selected_tier2"] = f"Tổng quan ({selected_city})"
-            st.rerun()
 
     # Locate Tier 2 units dynamically
     folder_name = CITY_FOLDERS.get(selected_city, "ho_chi_minh")
@@ -85,12 +111,13 @@ def render(global_df):
     file_map = {tong_quan_lbl: "all.csv"}
     
     if os.path.exists(dir_path):
-        files = os.listdir(dir_path)
-        for f in files:
+        loc_mapping = get_location_map(dir_path)
+        for f in os.listdir(dir_path):
             if f.endswith(".csv") and f != "all.csv":
                 clean_name = f.replace(".csv", "")
-                tier2_options.append(clean_name)
-                file_map[clean_name] = f
+                loc_name = loc_mapping.get(f, clean_name)
+                tier2_options.append(loc_name)
+                file_map[loc_name] = f
                 
     tier2_options.sort() # Optional: sort alphabetical
     
@@ -102,17 +129,20 @@ def render(global_df):
     # Reset tier2 selection if not found
     if st.session_state["aqi_selected_tier2"] not in tier2_options:
         st.session_state["aqi_selected_tier2"] = tier2_options[0]
+        if "aqi_tier2_select" in st.session_state:
+            del st.session_state["aqi_tier2_select"]
+            
+    def on_tier2_change():
+        st.session_state["aqi_selected_tier2"] = st.session_state["aqi_tier2_select"]
 
     with c2:
         selected_tier2 = st.selectbox(
             "Đơn vị (Huyện/Xã/Phường)", 
             options=tier2_options,
             index=tier2_options.index(st.session_state["aqi_selected_tier2"]),
-            key="aqi_tier2_select"
+            key="aqi_tier2_select",
+            on_change=on_tier2_change
         )
-        if selected_tier2 != st.session_state["aqi_selected_tier2"]:
-            st.session_state["aqi_selected_tier2"] = selected_tier2
-            st.rerun()
 
     with c3:
         # Use native segmented_control with Material Icons style if supported
