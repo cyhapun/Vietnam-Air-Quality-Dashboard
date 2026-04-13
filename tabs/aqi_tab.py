@@ -222,7 +222,8 @@ def render(global_df):
     
     # Title & Cards Layout
     st.markdown('<hr style="margin: 1.5rem 0 1rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
-    cT1, cT2 = st.columns([1.2, 1], gap="small")
+    cChart, cRank = st.columns([2.8, 1.2], gap="large")
+    cT1, cT2 = cChart.columns([1.4, 1], gap="small")
     
     with cT1:
         st.markdown(f'''<div>
@@ -494,22 +495,104 @@ def render(global_df):
         margin=dict(l=10, r=10, t=20, b=10)
     )
     
-    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key="aqi_plotly_chart")
-    
-    # Legend Explanation
-    bands = POLL_BANDS.get(y_col, POLL_BANDS["aqi"])
-    legend_html = '<div style="margin-top:0.5rem; padding-top: 1rem; border-top: 1px dashed rgba(148,163,184,0.3); display:flex; justify-content:center; flex-wrap:wrap; gap:12px; font-size:12px;">'
-    for i, (lo, hi, lbl, col) in enumerate(AQI_DEF):
-        if i < len(bands):
-            b_lo, b_hi = bands[i]
-            val_str = f"{b_lo}-{b_hi}" if i < 5 else f"{b_lo}+"
-            
-            # Format số thực cho CO vì đơn vị rất nhỏ
-            if y_col == "co":
-                val_str = f"{float(b_lo):.1f}-{float(b_hi):.1f}" if i < 5 else f"{float(b_lo):.1f}+"
+    with cChart:
+        st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key="aqi_plotly_chart")
+        
+        # Legend Explanation
+        bands = POLL_BANDS.get(y_col, POLL_BANDS["aqi"])
+        legend_html = '<div style="margin-top:0.5rem; padding-top: 1rem; border-top: 1px dashed rgba(148,163,184,0.3); display:flex; justify-content:center; flex-wrap:wrap; gap:12px; font-size:12px;">'
+        for i, (lo, hi, lbl, col) in enumerate(AQI_DEF):
+            if i < len(bands):
+                b_lo, b_hi = bands[i]
+                val_str = f"{b_lo}-{b_hi}" if i < 5 else f"{b_lo}+"
                 
-            legend_html += f'<div style="display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:99px; background:{hex_rgba(col,0.1)}; border: 1px solid {hex_rgba(col, 0.4)}"><div style="width:10px; height:10px; border-radius:50%; background:{col};"></div><span style="color:{col}; font-weight:600;">{lbl} ({val_str})</span></div>'
-    legend_html += '</div>'
-    st.markdown(legend_html, unsafe_allow_html=True)
+                # Format số thực cho CO vì đơn vị rất nhỏ
+                if y_col == "co":
+                    val_str = f"{float(b_lo):.1f}-{float(b_hi):.1f}" if i < 5 else f"{float(b_lo):.1f}+"
+                    
+                legend_html += f'<div style="display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:99px; background:{hex_rgba(col,0.1)}; border: 1px solid {hex_rgba(col, 0.4)}"><div style="width:10px; height:10px; border-radius:50%; background:{col};"></div><span style="color:{col}; font-weight:600;">{lbl} ({val_str})</span></div>'
+        legend_html += '</div>'
+        st.markdown(legend_html, unsafe_allow_html=True)
+        
+    with cRank:
+        # Title of Rank
+        st.markdown(f'''<div style="font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;">Top 5 Ô nhiễm ({time_range})</div>''', unsafe_allow_html=True)
+        
+        top_list_html = f'''<div style="display:flex; font-size:12px; font-weight:600; color:#64748b; padding-bottom: 10px; border-bottom: 2px solid rgba(148,163,184,0.1); margin-bottom: 12px; text-transform:uppercase;">
+            <div style="flex:4;">Địa điểm</div>
+            <div style="flex:3; text-align:center;">Trạng thái</div>
+            <div style="flex:2; text-align:right;">{poll_lbl}</div>
+        </div>'''
+        
+        # calculate Top 10 locations
+        top_locations = []
+        for loc_name, f_name in file_map.items():
+            if "Tổng quan" in loc_name or loc_name == tong_quan_lbl: continue
+            
+            try:
+                loc_df = load_tier2_data(folder_name, f_name)
+                if loc_df.empty or selected_poll_key not in loc_df.columns:
+                    continue
+                
+                loc_df_sub = loc_df[loc_df["timestamp"] >= min_d]
+                if loc_df_sub.empty: continue
+                
+                # Use mean value over the selected time range
+                metric_val = loc_df_sub[selected_poll_key].mean()
+                top_locations.append({
+                    "loc": loc_name,
+                    "val": metric_val
+                })
+            except Exception:
+                continue
+            
+        if top_locations:
+            top_df = pd.DataFrame(top_locations).sort_values(by="val", ascending=False).head(5)
+            for _, row in top_df.iterrows():
+                v = row["val"]
+                loc_name_full = row["loc"]
+                
+                lbl, c = val_meta(v, selected_poll_key)
+                str_v = f"{v:.0f}" if selected_poll_key == "aqi" else f"{v:.1f}"
+                
+                top_list_html += f'''<div style="display:flex; align-items:center; background-color: rgba(248,250,252,0.6); padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(148,163,184,0.15);">
+                     <div style="flex:4; font-size:13px; font-weight:600; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:8px;" title="{loc_name_full}">{loc_name_full}</div>
+                     <div style="flex:3; display:flex; justify-content:center;">
+                         <span style="background-color: {c}; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight:600; white-space:nowrap;">{lbl}</span>
+                     </div>
+                     <div style="flex:2; text-align:right; font-size:15px; font-weight:700; color:#0f172a;">{str_v}</div>
+                </div>'''
+        else:
+            top_list_html += '''<div style="color:#64748b; font-size:13px; font-style:italic; text-align:center; padding: 20px 0;">Không có dữ liệu trong khoảng thời gian này</div>'''
+
+        st.markdown(top_list_html, unsafe_allow_html=True)
+        
+        # Recommendations
+        advice_map = {
+            "Tốt": ("Không khí trong lành", "Lý tưởng cho các hoạt động ngoài trời. Bạn có thể thoải mái tận hưởng không khí.", "local_florist"),
+            "Vừa phải": ("Chất lượng ở mức chấp nhận được", "Những người quá nhạy cảm nên cân nhắc giảm bớt các hoạt động gắng sức ngoài trời.", "sentiment_neutral"),
+            "Không lành mạnh cho nhóm nhạy cảm": ("Ảnh hưởng tới nhóm nhạy cảm", "Trẻ em, người già và người bị bệnh hô hấp nên hạn chế hoạt động ngoài trời.", "masks"),
+            "Không khỏe mạnh": ("Bắt đầu ảnh hưởng sức khỏe", "Mọi người nên giảm hoạt động ngoài trời. Nhóm nhạy cảm nên ở trong nhà.", "warning"),
+            "Rất không tốt cho sức khỏe": ("Cảnh báo sức khỏe khẩn cấp", "Rất có hại cho sức khỏe. Tốt nhất nên ở trong nhà và đóng kín cửa sổ.", "error_outline"),
+            "Nguy hiểm": ("Báo động khẩn", "Nguy cơ cao về sức khỏe. Mọi người nên ở trong nhà và sử dụng máy lọc không khí.", "coronavirus")
+        }
+        
+        avg_selected = df_sub[y_col].mean()
+        avg_lbl, avg_c = val_meta(avg_selected, y_col)
+        
+        adv_title, adv_desc, adv_icon = advice_map.get(avg_lbl, ("Đang cập nhật", "Hệ thống đang kiểm tra mức độ an toàn...", "info"))
+        
+        adv_html = f'''
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+        <div style="margin-top: 1.5rem; background-color: {hex_rgba(avg_c, 0.08)}; border: 1px solid {hex_rgba(avg_c, 0.3)}; border-radius: 10px; padding: 14px;">
+            <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                <span class="material-symbols-rounded" style="color: {avg_c}; font-size: 20px; margin-right: 6px;">{adv_icon}</span>
+                <span style="color: {avg_c}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Khuyến cáo sức khỏe</span>
+            </div>
+            <div style="color: #0f172a; font-size: 14px; font-weight: 700; margin-bottom: 4px;">{adv_title}</div>
+            <div style="color: #475569; font-size: 13px; line-height: 1.5;">{adv_desc}</div>
+        </div>
+        '''
+        st.markdown(adv_html, unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
