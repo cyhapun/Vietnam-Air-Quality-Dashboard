@@ -124,3 +124,4 @@ __pycache__/
 *.py[cod]
 
 .agent
+.streamlit/
