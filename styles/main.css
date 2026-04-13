@@ -2672,107 +2672,50 @@ section.main [data-testid="stRadio"] label:has(input:checked) p {
     color: rgba(226, 232, 240, 0.9);
 }
 
-/* Segmented pill style for overview scope */
-div[data-testid="stSegmentedControl"] {
-    --seg-pill-bg: transparent;
-    --seg-pill-bd: transparent;
-}
-
-div[data-testid="stSegmentedControl"]>div {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    gap: 4px !important;
-    background: #eef3f9 !important;
-    border: 1px solid rgba(148, 163, 184, 0.35) !important;
-    border-radius: 999px !important;
-    padding: 6px !important;
-    box-shadow: inset 0 3px 8px rgba(15, 23, 42, 0.04) !important;
-}
-
-div[data-testid="stSegmentedControl"] button {
-    flex: 1;
-    border: 0 !important;
-    background: transparent !important;
-    border-radius: 999px !important;
-    min-height: 40px !important;
-    height: 40px !important;
-    margin: 0 !important;
-    padding: 0 16px !important;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-shadow: none !important;
-}
-
-div[data-testid="stSegmentedControl"] button p {
-    color: #64748b !important;
+/* Global Primary Button Color (Xanh lá/Xanh dương) */
+div[data-testid="stButton"] button[kind="primary"] {
+    background-color: #0ea5e9 !important; /* Xanh dương nhẹ nhàng */
+    color: white !important;
+    border-color: #0ea5e9 !important;
+    border-radius: 8px !important;
     font-weight: 600 !important;
-    font-size: 0.85rem !important;
-    margin: 0 !important;
-    line-height: 1 !important;
 }
 
-/* Active State targeting Streamlit segmented controls - handling all possible state attributes */
-div[data-testid="stSegmentedControl"] button[aria-pressed="true"],
-div[data-testid="stSegmentedControl"] button[aria-selected="true"],
-div[data-testid="stSegmentedControl"] button[aria-checked="true"],
-div[data-testid="stSegmentedControl"] button[data-pressed="true"],
-div[data-testid="stSegmentedControl"] button[data-selected="true"],
-div[data-testid="stSegmentedControl"] button[data-checked="true"] {
-    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
-    border: 1px solid rgba(14, 165, 233, 0.5) !important;
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.28) !important;
+div[data-testid="stButton"] button[kind="primary"]:hover {
+    background-color: #0284c7 !important;
+    border-color: #0284c7 !important;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25) !important;
 }
 
-div[data-testid="stSegmentedControl"] button[aria-pressed="true"] p,
-div[data-testid="stSegmentedControl"] button[aria-selected="true"] p,
-div[data-testid="stSegmentedControl"] button[aria-checked="true"] p,
-div[data-testid="stSegmentedControl"] button[data-pressed="true"] p,
-div[data-testid="stSegmentedControl"] button[data-selected="true"] p,
-div[data-testid="stSegmentedControl"] button[data-checked="true"] p {
-    color: #ffffff !important;
-    font-weight: 700 !important;
+div[data-testid="stButton"] button[kind="secondary"] {
+    border-radius: 8px !important;
+    border-color: rgba(148, 163, 184, 0.4) !important;
 }
 
-/* Fallback if Streamlit uses dynamic background color for active state (red/pink) we aggressively reset them */
-div[data-testid="stSegmentedControl"] button>div {
-    background: transparent !important;
-    border: none !important;
-}
-
-div[data-testid="stSegmentedControl"] button {
-    overflow: visible !important;
-}
-
-/* Selectbox matching style */
-div[data-testid="stSelectbox"]>div>div,
+/* Selectbox clean style */
 div[data-testid="stSelectbox"] [data-baseweb="select"] {
-    border-radius: 999px !important;
-    border: 1px solid rgba(148, 163, 184, 0.4) !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(148, 163, 184, 0.6) !important;
     background: #ffffff !important;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04) !important;
-    min-height: 54px !important;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05) !important;
+    min-height: 40px !important;
     align-items: center !important;
-    padding-left: 10px !important;
-    transition: all 0.25s ease !important;
+    padding-left: 8px !important;
+    transition: all 0.2s ease !important;
 }
 
-div[data-testid="stSelectbox"]>div>div:hover,
 div[data-testid="stSelectbox"] [data-baseweb="select"]:hover {
     border-color: #0ea5e9 !important;
-    box-shadow: 0 6px 20px rgba(14, 165, 233, 0.12) !important;
 }
 
-div[data-testid="stSelectbox"]>div:focus-within>div,
 div[data-testid="stSelectbox"] [data-baseweb="select"]:focus-within {
     border-color: #0ea5e9 !important;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2) !important;
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2) !important;
 }
 
-/* Also ensure the Selectbox inner parts don't clip the rounded borders badly */
 div[data-testid="stSelectbox"] [data-baseweb="select"]>div {
     background: transparent !important;
+    border: none !important;
 }
 
 @media (max-width: 1200px) {

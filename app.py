@@ -139,24 +139,18 @@ with tabs[0]:
     c_filter_mode, c_filter_target, c_filter_meta = st.columns([1.2, 1.6, 1.2], gap="small")
     with c_filter_mode:
         st.markdown("<div class='ov-filter-label'>Phạm vi</div>", unsafe_allow_html=True)
-        if hasattr(st, "segmented_control"):
-            scope_mode = st.segmented_control(
-                "Phạm vi tổng quan",
-                options=["Cả nước", "Theo tỉnh/thành"],
-                key="overview_scope_mode",
-                label_visibility="collapsed",
-                width="stretch",
-            )
-            if scope_mode is None:
-                scope_mode = st.session_state.get("overview_scope_mode", "Cả nước")
-        else:
-            scope_mode = st.radio(
-                "Phạm vi tổng quan",
-                options=["Cả nước", "Theo tỉnh/thành"],
-                key="overview_scope_mode",
-                horizontal=True,
-                label_visibility="collapsed",
-            )
+        if "overview_scope_mode" not in st.session_state:
+            st.session_state.overview_scope_mode = "Cả nước"
+
+        b1, b2 = st.columns(2, gap="small")
+        if b1.button("Cả nước", type="primary" if st.session_state.overview_scope_mode == "Cả nước" else "secondary", use_container_width=True):
+            st.session_state.overview_scope_mode = "Cả nước"
+            st.rerun()
+        if b2.button("Theo tỉnh/thành", type="primary" if st.session_state.overview_scope_mode == "Theo tỉnh/thành" else "secondary", use_container_width=True):
+            st.session_state.overview_scope_mode = "Theo tỉnh/thành"
+            st.rerun()
+            
+        scope_mode = st.session_state.overview_scope_mode
     selected_scope_label = "Việt Nam"
     with c_filter_target:
         if scope_mode == "Theo tỉnh/thành":
@@ -164,8 +158,9 @@ with tabs[0]:
             selected_province = st.selectbox(
                 "Chọn tỉnh/thành",
                 options=province_options,
+                index=None,
                 key="overview_scope_province",
-                placeholder="Chọn một tỉnh/thành",
+                placeholder="Vui lòng chọn tỉnh thành",
                 label_visibility="collapsed",
             )
             if selected_province:
@@ -178,6 +173,8 @@ with tabs[0]:
                 except Exception:
                     overview_df = overview_df[overview_df[province_col] == selected_province].copy()
                 selected_scope_label = selected_province
+            else:
+                overview_df = overview_df.iloc[0:0] 
         else:
             st.markdown("<div style='height:26px'></div>", unsafe_allow_html=True)
     with c_filter_meta:
