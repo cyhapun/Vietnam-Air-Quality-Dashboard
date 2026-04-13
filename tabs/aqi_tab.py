@@ -267,6 +267,7 @@ def render(global_df):
         </div>
     </div>
 </div>''', unsafe_allow_html=True)
+    has_envelope = False
     # Tối giản số điểm dữ liệu cho view lớn để tránh bị chèn ép biểu đồ
     if len(df_sub) > 50:
         rule_map = {
@@ -278,31 +279,200 @@ def render(global_df):
         }
         rule = rule_map.get(time_range)
         if rule:
-            df_sub = df_sub.set_index("timestamp").resample(rule).mean(numeric_only=True).dropna().reset_index()
+            if chart_type == "Đường (Spline)":
+                # Nhóm dữ liệu để vẽ Band bao phủ (Envelope) Min/Max và đường trung tâm (Mean)
+                grouped = df_sub.set_index("timestamp").resample(rule)[y_col]
+                
+                df_mean = grouped.mean().dropna().reset_index()
+                df_max_env = grouped.max().dropna().reset_index()
+                df_min_env = grouped.min().dropna().reset_index()
+                
+                # Biến df_sub thành bảng chứa điểm trung bình để vẽ line chính
+                df_sub = df_mean
+                # Add columns for envelope hover tooltips
+                df_sub["env_max"] = df_max_env[y_col].values
+                df_sub["env_min"] = df_min_env[y_col].values
+                has_envelope = True
+            else:
+                # Bar Chart vần trục thời gian chia khoảng Đều (Uniform) để các cột được tính toán chiều ngang to rõ ràng
+                # Ta vẫn dùng .max() để nhặt ra mốc ô nhiễm nặng nhất, không lo bị chà phẳng
+                df_sub = df_sub.set_index("timestamp").resample(rule)[[y_col]].max().dropna().reset_index()
 
     # Prepare array colors & labels for Plotly based on selected pollutant scale
     df_sub["clr"] = df_sub[y_col].apply(lambda x: val_meta(x, y_col)[1])
     df_sub["lbl"] = df_sub[y_col].apply(lambda x: val_meta(x, y_col)[0])
     
+    # Clean unit string for tooltips to avoid empty parentheses
+    clean_unit = y_unit.strip()
+    u_suffix = f" {clean_unit}" if clean_unit else ""
+    
+    if has_envelope:
+        df_sub["env_max_clr"] = df_sub["env_max"].apply(lambda x: val_meta(x, y_col)[1])
+        df_sub["env_min_clr"] = df_sub["env_min"].apply(lambda x: val_meta(x, y_col)[1])
+
     # Calculate overall average color for the line chart
     avg_val = df_sub[y_col].mean()
     _, avg_color = val_meta(avg_val, y_col)
 
     fig = go.Figure()
     if chart_type == "Đường (Spline)":
+        if has_envelope:
+            # Trace 1: Draw Lower Bound Line purely for visual (NO HOVER)
+            fig.add_trace(go.Scatter(
+                x=df_sub["timestamp"],
+                y=df_sub["env_min"],
+                mode="lines",
+                line=dict(width=1, color="rgba(148, 163, 184, 0.4)", shape="spline", smoothing=1),
+                hoverinfo="skip",
+                showlegend=False
+            ))
+            
+            # Trace 2: Draw Upper Bound Line purely to fill shading down to Trace 1 (NO HOVER)
+            fig.add_trace(go.Scatter(
+                x=df_sub["timestamp"],
+                y=df_sub["env_max"],
+                mode="lines",
+                line=dict(width=1, color="rgba(148, 163, 184, 0.4)", shape="spline", smoothing=1),
+                fill="tonexty", 
+                fillcolor="rgba(148, 163, 184, 0.15)",
+                hoverinfo="skip",
+                showlegend=False
+            ))
+
+        x_vals = df_sub["timestamp"].tolist()
+        y_vals = df_sub[y_col].tolist()
+        c_vals = df_sub["clr"].tolist()
+        # customdata: [label, color]
+        cd_vals = df_sub[["lbl", "clr"]].values.tolist()
+
+        bands = POLL_BANDS.get(y_col, POLL_BANDS["aqi"])
+        base_colors = [col for _,_,_,col in AQI_DEF]
+        
+        def get_color_score(val):
+            for i in range(len(bands)):
+                hi = bands[i][1]
+                if hi == np.inf or hi is None or hi > 9999: hi = bands[i][0] * 1.5
+                if val <= hi:
+                    lo = bands[i-1][1] if i > 0 else bands[i][0]
+                    frac = (val - lo)/(hi - lo) if hi > lo else 0
+                    return i + max(0, frac)
+            return len(bands) - 1.0
+            
+        def get_gradient_color(val):
+            score = get_color_score(val)
+            score = max(0, min(len(base_colors)-1.0, score))
+            idx = int(score)
+            if idx >= len(base_colors) - 1: return base_colors[-1]
+            c1, c2 = base_colors[idx], base_colors[idx+1]
+            t = score - idx
+            def hex_to_rgb(h): return tuple(int(h.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+            r1, g1, b1 = hex_to_rgb(c1)
+            r2, g2, b2 = hex_to_rgb(c2)
+            r = int(r1 + (r2 - r1)*t)
+            g = int(g1 + (g2 - g1)*t)
+            b = int(b1 + (b2 - b1)*t)
+            return f"#{r:02x}{g:02x}{b:02x}"
+
+        # Smoothing using pchip for gradient spline Effect
+        try:
+            from scipy.interpolate import pchip_interpolate
+            df_unique = df_sub.drop_duplicates(subset=["timestamp"]).sort_values("timestamp")
+            if len(df_unique) > 3:
+                x_num = df_unique["timestamp"].astype('int64').values
+                y_arr = df_unique[y_col].values
+                
+                # Biểu đồ PCHIP mượt mà, kẹp chặt đỉnh và đáy để không miss tín hiệu
+                base_grid = np.linspace(x_num.min(), x_num.max(), max(1000, len(x_num)))
+                x_interp_num = np.union1d(base_grid, x_num)
+                y_interp = pchip_interpolate(x_num, y_arr, x_interp_num)
+                x_interp = pd.to_datetime(x_interp_num, unit='ns')
+            else:
+                x_interp, y_interp = x_vals, y_vals
+        except Exception:
+            x_interp, y_interp = x_vals, y_vals
+
+        # Group line segments by color to completely bypass Plotly's DOM limits
+        color_traces = {}
+        for i in range(len(x_interp)-1):
+            avg_y = (y_interp[i] + y_interp[i+1]) / 2.0
+            h_color = get_gradient_color(avg_y)
+            if h_color not in color_traces:
+                color_traces[h_color] = {"x": [], "y": []}
+            color_traces[h_color]["x"].extend([x_interp[i], x_interp[i+1], None])
+            color_traces[h_color]["y"].extend([y_interp[i], y_interp[i+1], None])
+            
+        for h_color, data in color_traces.items():
+            fig.add_trace(go.Scatter(
+                x=data["x"],
+                y=data["y"],
+                mode="lines",
+                showlegend=False,
+                hoverinfo="skip",
+                line=dict(color=h_color, width=3.5)
+            ))
+            
+        # Reactive Hover Layers (Segmented by color for dots & text coloring)
+        if has_envelope:
+            # Min Hover Segments
+            min_segs = []
+            if not df_sub.empty:
+                cur_s = {"clr": df_sub["env_min_clr"].iloc[0], "x": [], "y": []}
+                for i in range(len(df_sub)):
+                    c = df_sub["env_min_clr"].iloc[i]
+                    if c != cur_s["clr"]:
+                        min_segs.append(cur_s)
+                        cur_s = {"clr": c, "x": [], "y": []}
+                    cur_s["x"].append(df_sub["timestamp"].iloc[i])
+                    cur_s["y"].append(df_sub["env_min"].iloc[i])
+                min_segs.append(cur_s)
+
+                for s in min_segs:
+                    fig.add_trace(go.Scatter(
+                        x=s["x"], y=s["y"],
+                        name="Tối thiểu",
+                        mode="lines",
+                        line=dict(width=0.1, color=s["clr"]), # Very thin colored line -> triggers colored dot
+                        hovertemplate=f"<span style='color:{s['clr']}'><b>Tối thiểu</b></span>: %{{y:.1f}}{u_suffix}<extra></extra>",
+                        showlegend=False
+                    ))
+
+        t_name = "Trung bình" if has_envelope else "Chỉ số"
+        # Mean markers trace (always visible)
         fig.add_trace(go.Scatter(
-            x=df_sub["timestamp"],
-            y=df_sub[y_col],
-            mode="lines+markers",
-            line=dict(color=avg_color, width=5.0, shape="spline", smoothing=1),
-            marker=dict(size=7, color=df_sub["clr"], line=dict(width=1, color="#fff")),
-            hovertemplate=(
-                "<b>%{x|%H:%M, %d %b %Y}</b><br>"
-                f"{poll_lbl}: <b>%{{y:.1f}}{y_unit}</b><br>"
-                "Phân loại: %{customdata[0]}<extra></extra>"
-            ),
-            customdata=df_sub[["lbl"]]
+            x=x_vals,
+            y=y_vals,
+            name=t_name,
+            mode="markers",
+            marker=dict(size=6, color=c_vals, opacity=1.0, line=dict(width=1, color="#fff")),
+            showlegend=False,
+            # Format: <text>: <value>, with colored text
+            hovertemplate=f"<span style='color:%{{customdata[1]}}'><b>{t_name}</b></span>: %{{y:.1f}}{u_suffix}<extra></extra>",
+            customdata=cd_vals
         ))
+        
+        if has_envelope:
+            # Max Hover Segments
+            max_segs = []
+            if not df_sub.empty:
+                cur_s = {"clr": df_sub["env_max_clr"].iloc[0], "x": [], "y": []}
+                for i in range(len(df_sub)):
+                    c = df_sub["env_max_clr"].iloc[i]
+                    if c != cur_s["clr"]:
+                        max_segs.append(cur_s)
+                        cur_s = {"clr": c, "x": [], "y": []}
+                    cur_s["x"].append(df_sub["timestamp"].iloc[i])
+                    cur_s["y"].append(df_sub["env_max"].iloc[i])
+                max_segs.append(cur_s)
+
+                for s in max_segs:
+                    fig.add_trace(go.Scatter(
+                        x=s["x"], y=s["y"],
+                        name="Tối đa",
+                        mode="lines",
+                        line=dict(width=0.1, color=s["clr"]), # Very thin colored line -> triggers colored dot
+                        hovertemplate=f"<span style='color:{s['clr']}'><b>Tối đa</b></span>: %{{y:.1f}}{u_suffix}<extra></extra>",
+                        showlegend=False
+                    ))
     else:
         fig.add_trace(go.Bar(
             x=df_sub["timestamp"],
@@ -310,18 +480,15 @@ def render(global_df):
             marker_color=df_sub["clr"],
             marker_line=dict(width=1, color="#fff"),
             opacity=0.9,
-            hovertemplate=(
-                "<b>%{x|%H:%M, %d %b %Y}</b><br>"
-                f"{poll_lbl}: <b>%{{y:.1f}}{y_unit}</b><br>"
-                "Phân loại: %{customdata[0]}<extra></extra>"
-            ),
-            customdata=df_sub[["lbl"]]
+            hovertemplate=f"<span style='color:%{{customdata[1]}}'><b>Chỉ số</b></span>: %{{y:.1f}}{u_suffix}<extra></extra>",
+            customdata=cd_vals
         ))
 
+    fig.update_layout(hovermode="x")
     ml(
         fig,
         h=420,
-        xaxis=dict(**ax(), tickformat="%H:%M\n%d/%m", hoverformat="%H:%M"),
+        xaxis=dict(**ax(), tickformat="%H:%M\n%d/%m", hoverformat="%H:%M, %d %b %Y", showspikes=True, spikemode="across", spikesnap="data", showline=True, spikedash="dash", spikethickness=1, spikecolor="#94a3b8"),
         yaxis=dict(**ax(f"{poll_lbl}{y_unit}")),
         margin=dict(l=10, r=10, t=20, b=10)
     )
