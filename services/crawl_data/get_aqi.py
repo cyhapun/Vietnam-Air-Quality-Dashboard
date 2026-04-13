@@ -14,8 +14,8 @@ from tqdm import tqdm
 
 START_DATE = "2025-01-01"
 END_DATE = (date.today() - timedelta(days=5)).strftime("%Y-%m-%d")
-LOCATION_DIR = "../../data/location"
-OUTPUT_DIR = "../../data/aqi" 
+LOCATION_DIR = "./data/location"
+OUTPUT_DIR = "./data/aqi" 
 
 session = requests.Session()
 retries = Retry(
