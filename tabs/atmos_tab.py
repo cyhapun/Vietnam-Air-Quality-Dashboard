@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -76,7 +76,7 @@ def _render_button_group(options, state_key, prefix):
             opt,
             key=f"{prefix}_{idx}",
             type="primary" if is_active else "secondary",
-            use_container_width=True,
+            width="stretch",
         ):
             st.session_state[state_key] = opt
 
@@ -363,7 +363,7 @@ def render(df):
                 x=1.01,
             ),
         )
-        st.plotly_chart(fig_w, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig_w, width="stretch", config={"displayModeBar": False})
         st.markdown("</div>", unsafe_allow_html=True)
 
     with c2:
@@ -405,7 +405,7 @@ def render(df):
             )
             st.plotly_chart(
                 fig_rr,
-                use_container_width=True,
+                width="stretch",
                 config={"displayModeBar": False},
             )
         st.markdown("</div>", unsafe_allow_html=True)
@@ -472,7 +472,7 @@ def render(df):
                     x=0,
                 ),
             )
-            st.plotly_chart(fig_tr, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig_tr, width="stretch", config={"displayModeBar": False})
         st.markdown("</div>", unsafe_allow_html=True)
 
     with c4:
@@ -499,7 +499,7 @@ def render(df):
             )
         )
         ml_fn(fig_dn, h=300, margin=dict(l=4, r=4, t=12, b=2), showlegend=False)
-        st.plotly_chart(fig_dn, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig_dn, width="stretch", config={"displayModeBar": False})
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown(
@@ -524,5 +524,5 @@ def render(df):
         if c in table_df.columns:
             table_df[c] = table_df[c].round(1)
 
-    st.dataframe(table_df.head(40), use_container_width=True, hide_index=True)
+    st.dataframe(table_df.head(40), width="stretch", hide_index=True)
     st.markdown("</div>", unsafe_allow_html=True)

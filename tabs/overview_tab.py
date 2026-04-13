@@ -242,7 +242,7 @@ def render(df):
                     label,
                     key=f"ov_p_{label}",
                     type="primary" if is_active else "secondary",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     st.session_state["ov_trend_period"] = label
                     st.rerun()
