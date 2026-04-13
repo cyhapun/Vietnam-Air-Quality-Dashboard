@@ -8,7 +8,6 @@ from services.crawl_data.get_forecast import run_forecast_update
 
 from components.footer import render_footer
 from components.header import render_header
-from components.overview import render_overview
 from components.sidebar import render_sidebar
 from services.data_loader import load_data
 from tabs import overview_tab, location_tab, datetime_tab, atmos_tab, aqi_tab, weather_tab, interaction_tab
@@ -137,33 +136,27 @@ with tabs[0]:
     province_options = sorted(overview_df[province_col].dropna().astype(str).unique().tolist())
     if "overview_scope_mode" not in st.session_state:
         st.session_state["overview_scope_mode"] = "Cả nước"
-
-    st.markdown('<div class="ov-filter-shell">', unsafe_allow_html=True)
-    c_filter_mode, c_filter_target, c_filter_meta = st.columns([1.25, 1.8, 1.0], gap="small")
+    c_filter_mode, c_filter_target, c_filter_meta = st.columns([1.2, 1.6, 1.2], gap="small")
     with c_filter_mode:
-        st.markdown(
-            "<div class='ov-filter-label'>Phạm vi</div>",
-            unsafe_allow_html=True,
-        )
-        b1, b2 = st.columns(2, gap="small")
-        with b1:
-            if st.button(
-                "Cả nước",
-                key="ov_scope_btn_nation",
-                type="primary" if st.session_state["overview_scope_mode"] == "Cả nước" else "secondary",
+        st.markdown("<div class='ov-filter-label'>Phạm vi</div>", unsafe_allow_html=True)
+        if hasattr(st, "segmented_control"):
+            scope_mode = st.segmented_control(
+                "Phạm vi tổng quan",
+                options=["Cả nước", "Theo tỉnh/thành"],
+                key="overview_scope_mode",
+                label_visibility="collapsed",
                 width="stretch",
-            ):
-                st.session_state["overview_scope_mode"] = "Cả nước"
-        with b2:
-            if st.button(
-                "Tỉnh/thành",
-                key="ov_scope_btn_province",
-                type="primary" if st.session_state["overview_scope_mode"] == "Theo tỉnh/thành" else "secondary",
-                width="stretch",
-            ):
-                st.session_state["overview_scope_mode"] = "Theo tỉnh/thành"
-
-    scope_mode = st.session_state["overview_scope_mode"]
+            )
+            if scope_mode is None:
+                scope_mode = st.session_state.get("overview_scope_mode", "Cả nước")
+        else:
+            scope_mode = st.radio(
+                "Phạm vi tổng quan",
+                options=["Cả nước", "Theo tỉnh/thành"],
+                key="overview_scope_mode",
+                horizontal=True,
+                label_visibility="collapsed",
+            )
     selected_scope_label = "Việt Nam"
     with c_filter_target:
         if scope_mode == "Theo tỉnh/thành":
@@ -176,34 +169,34 @@ with tabs[0]:
                 label_visibility="collapsed",
             )
             if selected_province:
-                overview_df = overview_df[overview_df[province_col] == selected_province].copy()
+                try:
+                    from services.data_loader import load_province_detail, _apply_aqi_labels
+                    s_arg = str(state["s_d"]) if "s_d" in state else None
+                    e_arg = str(state["e_d"]) if "e_d" in state else None
+                    detail_raw = load_province_detail(selected_province, s_arg, e_arg)
+                    overview_df = _apply_aqi_labels(detail_raw.copy())
+                except Exception:
+                    overview_df = overview_df[overview_df[province_col] == selected_province].copy()
                 selected_scope_label = selected_province
         else:
-            st.markdown(
-                """
-                <div class="ov-filter-placeholder">
-                    Đang hiển thị dữ liệu tổng hợp toàn quốc.
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            st.markdown("<div style='height:26px'></div>", unsafe_allow_html=True)
     with c_filter_meta:
         st.markdown(
             f"""
-            <div class="ov-filter-meta">
-                <div class="ov-filter-meta-k">Phạm vi đang xem</div>
-                <div class="ov-filter-meta-v">{selected_scope_label}</div>
-                <div class="ov-filter-meta-sub">{len(overview_df):,} bản ghi</div>
+            <div class="ov-filter-meta-dark">
+                <div class="ov-filter-meta-dark-k">PHẠM VI ĐANG XEM</div>
+                <div class="ov-filter-meta-dark-v">{selected_scope_label}</div>
+                <div class="ov-filter-meta-dark-sub">{len(overview_df):,} bản ghi</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-    st.markdown("</div>", unsafe_allow_html=True)
-
     if overview_df.empty:
         st.info("Không có dữ liệu cho phạm vi đã chọn.")
     else:
-        render_overview(state, df_override=overview_df, scope_label=selected_scope_label)
+        overview_tab.render_overview(
+            state, df_override=overview_df, scope_label=selected_scope_label
+        )
         render_tab_or_blank(overview_tab, overview_df)
 with tabs[1]:
     render_tab_or_blank(location_tab, state["df"])

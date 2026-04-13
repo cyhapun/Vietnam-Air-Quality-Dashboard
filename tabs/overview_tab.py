@@ -18,7 +18,7 @@ def _build_scope_metrics(df, state):
     _aqi_meta = state["aqi_meta"]
     _aqi_health_guidance = state["aqi_health_guidance"]
     _fmt_delta = state["fmt_delta"]
-    city_col = "province" if "province" in df.columns else "city"
+    city_col = "city" if "city" in df.columns else "province"
     city_aqi_mean = (
         df.groupby(city_col)["aqi"].mean().sort_values(ascending=False)
         if city_col in df.columns
