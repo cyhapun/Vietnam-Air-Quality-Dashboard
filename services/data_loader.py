@@ -10,6 +10,7 @@ import streamlit as st
 from utils.helpers import AQI_DEF
 
 
+<<<<<<< Updated upstream
 PREFERRED_COLUMNS = [
     "timestamp",
     "city",
@@ -123,6 +124,49 @@ def _postprocess_df(df: pd.DataFrame) -> pd.DataFrame:
 
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
     df = df[df["timestamp"].notna()].copy()
+=======
+@st.cache_data(ttl=3600)
+def _load_raw():
+    """Load and parse raw CSV data (cached). Label columns are added later."""
+    import glob
+    base = os.path.dirname(__file__)
+
+    data_dir = os.path.join(base, "..", "data", "aqi")
+    if not os.path.exists(data_dir):
+        data_dir = os.path.join(base, "data", "aqi")
+    if not os.path.exists(data_dir):
+        data_dir = os.path.join(base, "aqi")
+
+    if not os.path.exists(data_dir):
+        st.error("Không tìm thấy thư mục 'data/aqi'")
+        st.stop()
+
+    all_files = glob.glob(os.path.join(data_dir, "**", "all.csv"), recursive=True)
+
+    if not all_files:
+        st.error(f"Không tìm thấy file CSV nào trong thư mục {data_dir}")
+        st.stop()
+
+    df_list = []
+    for p in all_files:
+        try:
+            temp_df = pd.read_csv(p)
+            if not temp_df.empty:
+                df_list.append(temp_df)
+        except Exception as e:
+            print(f"Lỗi đọc file {p}: {e}")
+
+    if not df_list:
+        st.error("Không có file CSV nào chứa dữ liệu hợp lệ.")
+        st.stop()
+
+    df = pd.concat(df_list, ignore_index=True)
+
+    if "province" in df.columns and "location" in df.columns:
+        df["city"] = df["province"] + " - " + df["location"]
+    elif "province" in df.columns:
+        df["city"] = df["province"]
+>>>>>>> Stashed changes
 
     df["date_ts"] = df["timestamp"].dt.normalize()
     df["date"] = df["date_ts"].dt.date
@@ -131,15 +175,6 @@ def _postprocess_df(df: pd.DataFrame) -> pd.DataFrame:
     df["dow"] = df["timestamp"].dt.dayofweek
     df["is_weekend"] = df["dow"] >= 5
     df["is_raining"] = df["rain"] > 0
-
-    aqi_labels = [x[2] for x in AQI_DEF]
-    df["aqi_lbl"] = pd.cut(
-        df["aqi"],
-        bins=[-np.inf, 50, 100, 150, 200, 300, np.inf],
-        labels=aqi_labels,
-        include_lowest=True,
-    ).fillna(AQI_DEF[-1][2])
-    df["band"] = df["aqi_lbl"]
 
     slot_labels = ["Đêm (0–6h)", "Sáng (6–12h)", "Chiều (12–18h)", "Tối (18–24h)"]
     df["time_slot"] = pd.cut(
@@ -157,6 +192,7 @@ def _postprocess_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+<<<<<<< Updated upstream
 @st.cache_data(ttl=3600, show_spinner=False)
 def _province_name_slug_map() -> dict[str, str]:
     base = os.path.dirname(__file__)
@@ -300,7 +336,22 @@ def load_province_detail(
 
     return _postprocess_df(pd.concat(df_list, ignore_index=True))
 
+=======
+def load_data():
+    """Return data with AQI labels always matching current AQI_DEF."""
+    df = _load_raw().copy()
+    aqi_labels = [x[2] for x in AQI_DEF]
+    df["aqi_lbl"] = pd.cut(
+        df["aqi"],
+        bins=[-np.inf, 50, 100, 150, 200, 300, np.inf],
+        labels=aqi_labels,
+        include_lowest=True,
+    ).fillna(AQI_DEF[-1][2])
+    df["band"] = df["aqi_lbl"]
+    return df
+
+
+>>>>>>> Stashed changes
 @st.cache_data(show_spinner=False)
 def to_csv_bytes(frame: pd.DataFrame) -> bytes:
     return frame.to_csv(index=False).encode("utf-8-sig")
-

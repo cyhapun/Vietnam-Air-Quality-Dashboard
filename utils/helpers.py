@@ -60,14 +60,6 @@ def apply_colorblind(on: bool):
     else:
         AQI_DEF[:] = AQI_DEF_NORMAL
         POLLS.update(POLLS_NORMAL)
-AQI_DEF = [
-    (0,   50,  "Tốt",        "#10b981"),
-    (51,  100, "Trung bình", "#eab308"),
-    (101, 150, "Kém",        "#f97316"),
-    (151, 200, "Xấu",        "#ef4444"),
-    (201, 300, "Rất xấu",    "#a855f7"),
-    (301, 500, "Nguy hại",   "#9f1239"),
-]
 
 POLL_BANDS = {
     "aqi":   [(0, 50), (51, 100), (101, 150), (151, 200), (201, 300), (301, 500)],
