@@ -39,10 +39,10 @@ def start_crawler_thread():
         try:
             print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler đang chạy ngầm...")
             # Bước 1: Cào dữ liệu mới cho từng trạm (Batch API)
-            run_hourly_update()
+            # run_hourly_update()
             
             # Bước 2: Tính toán lại giá trị đại diện (Mean/Mode) cho từng tỉnh thành
-            run_province_aggregation()
+            # run_province_aggregation()
 
             # 3. Cập nhật dữ liệu Dự báo (Forecast tương lai)
             run_forecast_update()
