@@ -41,7 +41,7 @@ def clean_and_format_lf(file_path):
     lf = pl.scan_csv(file_path, infer_schema_length=0)
     lf = lf.rename(rename_dict)
     
-    # --- SỬA TẠI ĐÂY: Lấy schema một lần duy nhất ---
+    # --- Lấy schema một lần duy nhất ---
     current_columns = lf.collect_schema().names() 
     
     # Chỉ chọn các cột có trong TARGET_SCHEMA
@@ -51,7 +51,7 @@ def clean_and_format_lf(file_path):
     # Ép kiểu và thêm các cột còn thiếu
     expressions = []
     for col_name, dtype in TARGET_SCHEMA.items():
-        # --- SỬA TẠI ĐÂY: Kiểm tra trong biến current_columns đã lấy ở trên ---
+        # --- Kiểm tra trong biến current_columns đã lấy ở trên ---
         if col_name in current_columns:
             expressions.append(pl.col(col_name).cast(dtype, strict=False))
         else:
@@ -104,7 +104,7 @@ def run_province_aggregation():
         print(f"✅ Đã cập nhật: {output_file}")
 
 def process_data():
-    provinces = [d for d in root_dir.iterdir() if d.is_dir()]
+    provinces = [d for d in ROOT_DIR.iterdir() if d.is_dir()]
 
     for province_path in provinces:
         print(f"🚀 Đang xử lý tỉnh: {province_path.name}")
