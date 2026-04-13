@@ -1,5 +1,7 @@
 import streamlit as st
-
+import threading
+import time
+from services.crawl_data.get_aqi_hourly import run_hourly_update 
 from components.footer import render_footer
 from components.header import render_header
 from components.overview import render_overview
@@ -27,6 +29,29 @@ from utils.helpers import (
     rank_rows_html,
 )
 
+# Hàm chạy ngầm để lập lịch
+def start_crawler_thread():
+    time.sleep(10)
+    while True:
+        try:
+            print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler đang chạy ngầm...")
+            run_hourly_update()
+        except Exception as e:
+            print(f"❌ Lỗi crawler: {e}")
+        
+        # Ngủ 1 tiếng (3610 giây) rồi chạy tiếp (chừa 10s để API cập nhật dữ liệu tránh lỗi)
+        time.sleep(3610) 
+
+# Sử dụng decorator cache để đảm bảo thread này CHỈ KHỞI TẠO 1 LẦN 
+# ngay cả khi Streamlit rerun (do user thao tác trên web)
+@st.cache_resource
+def initialize_background_tasks():
+    thread = threading.Thread(target=start_crawler_thread, daemon=True)
+    thread.start()
+    return "Crawler started"
+
+# Gọi hàm khởi tạo
+initialize_background_tasks()
 
 st.set_page_config(
     layout="wide",
