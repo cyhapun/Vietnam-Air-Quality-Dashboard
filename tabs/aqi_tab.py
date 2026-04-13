@@ -81,13 +81,6 @@ def render(global_df):
         
     c1, c2, c3, c4, c5 = st.columns([1.6, 1.6, 1.2, 1.0, 1.0])
     
-    def on_city_change():
-        new_city = st.session_state["aqi_city_select"]
-        st.session_state["aqi_selected_city"] = new_city
-        st.session_state["aqi_selected_tier2"] = f"Tổng quan ({new_city})"
-        if "aqi_tier2_select" in st.session_state:
-            del st.session_state["aqi_tier2_select"]
-
     with c1:
         # Safe fallback for index
         idx_city = 0
@@ -98,9 +91,14 @@ def render(global_df):
             "Thành phố / Tỉnh", 
             options=cities, 
             index=idx_city,
-            key="aqi_city_select",
-            on_change=on_city_change
+            key="aqi_city_select"
         )
+        
+        if selected_city != st.session_state.get("aqi_selected_city"):
+            st.session_state["aqi_city_version"] = st.session_state.get("aqi_city_version", 0) + 1
+            st.session_state["aqi_selected_city"] = selected_city
+            st.session_state["aqi_selected_tier2"] = f"Tổng quan ({selected_city})"
+            st.rerun()
 
     # Locate Tier 2 units dynamically
     folder_name = CITY_FOLDERS.get(selected_city, "ho_chi_minh")
@@ -129,20 +127,21 @@ def render(global_df):
     # Reset tier2 selection if not found
     if st.session_state["aqi_selected_tier2"] not in tier2_options:
         st.session_state["aqi_selected_tier2"] = tier2_options[0]
-        if "aqi_tier2_select" in st.session_state:
-            del st.session_state["aqi_tier2_select"]
-            
-    def on_tier2_change():
-        st.session_state["aqi_selected_tier2"] = st.session_state["aqi_tier2_select"]
 
     with c2:
+        v = st.session_state.get("aqi_city_version", 0)
+        widget_key = f"aqi_tier2_select_{selected_city}_{v}"
+        
         selected_tier2 = st.selectbox(
             "Đơn vị (Huyện/Xã/Phường)", 
             options=tier2_options,
             index=tier2_options.index(st.session_state["aqi_selected_tier2"]),
-            key="aqi_tier2_select",
-            on_change=on_tier2_change
+            key=widget_key
         )
+        
+        if selected_tier2 != st.session_state.get("aqi_selected_tier2"):
+            st.session_state["aqi_selected_tier2"] = selected_tier2
+            st.rerun()
 
     with c3:
         # Use native segmented_control with Material Icons style if supported
