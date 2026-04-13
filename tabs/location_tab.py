@@ -168,7 +168,24 @@ def _build_region_token_map() -> dict[str, str]:
 def _attach_region(frame: pd.DataFrame) -> pd.DataFrame:
     out = frame.copy()
     p2r = _build_region_token_map()
-    token = out["province"].astype(str).map(_normalize_token)
+
+    source_col = None
+    if "province" in out.columns:
+        source_col = "province"
+    elif "city" in out.columns:
+        source_col = "city"
+    elif "location" in out.columns:
+        source_col = "location"
+
+    if source_col is None:
+        out["province"] = "Không rõ"
+        out["region_7"] = "Chưa xếp vùng"
+        return out
+
+    if "province" not in out.columns:
+        out["province"] = out[source_col].astype(str)
+
+    token = out[source_col].astype(str).map(_normalize_token)
     token = token.map(lambda t: PROVINCE_TOKEN_ALIAS.get(t, t))
     out["region_7"] = token.map(p2r).fillna("Chưa xếp vùng")
     return out
