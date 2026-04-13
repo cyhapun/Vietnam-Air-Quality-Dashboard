@@ -5,7 +5,7 @@ from components.header import render_header
 from components.overview import render_overview
 from components.sidebar import render_sidebar
 from services.data_loader import load_data
-from tabs import overview_tab, location_tab, datetime_tab, atmos_tab
+from tabs import overview_tab, location_tab, datetime_tab, atmos_tab, aqi_tab
 from utils.css import inject_css
 from utils.helpers import (
     AQI_DEF,
@@ -88,6 +88,7 @@ tabs = st.tabs(
         "Ví Trí",
         "Thời Gian",
         "Khí Tượng & Môi Trường",
+        "AQI",
     ]
 )
 
@@ -99,5 +100,7 @@ with tabs[2]:
     render_tab_or_blank(datetime_tab, state["df"])
 with tabs[3]:
     render_tab_or_blank(atmos_tab, state["df"])
+with tabs[4]:
+    render_tab_or_blank(aqi_tab, state["df"])
 
 render_footer()
