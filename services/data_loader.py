@@ -10,7 +10,6 @@ import streamlit as st
 from utils.helpers import AQI_DEF
 
 
-<<<<<<< Updated upstream
 PREFERRED_COLUMNS = [
     "timestamp",
     "city",
@@ -124,49 +123,6 @@ def _postprocess_df(df: pd.DataFrame) -> pd.DataFrame:
 
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
     df = df[df["timestamp"].notna()].copy()
-=======
-@st.cache_data(ttl=3600)
-def _load_raw():
-    """Load and parse raw CSV data (cached). Label columns are added later."""
-    import glob
-    base = os.path.dirname(__file__)
-
-    data_dir = os.path.join(base, "..", "data", "aqi")
-    if not os.path.exists(data_dir):
-        data_dir = os.path.join(base, "data", "aqi")
-    if not os.path.exists(data_dir):
-        data_dir = os.path.join(base, "aqi")
-
-    if not os.path.exists(data_dir):
-        st.error("Không tìm thấy thư mục 'data/aqi'")
-        st.stop()
-
-    all_files = glob.glob(os.path.join(data_dir, "**", "all.csv"), recursive=True)
-
-    if not all_files:
-        st.error(f"Không tìm thấy file CSV nào trong thư mục {data_dir}")
-        st.stop()
-
-    df_list = []
-    for p in all_files:
-        try:
-            temp_df = pd.read_csv(p)
-            if not temp_df.empty:
-                df_list.append(temp_df)
-        except Exception as e:
-            print(f"Lỗi đọc file {p}: {e}")
-
-    if not df_list:
-        st.error("Không có file CSV nào chứa dữ liệu hợp lệ.")
-        st.stop()
-
-    df = pd.concat(df_list, ignore_index=True)
-
-    if "province" in df.columns and "location" in df.columns:
-        df["city"] = df["province"] + " - " + df["location"]
-    elif "province" in df.columns:
-        df["city"] = df["province"]
->>>>>>> Stashed changes
 
     df["date_ts"] = df["timestamp"].dt.normalize()
     df["date"] = df["date_ts"].dt.date
@@ -192,7 +148,19 @@ def _load_raw():
     return df
 
 
-<<<<<<< Updated upstream
+def _apply_aqi_labels(df: pd.DataFrame) -> pd.DataFrame:
+    """Add aqi_lbl/band columns using current AQI_DEF (never cached)."""
+    aqi_labels = [x[2] for x in AQI_DEF]
+    df["aqi_lbl"] = pd.cut(
+        df["aqi"],
+        bins=[-np.inf, 50, 100, 150, 200, 300, np.inf],
+        labels=aqi_labels,
+        include_lowest=True,
+    ).fillna(AQI_DEF[-1][2])
+    df["band"] = df["aqi_lbl"]
+    return df
+
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def _province_name_slug_map() -> dict[str, str]:
     base = os.path.dirname(__file__)
@@ -230,7 +198,6 @@ def list_detail_provinces() -> list[str]:
         if names:
             return sorted(set(names))
 
-    # Fallback from folder names if location mapping is unavailable.
     aqi_dir = _resolve_aqi_dir(base)
     if not aqi_dir:
         return []
@@ -244,38 +211,39 @@ def list_detail_provinces() -> list[str]:
 
 
 @st.cache_data(ttl=3600)
-def load_data() -> pd.DataFrame:
+def _load_raw() -> pd.DataFrame:
+    """Load + postprocess (cached). AQI labels added separately to avoid stale cache."""
     base = os.path.dirname(__file__)
+
+    # Priority 1: per-province all.csv (has full pollutant columns)
+    data_dir = _resolve_aqi_dir(base)
+    if data_dir:
+        all_files = glob.glob(os.path.join(data_dir, "**", "all.csv"), recursive=True)
+        if all_files:
+            df_list = []
+            for p in all_files:
+                try:
+                    temp_df = _safe_read_csv(p)
+                    if not temp_df.empty:
+                        df_list.append(temp_df)
+                except Exception as e:
+                    print(f"Lỗi đọc file {p}: {e}")
+            if df_list:
+                return _postprocess_df(pd.concat(df_list, ignore_index=True))
+
+    # Priority 2: single aggregated CSV
     all_csv = _resolve_all_csv(base)
     if all_csv:
-        df = _safe_read_csv(all_csv)
-        return _postprocess_df(df)
+        return _postprocess_df(_safe_read_csv(all_csv))
 
-    # Fallback for environments where all.csv is missing.
-    data_dir = _resolve_aqi_dir(base)
-    if not data_dir:
-        st.error("Không tìm thấy nguồn dữ liệu all.csv hoặc thư mục data/aqi")
-        st.stop()
+    st.error("Không tìm thấy nguồn dữ liệu (data/aqi/*/all.csv hoặc vietnam_air_quality.csv)")
+    st.stop()
 
-    all_files = glob.glob(os.path.join(data_dir, "**", "*.csv"), recursive=True)
-    if not all_files:
-        st.error(f"Không tìm thấy file CSV nào trong thư mục {data_dir}")
-        st.stop()
 
-    df_list = []
-    for p in all_files:
-        try:
-            temp_df = _safe_read_csv(p)
-            if not temp_df.empty:
-                df_list.append(temp_df)
-        except Exception as e:
-            print(f"Lỗi đọc file {p}: {e}")
-
-    if not df_list:
-        st.error("Không có file CSV nào chứa dữ liệu hợp lệ.")
-        st.stop()
-
-    return _postprocess_df(pd.concat(df_list, ignore_index=True))
+def load_data() -> pd.DataFrame:
+    """Return data with AQI labels always matching current AQI_DEF."""
+    df = _load_raw().copy()
+    return _apply_aqi_labels(df)
 
 
 @st.cache_data(ttl=1800)
@@ -336,22 +304,7 @@ def load_province_detail(
 
     return _postprocess_df(pd.concat(df_list, ignore_index=True))
 
-=======
-def load_data():
-    """Return data with AQI labels always matching current AQI_DEF."""
-    df = _load_raw().copy()
-    aqi_labels = [x[2] for x in AQI_DEF]
-    df["aqi_lbl"] = pd.cut(
-        df["aqi"],
-        bins=[-np.inf, 50, 100, 150, 200, 300, np.inf],
-        labels=aqi_labels,
-        include_lowest=True,
-    ).fillna(AQI_DEF[-1][2])
-    df["band"] = df["aqi_lbl"]
-    return df
 
-
->>>>>>> Stashed changes
 @st.cache_data(show_spinner=False)
 def to_csv_bytes(frame: pd.DataFrame) -> bytes:
     return frame.to_csv(index=False).encode("utf-8-sig")
