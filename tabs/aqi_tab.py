@@ -314,6 +314,9 @@ def render(global_df):
     avg_val = df_sub[y_col].mean()
     _, avg_color = val_meta(avg_val, y_col)
 
+    # customdata: [label, color]
+    cd_vals = df_sub[["lbl", "clr"]].values.tolist()
+
     fig = go.Figure()
     if chart_type == "Đường (Spline)":
         if has_envelope:
@@ -342,8 +345,6 @@ def render(global_df):
         x_vals = df_sub["timestamp"].tolist()
         y_vals = df_sub[y_col].tolist()
         c_vals = df_sub["clr"].tolist()
-        # customdata: [label, color]
-        cd_vals = df_sub[["lbl", "clr"]].values.tolist()
 
         bands = POLL_BANDS.get(y_col, POLL_BANDS["aqi"])
         base_colors = [col for _,_,_,col in AQI_DEF]
