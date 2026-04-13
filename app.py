@@ -2,6 +2,7 @@ import streamlit as st
 import threading
 import time
 from services.crawl_data.get_aqi_hourly import run_hourly_update 
+from services.crawl_data.get_province_aqi import run_province_aggregation 
 from components.footer import render_footer
 from components.header import render_header
 from components.overview import render_overview
@@ -35,7 +36,12 @@ def start_crawler_thread():
     while True:
         try:
             print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler đang chạy ngầm...")
+            # Bước 1: Cào dữ liệu mới cho từng trạm (Batch API)
             run_hourly_update()
+            
+            # Bước 2: Tính toán lại giá trị đại diện (Mean/Mode) cho từng tỉnh thành
+            run_province_aggregation()
+            print("Đã hoàn tất cập nhật dữ liệu!")
         except Exception as e:
             print(f"❌ Lỗi crawler: {e}")
         
