@@ -799,6 +799,19 @@ footer {
     border-bottom: 2px solid #1e3a5f !important;
 }
 
+/* ── UI FIXES: Segmented Control Highlight (Blue) ── */
+div[data-role="radiogroup"] button[aria-checked="true"] {
+    background-color: var(--pri-500) !important;
+    border-color: var(--pri-500) !important;
+    color: white !important;
+}
+
+div[data-role="radiogroup"] button[aria-checked="true"] svg,
+div[data-role="radiogroup"] button[aria-checked="true"] i,
+div[data-role="radiogroup"] button[aria-checked="true"] span {
+    color: white !important;
+}
+
 .stTabs [data-baseweb="tab-panel"] {
     padding: 12px 0 0 !important;
 }

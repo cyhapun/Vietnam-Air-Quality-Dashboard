@@ -60,9 +60,30 @@ def load_tier2_data(city_folder, filename):
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_forecast_data(city_folder, filename):
     base_dir = os.path.dirname(__file__)
+    # Try exact match first
     file_path = os.path.join(base_dir, "..", "data", "forecast", city_folder, filename)
+    
+    if not os.path.exists(file_path):
+        # Mismatch logic: Forecast files are often normalized (lowercase, no accents, underscores)
+        # We try to normalize the filename to match.
+        import re
+        s = filename.replace(".csv", "")
+        # Standard normalization used in get_forecast.py
+        s = re.sub(r'[àáạảãâầấậẩẫăằắặẳẵÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]', 'a', s)
+        s = re.sub(r'[èéẹẻẽêềếệểễÈÉẸẺẼÊỀẾỆỂỄ]', 'e', s)
+        s = re.sub(r'[òóọỏõôồốộổỗơờớợởỡÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]', 'o', s)
+        s = re.sub(r'[ìíịỉĩÌÍỊỈĨ]', 'i', s)
+        s = re.sub(r'[ùúụủũưừứựửữÙÚỤỦŨƯỪỨỰỬỮ]', 'u', s)
+        s = re.sub(r'[ỳýỵỷỹỲÝỴỶỸ]', 'y', s)
+        s = re.sub(r'[đĐ]', 'd', s)
+        s = re.sub(r'[^a-zA-Z0-9\s]', '', s).strip().lower()
+        normalized_filename = re.sub(r'\s+', '_', s) + ".csv"
+        
+        file_path = os.path.join(base_dir, "..", "data", "forecast", city_folder, normalized_filename)
+
     if not os.path.exists(file_path):
         return pd.DataFrame()
+        
     try:
         df = pd.read_csv(file_path)
         if df.empty: return df
@@ -75,23 +96,27 @@ def load_forecast_data(city_folder, filename):
     except Exception:
         return pd.DataFrame()
 
-def render_hourly_forecast(df_forecast, poll_key):
+def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_name):
     if df_forecast.empty:
         return
     
     # Filter for future data (from current hour onwards)
-    # Since it's a dashboard, we might want to show from "now"
     now = pd.Timestamp.now().replace(minute=0, second=0, microsecond=0)
-    # Adjust for local time if needed, but assuming data is in sync
     df_future = df_forecast[df_forecast["timestamp"] >= (now - pd.Timedelta(hours=1))].copy()
     
     if df_future.empty:
         return
 
-    st.markdown('<div style="margin-top: 2rem; margin-bottom: 1rem;">'
-                '<div style="font-size: 18px; font-weight: 700; color: #0f172a;">Dự báo theo giờ</div>'
-                '<div style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Dự báo xu hướng chất lượng không khí trong 24-48 giờ tới.</div>'
-                '</div>', unsafe_allow_html=True)
+    # Clean location string: if 'Tổng quan' is in unit_name, just show city_name
+    if "Tổng quan" in unit_name:
+        location_str = city_name
+    else:
+        location_str = f"{city_name} - {unit_name}"
+    
+    st.markdown(f'''<div style="margin-top: 1rem; margin-bottom: 1rem;">
+<div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Dự báo {poll_label} theo giờ</div>
+<div style="font-size: 14px; color: #64748b;">Khu vực: <span style="font-weight: 600; color: #334155;">{location_str}</span></div>
+</div>''', unsafe_allow_html=True)
 
     # Build horizontal scroll container
     scroll_html = '<div style="display: flex; overflow-x: auto; gap: 12px; padding-bottom: 16px; scrollbar-width: thin;">'
@@ -121,14 +146,10 @@ def render_hourly_forecast(df_forecast, poll_key):
     scroll_html += '</div>'
     st.markdown(scroll_html, unsafe_allow_html=True)
 
-def render_daily_forecast(df_forecast, poll_key):
+def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_name):
     if df_forecast.empty:
         return
         
-    st.markdown('<div style="margin-top: 1rem; margin-bottom: 1rem;">'
-                '<div style="font-size: 18px; font-weight: 700; color: #0f172a;">Dự báo hàng ngày</div>'
-                '</div>', unsafe_allow_html=True)
-                
     # Group by date
     df_forecast["date"] = df_forecast["timestamp"].dt.date
     daily = df_forecast.groupby("date").agg({poll_key: "mean"}).reset_index()
@@ -163,6 +184,55 @@ def render_daily_forecast(df_forecast, poll_key):
         
     container_html += '</div>'
     st.markdown(container_html, unsafe_allow_html=True)
+
+def render_health_advice_box(avg_val, poll_type):
+    lbl, clr = val_meta(avg_val, poll_type)
+    
+    advice_content = {
+        "Tốt": "Chất lượng không khí tốt, không ảnh hưởng tới sức khỏe",
+        "Vừa phải": "Chất lượng không khí ở mức chấp nhận được. Tuy nhiên đối với những người nhạy cảm (người cao tuổi, trẻ em, người mắc các bệnh hô hấp, tim mạch…) có thể chịu những tác động nhất định tới sức khỏe.",
+        "Không lành mạnh cho nhóm nhạy cảm": "Những người nhạy cảm gặp phải các vấn đề về sức khỏe, những người bình thường ít ảnh hưởng.",
+        "Không khỏe mạnh": "Những người bình thường bắt đầu có các ảnh hưởng tới sức khỏe, nhóm người nhạy cảm có thể gặp những vấn đề sức khỏe nghiêm trọng hơn.",
+        "Rất không tốt cho sức khỏe": "Cảnh báo hưởng tới sức khỏe: mọi người bị ảnh hưởng tới sức khỏe nghiêm trọng hơn.",
+        "Nguy hiểm": "Cảnh báo khẩn cấp về sức khỏe: Toàn bộ dân số bị ảnh hưởng tới sức khỏe tới mức nghiêm trọng."
+    }
+    
+    icon_map = {
+        "Tốt": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_green.svg",
+        "Vừa phải": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_yellow.svg",
+        "Không lành mạnh cho nhóm nhạy cảm": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_orange.svg",
+        "Không khỏe mạnh": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_red.svg",
+        "Rất không tốt cho sức khỏe": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_purple.svg",
+        "Nguy hiểm": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_maroon.svg"
+    }
+    
+    icon_url = icon_map.get(lbl)
+    desc = advice_content.get(lbl, "Hệ thống đang cập nhật khuyến cáo cho mức độ này...")
+    
+    # Header with dynamic icon (SVG or Material Fallback)
+    if icon_url:
+        icon_html = f'<img src="{icon_url}" style="width: 38px; height: 38px; margin-right: 12px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" />'
+    else:
+        # Fallback for "Nguy hiểm" or others
+        icon_html = f'<span class="material-symbols-rounded" style="color: {clr}; font-size: 32px; margin-right: 10px;">warning</span>'
+
+    st.markdown(f'''<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+<div style="height: 100%; min-height: 380px; background-color: {hex_rgba(clr, 0.08)}; border: 1.5px solid {hex_rgba(clr, 0.3)}; border-radius: 12px; padding: 24px; display: flex; flex-direction: column;">
+    <div style="display: flex; align-items: center; margin-bottom: 12px;">
+        {icon_html}
+        <span style="color: {clr}; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">KHUYẾN CÁO SỨC KHỎE</span>
+    </div>
+    <div style="color: #0f172a; font-size: 20px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center;">
+        <div style="width: 12px; height: 12px; background: {clr}; border-radius: 50%; margin-right: 10px;"></div>
+        {lbl}
+    </div>
+    <div style="color: #334155; font-size: 15px; line-height: 1.6; flex: 1; font-weight: 500;">
+        {desc}
+    </div>
+    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed {hex_rgba(clr, 0.4)}; color: #64748b; font-size: 12px; font-style: italic;">
+        * Khuyến cáo dựa trên mức độ ô nhiễm trung bình dự báo.
+    </div>
+</div>''', unsafe_allow_html=True)
 
 def render(global_df):
     ctx = st.session_state.get("dashboard_context", {})
@@ -650,7 +720,7 @@ def render(global_df):
         
     with cRank:
         # Title of Rank
-        st.markdown(f'''<div style="font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;">Top 5 Ô nhiễm ({time_range})</div>''', unsafe_allow_html=True)
+        st.markdown(f'''<div style="font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;">Top 8 Ô nhiễm ({time_range})</div>''', unsafe_allow_html=True)
         
         top_list_html = f'''<div style="display:flex; font-size:12px; font-weight:600; color:#64748b; padding-bottom: 10px; border-bottom: 2px solid rgba(148,163,184,0.1); margin-bottom: 12px; text-transform:uppercase;">
             <div style="flex:4;">Địa điểm</div>
@@ -681,7 +751,7 @@ def render(global_df):
                 continue
             
         if top_locations:
-            top_df = pd.DataFrame(top_locations).sort_values(by="val", ascending=False).head(5)
+            top_df = pd.DataFrame(top_locations).sort_values(by="val", ascending=False).head(8)
             for _, row in top_df.iterrows():
                 v = row["val"]
                 loc_name_full = row["loc"]
@@ -700,40 +770,37 @@ def render(global_df):
             top_list_html += '''<div style="color:#64748b; font-size:13px; font-style:italic; text-align:center; padding: 20px 0;">Không có dữ liệu trong khoảng thời gian này</div>'''
 
         st.markdown(top_list_html, unsafe_allow_html=True)
-        
-        # Recommendations
-        advice_map = {
-            "Tốt": ("Không khí trong lành", "Lý tưởng cho các hoạt động ngoài trời. Bạn có thể thoải mái tận hưởng không khí.", "local_florist"),
-            "Vừa phải": ("Chất lượng ở mức chấp nhận được", "Những người quá nhạy cảm nên cân nhắc giảm bớt các hoạt động gắng sức ngoài trời.", "sentiment_neutral"),
-            "Không lành mạnh cho nhóm nhạy cảm": ("Ảnh hưởng tới nhóm nhạy cảm", "Trẻ em, người già và người bị bệnh hô hấp nên hạn chế hoạt động ngoài trời.", "masks"),
-            "Không khỏe mạnh": ("Bắt đầu ảnh hưởng sức khỏe", "Mọi người nên giảm hoạt động ngoài trời. Nhóm nhạy cảm nên ở trong nhà.", "warning"),
-            "Rất không tốt cho sức khỏe": ("Cảnh báo sức khỏe khẩn cấp", "Rất có hại cho sức khỏe. Tốt nhất nên ở trong nhà và đóng kín cửa sổ.", "error_outline"),
-            "Nguy hiểm": ("Báo động khẩn", "Nguy cơ cao về sức khỏe. Mọi người nên ở trong nhà và sử dụng máy lọc không khí.", "coronavirus")
-        }
-        
-        avg_selected = df_sub[y_col].mean()
-        avg_lbl, avg_c = val_meta(avg_selected, y_col)
-        
-        adv_title, adv_desc, adv_icon = advice_map.get(avg_lbl, ("Đang cập nhật", "Hệ thống đang kiểm tra mức độ an toàn...", "info"))
-        
-        adv_html = f'''<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
-<div style="margin-top: 1.5rem; background-color: {hex_rgba(avg_c, 0.08)}; border: 1px solid {hex_rgba(avg_c, 0.3)}; border-radius: 10px; padding: 14px;">
-<div style="display: flex; align-items: center; margin-bottom: 6px;">
-<span class="material-symbols-rounded" style="color: {avg_c}; font-size: 20px; margin-right: 6px;">{adv_icon}</span>
-<span style="color: {avg_c}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Khuyến cáo sức khỏe</span>
-</div>
-<div style="color: #0f172a; font-size: 14px; font-weight: 700; margin-bottom: 4px;">{adv_title}</div>
-<div style="color: #475569; font-size: 13px; line-height: 1.5;">{adv_desc}</div>
-</div>'''
-        st.markdown(adv_html, unsafe_allow_html=True)
     
     # ── FORECAST SECTION ──
-    st.markdown('<hr style="margin: 2rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
+    st.markdown('<hr style="margin: 1.5rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
     
     df_forecast = load_forecast_data(folder_name, target_file)
     if not df_forecast.empty:
-        render_hourly_forecast(df_forecast, selected_poll_key)
-        render_daily_forecast(df_forecast, selected_poll_key)
+        # Lấy nhãn hiển thị từ từ điển POLLS có sẵn
+        poll_label = POLLS.get(selected_poll_key, {}).get("label", selected_poll_key.upper())
+        
+        render_hourly_forecast(df_forecast, selected_poll_key, poll_label, selected_city, selected_tier2)
+
+        # Forecast Header (Moved outside to ensure alignment)
+        if "Tổng quan" in selected_tier2:
+            location_str = selected_city
+        else:
+            location_str = f"{selected_city} - {selected_tier2}"
+
+        st.markdown(f'''<div style="margin-top: 1.5rem; margin-bottom: 0.8rem;">
+<div style="font-size: 19px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Dự báo {poll_label} hàng ngày</div>
+<div style="font-size: 14px; color: #64748b;">Dự báo tại <span style="font-weight: 600;">{location_str}</span> trong 7 ngày tới</div>
+</div>''', unsafe_allow_html=True)
+        
+        # Daily Forecast & Advice Side-by-Side
+        cDaily, cAdvice = st.columns([1.6, 1], gap="medium")
+        with cDaily:
+            render_daily_forecast(df_forecast, selected_poll_key, poll_label, selected_city, selected_tier2)
+        with cAdvice:
+            # Get average forecast for advice
+            avg_forecast = df_forecast[selected_poll_key].mean()
+            # Removed spacer to align with the list start
+            render_health_advice_box(avg_forecast, selected_poll_key)
     else:
         st.info("Hiện chưa có dữ liệu dự báo cho khu vực này.")
         
