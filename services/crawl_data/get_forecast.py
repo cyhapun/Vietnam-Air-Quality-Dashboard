@@ -147,9 +147,16 @@ def process_forecast_batch(batch_meta):
                 df_merged["lon"] = float(meta["lon"])
                 
                 # 3. XỬ LÝ MISSING VALUE (Nội suy/Ngoại suy)
-                # Chỉ nội suy các cột số
-                numeric_cols = df_merged.select_dtypes(include=[np.number]).columns
-                df_merged[numeric_cols] = df_merged[numeric_cols].interpolate(method='linear', limit_direction='both')
+                # Phân tách 2 nhóm để xử lý nội suy khác nhau
+                weather_cols = ["temp", "humidity", "rain", "wind_speed", "wind_dir", "pressure", "cloud"]
+                poll_cols = ["aqi", "pm2_5", "pm10", "co", "no2", "o3", "so2"]
+                
+                # Nhóm thời tiết: Nội suy toàn bộ (vì thường có đủ 7 ngày)
+                df_merged[weather_cols] = df_merged[weather_cols].interpolate(method='linear', limit_direction='both')
+                
+                # Nhóm ô nhiễm: Chỉ nội suy các "lỗ hổng" bên trong vùng có dữ liệu (thường là khoảng 4 ngày đầu)
+                # Dùng limit_area='inside' để không tự ý điền thêm cho các ngày cuối nếu API không trả về
+                df_merged[poll_cols] = df_merged[poll_cols].interpolate(method='linear', limit_area='inside')
                 
                 # Sau khi nội suy AQI, tính toán lại level và class cho chính xác
                 df_merged["pollution_level"] = df_merged["aqi"].apply(get_pollution_level)
