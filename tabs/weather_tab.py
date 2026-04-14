@@ -246,14 +246,15 @@ def _inject_weather_css():
                 radial-gradient(100px 50px at 15% 80%, rgba(255,255,255,0.10) 0%, transparent 70%);
             pointer-events: none;
         }
-        /* Grass bump at the bottom */
+        /* Stable bottom fade instead of decorative bump (better on mobile) */
         .wx-hero::after {
             content: '';
             position: absolute;
-            left: -8%; right: -8%; bottom: -44px;
-            height: 120px;
-            border-radius: 50% 50% 0 0 / 80% 80% 0 0;
-            background: linear-gradient(180deg, #AED581 0%, #8BC34A 50%, #689F38 100%);
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 52px;
+            background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(2, 18, 40, 0.24) 100%);
             pointer-events: none;
         }
         .wx-hero-inner { position: relative; z-index: 2; }
@@ -296,7 +297,7 @@ def _inject_weather_css():
             grid-template-columns: 1.4fr 1fr;
             gap: 18px;
             align-items: start;
-            padding-bottom: 60px; /* space for grass */
+            padding-bottom: 8px;
         }
 
         /* Big temperature display */
@@ -392,8 +393,28 @@ def _inject_weather_css():
         /* ── PARAMS SECTION ── */
         .wx-section-wrap { margin-bottom: 14px; }
         .wx-section-title {
-            font-size: 1.05rem; font-weight: 800; color: #0f172a;
-            margin-bottom: 12px; padding-left: 2px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 12px;
+            padding-left: 2px;
+            letter-spacing: 0.2px;
+        }
+        .wx-block-head {
+            margin-bottom: 10px;
+            border-left: 4px solid #38bdf8;
+            padding-left: 10px;
+        }
+        .wx-block-title {
+            font-size: 1.04rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+        }
+        .wx-block-sub {
+            font-size: 0.72rem;
+            color: #64748b;
+            margin-top: 4px;
         }
 
         /* 2-row grid: top row 3 cols, bottom row 3 cols */
@@ -408,17 +429,23 @@ def _inject_weather_css():
             border-radius: 16px;
             background: linear-gradient(145deg, #2d6a8a 0%, #1e4f6b 100%);
             border: 1px solid rgba(255,255,255,0.12);
-            padding: 14px 16px;
+            padding: 15px 16px;
             box-shadow: 0 4px 16px rgba(15,40,60,0.18);
             min-height: 118px;
             position: relative;
             overflow: hidden;
             color: #f0f8ff;
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
         }
         .wx-pcard::before {
             content:''; position:absolute; inset:0;
             background: radial-gradient(120px 60px at 80% 10%, rgba(255,255,255,0.08) 0%, transparent 70%);
             pointer-events:none;
+        }
+        .wx-pcard:hover {
+            transform: translateY(-3px);
+            border-color: rgba(186,230,253,0.45);
+            box-shadow: 0 14px 28px rgba(8, 32, 52, 0.34), 0 0 0 1px rgba(186,230,253,0.18) inset;
         }
         /* UV card – green gradient */
         .wx-pcard.uv {
@@ -456,6 +483,7 @@ def _inject_weather_css():
             display: flex; align-items: center; gap: 12px; height: 100%;
         }
         .wx-compass-svg { flex-shrink: 0; }
+        .wx-compass-svg svg { width: 84px; height: 84px; }
         .wx-compass-info {}
         .wx-compass-deg { font-size: 1.6rem; font-weight: 900; color:#fff; line-height:1; }
         .wx-compass-dir { font-size: 1.0rem; font-weight: 700; color:rgba(180,220,255,0.9); }
@@ -464,6 +492,7 @@ def _inject_weather_css():
         /* ── WIND SPEED (turbine icon) ── */
         .wx-wind-wrap { display:flex; align-items:center; gap:12px; }
         .wx-wind-icon { flex-shrink:0; }
+        .wx-wind-icon svg { width: 72px; height: 88px; }
         .wx-turbine-svg { overflow: visible; }
         .wx-turbine-rotor {
             transform-origin: 35px 48px;
@@ -588,6 +617,7 @@ def _inject_weather_css():
 
         /* ── RAIN card ── */
         .wx-rain-wrap { display:flex; align-items:center; gap:10px; }
+        .wx-rain-wrap svg { width: 72px; height: 72px; }
 
         /* ── PRESSURE gauge ── */
         .wx-gauge-wrap { display:flex; align-items:center; gap:10px; }
@@ -647,6 +677,33 @@ def _inject_weather_css():
         }
         .wx-fc-title { font-size: 1.05rem; font-weight: 800; color: #0f172a; }
         .wx-fc-link  { font-size: 0.74rem; color: #3b82f6; font-weight: 600; text-decoration: none; }
+        .wx-fc-note {
+            margin-top: 10px;
+            font-size: 0.72rem;
+            color: #64748b;
+        }
+
+        /* Shared dark tone (same direction as monthly calendar section) */
+        .wx-month-tone {
+            background: linear-gradient(155deg, #10243c 0%, #1a3553 60%, #1f3f61 100%) !important;
+            border: 1px solid rgba(148, 163, 184, 0.24) !important;
+            box-shadow: 0 8px 26px rgba(15, 23, 42, 0.22);
+            color: #e2e8f0 !important;
+        }
+        .wx-month-tone .wx-fc-title,
+        .wx-month-tone .wx-switch-pane-title,
+        .wx-month-tone .wx-block-title,
+        .wx-month-tone .wx-kpi-v {
+            color: #f8fafc !important;
+        }
+        .wx-month-tone .wx-fc-link,
+        .wx-month-tone .wx-block-sub,
+        .wx-month-tone .wx-kpi-k {
+            color: #cbd5e1 !important;
+        }
+        .wx-month-tone .wx-block-head {
+            border-left-color: #60a5fa;
+        }
 
         /* Horizontal scroll strip */
         .wx-fc-strip {
@@ -715,6 +772,11 @@ def _inject_weather_css():
             box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
             overflow-x: auto;
         }
+        .wx-hourly-card.wx-month-tone {
+            background: linear-gradient(155deg, #10243c 0%, #1a3553 60%, #1f3f61 100%) !important;
+            border: 1px solid rgba(148, 163, 184, 0.24) !important;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+        }
         .wx-htable {
             width: 100%;
             border-collapse: collapse;
@@ -739,7 +801,37 @@ def _inject_weather_css():
             font-weight: 500;
             white-space: nowrap;
         }
+        .wx-hourly-card.wx-month-tone .wx-htable thead th {
+            color: #cbd5e1;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+        }
+        .wx-hourly-card.wx-month-tone .wx-htable tbody td {
+            color: #e2e8f0;
+        }
+        .wx-hourly-card.wx-month-tone .wx-htable tbody tr {
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        }
+        .wx-hourly-card.wx-month-tone .wx-htable tbody tr:hover {
+            background: rgba(148, 163, 184, 0.12);
+        }
         .wx-htable-cond { display: flex; align-items: center; gap: 5px; }
+        .wx-temp-pill,
+        .wx-rain-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 64px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+        }
+        .wx-temp-pill.na,
+        .wx-rain-pill.na {
+            background: #e2e8f0;
+            color: #475569;
+        }
         .wx-aqi-badge {
             display: inline-flex;
             align-items: center;
@@ -920,6 +1012,44 @@ def _inject_weather_css():
             color: #cbd5e1;
         }
 
+        .wx-kpi-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .wx-kpi-card {
+            background: linear-gradient(160deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid #dbe7f2;
+            border-radius: 12px;
+            padding: 10px 12px;
+            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+        }
+        .wx-kpi-k {
+            font-size: 0.64rem;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .wx-kpi-v {
+            font-size: 1.08rem;
+            color: #0f172a;
+            font-weight: 800;
+        }
+        .wx-kpi-strip-month .wx-kpi-card {
+            background: linear-gradient(155deg, rgba(16, 36, 60, 0.92) 0%, rgba(26, 53, 83, 0.92) 60%, rgba(31, 63, 97, 0.92) 100%);
+            border: 1px solid rgba(148, 163, 184, 0.20);
+            box-shadow: none;
+        }
+        .wx-kpi-strip-month .wx-kpi-k {
+            color: #cbd5e1;
+        }
+        .wx-kpi-strip-month .wx-kpi-v {
+            color: #f8fafc;
+        }
+
         /* ── DARK CHART CARD ── */
         .wx-dark-card {
             background: #0f172a;
@@ -952,14 +1082,16 @@ def _inject_weather_css():
             .wx-hero-grid { grid-template-columns: 1fr; }
             .wx-params-grid { grid-template-columns: repeat(2, 1fr); }
             .wx-month-shell { grid-template-columns: 1fr; }
+            .wx-kpi-strip { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 680px) {
             .wx-params-grid { grid-template-columns: 1fr; }
-            .wx-hour-strip { grid-template-columns: repeat(4, 1fr); }
+            .wx-hour-strip { grid-template-columns: repeat(3, 1fr); }
             .wx-temp-big { font-size: 3rem; }
             .wx-cal-cell { min-height: 86px; padding: 6px 6px 5px; }
             .wx-cal-temp { font-size: 1rem; }
             .wx-cal-temp-min { font-size: 0.74rem; }
+            .wx-kpi-strip { grid-template-columns: 1fr; }
         }
         </style>
         """),
@@ -983,23 +1115,39 @@ def _build_hourly_frame(city_df):
 
 
 def _build_daily_frame(city_df):
+    agg_spec = {
+        "temp_max": ("temp", "max"),
+        "temp_min": ("temp", "min"),
+        "temp_avg": ("temp", "mean"),
+        "humidity": ("humidity", "mean"),
+        "rain": ("rain", "sum"),
+        "wind_speed": ("wind_speed", "mean"),
+        "wind_dir": ("wind_dir", "mean"),
+        "pressure": ("pressure", "mean"),
+        "cloud": ("cloud", "mean"),
+    }
+
+    available_agg = {
+        out_col: (src_col, agg_fn)
+        for out_col, (src_col, agg_fn) in agg_spec.items()
+        if src_col in city_df.columns
+    }
+    if not available_agg:
+        return pd.DataFrame()
+
     daily = (
         city_df.set_index("timestamp")
         .resample("1D")
-        .agg(
-            temp_max=("temp", "max"),
-            temp_min=("temp", "min"),
-            temp_avg=("temp", "mean"),
-            humidity=("humidity", "mean"),
-            rain=("rain", "sum"),
-            wind_speed=("wind_speed", "mean"),
-            wind_dir=("wind_dir", "mean"),
-            pressure=("pressure", "mean"),
-            cloud=("cloud", "mean"),
-        )
+        .agg(**available_agg)
         .dropna(how="all")
         .reset_index()
     )
+
+    # Ensure downstream render logic can rely on these columns existing.
+    for out_col in agg_spec:
+        if out_col not in daily.columns:
+            daily[out_col] = np.nan
+
     if daily.empty:
         return daily
     daily["condition"] = daily.apply(
@@ -1117,12 +1265,8 @@ def _forecast_hourly_switch_html(forecast_df, day_groups, anchor_day=None, switc
 
         panes.append(
             f"<div class='wx-switch-pane wx-pane-{idx}'>"
-            "<div class='wx-forecast-card' style='margin-top:10px;'>"
-            "<div class='wx-fc-header'>"
-            f"<div class='wx-fc-title'>Chi tiết theo giờ ({row_ts:%d/%m/%Y})</div>"
-            "</div>"
-            f"<div class='wx-hourly-card'>{table_markup}</div>"
-            "</div>"
+            f"<div class='wx-switch-pane-title'>Chi tiết theo giờ ({row_ts:%d/%m/%Y})</div>"
+            f"<div class='wx-hourly-card wx-hourly-card-inline wx-month-tone'>{table_markup}</div>"
             "</div>"
         )
 
@@ -1150,9 +1294,17 @@ def _forecast_hourly_switch_html(forecast_df, day_groups, anchor_day=None, switc
         ".wx-switch-strip{display:flex;gap:8px;overflow-x:auto;padding:0 2px 4px;}"
         ".wx-switch-card{display:block;flex:0 0 auto;text-decoration:none;color:inherit;cursor:pointer;}"
         ".wx-switch-card:hover{text-decoration:none;}"
+        ".wx-switch-details{margin-top:8px;}"
         ".wx-switch-details .wx-switch-pane{display:none;}"
+        ".wx-switch-pane-title{font-size:.76rem;font-weight:700;color:#334155;margin:4px 0 8px;}"
+        ".wx-hourly-card-inline{margin:0;padding:10px 12px;border-radius:14px;}"
         + "".join(rules)
         + "</style>"
+        + "<div class='wx-forecast-card wx-forecast-shell wx-month-tone'>"
+        + "<div class='wx-fc-header'>"
+        + "<div class='wx-fc-title'>Dự báo 10 ngày</div>"
+        + "<span class='wx-fc-link'>Chọn một ngày để xem chi tiết theo giờ</span>"
+        + "</div>"
         + "<div class='wx-switch-wrap'>"
         + "".join(radios)
         + "<div class='wx-fc-strip wx-switch-strip'>"
@@ -1160,6 +1312,7 @@ def _forecast_hourly_switch_html(forecast_df, day_groups, anchor_day=None, switc
         + "</div>"
         + "<div class='wx-switch-details'>"
         + "".join(panes)
+        + "</div>"
         + "</div>"
         + "</div>"
     )
@@ -1183,18 +1336,54 @@ def _hourly_table_html(hourly_df, rows=24):
         cloud = getattr(row, "cloud", np.nan)
         cond = _condition_from_weather(rain, cloud)
         icon = _condition_svg_inline(cond, 14)
+        temp_pill = _temp_pill_html(getattr(row, "temp", np.nan))
+        rain_pill = _rain_pill_html(rain)
         rows_html.append(
             f"<tr>"
             f"<td>{time_str}</td>"
             f"<td><div class='wx-htable-cond'>{icon}{cond}</div></td>"
-            f"<td><b>{_fmt_num(getattr(row,'temp',np.nan),1)}°C</b></td>"
+            f"<td>{temp_pill}</td>"
             f"<td>{_fmt_num(getattr(row,'humidity',np.nan),0)}%</td>"
             f"<td>{_fmt_num(getattr(row,'wind_speed',np.nan),1)}</td>"
             f"<td>{_fmt_num(cloud,0)}%</td>"
-            f"<td>{_fmt_num(rain,1)} mm</td>"
+            f"<td>{rain_pill}</td>"
             "</tr>"
         )
     return header + "".join(rows_html) + "</tbody></table>"
+
+
+def _temp_pill_html(temp) -> str:
+    if temp is None or pd.isna(temp):
+        return "<span class='wx-temp-pill na'>N/A</span>"
+
+    value = float(temp)
+    if value >= 35:
+        bg, fg = "#ef4444", "#fff1f2"
+    elif value >= 30:
+        bg, fg = "#fb923c", "#fff7ed"
+    elif value >= 25:
+        bg, fg = "#facc15", "#422006"
+    elif value >= 20:
+        bg, fg = "#38bdf8", "#082f49"
+    else:
+        bg, fg = "#60a5fa", "#eff6ff"
+    return f"<span class='wx-temp-pill' style='background:{bg};color:{fg};'>{value:.1f}°C</span>"
+
+
+def _rain_pill_html(rain) -> str:
+    if rain is None or pd.isna(rain):
+        return "<span class='wx-rain-pill na'>N/A</span>"
+
+    value = float(rain)
+    if value >= 10:
+        bg, fg = "#0369a1", "#e0f2fe"
+    elif value >= 3:
+        bg, fg = "#0ea5e9", "#eff6ff"
+    elif value > 0:
+        bg, fg = "#7dd3fc", "#0c4a6e"
+    else:
+        bg, fg = "#e2e8f0", "#334155"
+    return f"<span class='wx-rain-pill' style='background:{bg};color:{fg};'>{value:.1f} mm</span>"
 
 
 def _normalize_name(text: str) -> str:
@@ -1231,6 +1420,11 @@ def _load_anchor_location_rows(city_name: str, anchor_day: pd.Timestamp) -> pd.D
         detail_df = load_province_detail(resolved_name, start_date=day_iso, end_date=day_iso)
     except Exception:
         return pd.DataFrame()
+    except BaseException as exc:
+        # Optional detail data must not stop the whole weather tab render.
+        if exc.__class__.__name__ == "StopException":
+            return pd.DataFrame()
+        raise
 
     if detail_df.empty or "timestamp" not in detail_df.columns or "location" not in detail_df.columns:
         return pd.DataFrame()
@@ -1296,17 +1490,17 @@ def _aqi_badge_html(aqi_value) -> str:
 
     aqi = float(aqi_value)
     if aqi <= 50:
-        bg, fg = "#86efac", "#14532d"
+        bg, fg = "#22c55e", "#f0fdf4"
     elif aqi <= 100:
-        bg, fg = "#fde68a", "#713f12"
+        bg, fg = "#facc15", "#422006"
     elif aqi <= 150:
-        bg, fg = "#fdba74", "#7c2d12"
+        bg, fg = "#fb923c", "#431407"
     elif aqi <= 200:
-        bg, fg = "#fca5a5", "#7f1d1d"
+        bg, fg = "#ef4444", "#fff1f2"
     elif aqi <= 300:
-        bg, fg = "#e9d5ff", "#581c87"
+        bg, fg = "#a855f7", "#faf5ff"
     else:
-        bg, fg = "#fecdd3", "#881337"
+        bg, fg = "#7f1d1d", "#fee2e2"
 
     return f"<span class='wx-aqi-badge' style='background:{bg};color:{fg};'>{int(round(aqi))}</span>"
 
@@ -1317,7 +1511,7 @@ def _location_detail_table_html(location_df: pd.DataFrame, max_rows: int = 120) 
 
     sub = location_df.head(max_rows)
     header = (
-        "<div class='wx-hourly-card'>"
+        "<div class='wx-hourly-card wx-month-tone'>"
         "<table class='wx-htable'><thead><tr>"
         "<th>Địa điểm</th><th>Tình trạng</th><th>🌡 Nhiệt độ</th>"
         "<th>💧 Độ ẩm</th><th>🌬 Gió</th><th>☁ Mây</th><th>🌧 Mưa</th><th>AQI</th><th>Mẫu</th>"
@@ -1344,7 +1538,7 @@ def _location_detail_table_html(location_df: pd.DataFrame, max_rows: int = 120) 
             "<tr>"
             f"<td><b>{location}</b></td>"
             f"<td><div class='wx-htable-cond'>{cond_icon}{condition}</div></td>"
-            f"<td><b>{temp_avg}°C</b> <span style='color:#64748b;font-size:0.68rem;'>({temp_max}° / {temp_min}°)</span></td>"
+            f"<td><b>{temp_avg}°C</b> <span style='color:#cbd5e1;font-size:0.68rem;'>({temp_max}° / {temp_min}°)</span></td>"
             f"<td>{humidity}%</td>"
             f"<td>{wind_speed} km/h · {wind_dir}</td>"
             f"<td>{cloud}%</td>"
@@ -1355,6 +1549,31 @@ def _location_detail_table_html(location_df: pd.DataFrame, max_rows: int = 120) 
         )
 
     return header + "".join(rows_html) + "</tbody></table></div>"
+
+
+def _detail_kpi_strip_html(total_locations: int, temp_avg_text: str, humidity_avg_text: str, rain_sum_text: str) -> str:
+    return _html(
+        f"""
+        <div class='wx-kpi-strip wx-kpi-strip-month'>
+            <div class='wx-kpi-card'>
+                <div class='wx-kpi-k'>Số địa điểm</div>
+                <div class='wx-kpi-v'>{total_locations:,}</div>
+            </div>
+            <div class='wx-kpi-card'>
+                <div class='wx-kpi-k'>Nhiệt độ TB</div>
+                <div class='wx-kpi-v'>{temp_avg_text}</div>
+            </div>
+            <div class='wx-kpi-card'>
+                <div class='wx-kpi-k'>Độ ẩm TB</div>
+                <div class='wx-kpi-v'>{humidity_avg_text}</div>
+            </div>
+            <div class='wx-kpi-card'>
+                <div class='wx-kpi-k'>Mưa cộng dồn</div>
+                <div class='wx-kpi-v'>{rain_sum_text}</div>
+            </div>
+        </div>
+        """
+    )
 
 
 def _pie_point(cx: float, cy: float, r: float, deg: float) -> tuple[float, float]:
@@ -1850,18 +2069,27 @@ def _plot_hourly_temp(hourly_df, ml_fn, ax_fn):
             yaxis="y2",
             hovertemplate="%{x|%H:%M %d/%m}<br>Độ ẩm: %{y:.0f}%<extra></extra>",
         ))
+    fig.add_hline(
+        y=35,
+        line_dash="dash",
+        line_color="rgba(251,113,133,0.92)",
+        annotation_text="Ngưỡng nóng 35°C",
+        annotation_position="top left",
+        annotation_font=dict(color="#fecdd3", size=10),
+    )
     y1 = ax_fn("Nhiệt độ (°C)")
-    y1.update({"tickfont": {"color": "#fca5a5", "size": 9}, "gridcolor": "rgba(255,255,255,0.10)"})
+    y1.update({"tickfont": {"color": "#fecaca", "size": 9}, "gridcolor": "rgba(148,163,184,0.22)"})
     y2 = ax_fn("Độ ẩm (%)")
-    y2.update({"overlaying": "y", "side": "right", "showgrid": False, "tickfont": {"color": "#93c5fd", "size": 9}})
+    y2.update({"overlaying": "y", "side": "right", "showgrid": False, "tickfont": {"color": "#bfdbfe", "size": 9}})
     xaxis_cfg = ax_fn("Giờ")
-    xaxis_cfg.update({"tickformat": "%Hh", "tickfont": {"color": "#94a3b8", "size": 9}})
+    xaxis_cfg.update({"tickformat": "%Hh", "tickfont": {"color": "#cbd5e1", "size": 9}, "gridcolor": "rgba(148,163,184,0.14)"})
     ml_fn(fig, h=300,
         xaxis=xaxis_cfg,
         yaxis=y1, yaxis2=y2,
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#e2e8f0", size=10, family="Inter"),
         legend=dict(orientation="h", x=0, y=1.12, bgcolor="rgba(0,0,0,0)", font=dict(color="#e2e8f0")),
+        hovermode="x unified",
     )
     return fig
 
@@ -1890,12 +2118,24 @@ def _plot_daily_forecast(daily_df, ml_fn, ax_fn):
             marker=dict(color="rgba(14,165,233,.30)", line=dict(color="#0284c7", width=1)),
             hovertemplate="%{x|%d/%m}<br>Mưa: %{y:.1f} mm<extra></extra>",
         ))
+    fig.add_hline(
+        y=35,
+        line_dash="dot",
+        line_color="rgba(239,68,68,0.7)",
+        annotation_text="35°C",
+        annotation_position="top left",
+        annotation_font=dict(color="#ef4444", size=10),
+    )
     ml_fn(fig, h=300,
-        xaxis=dict(**ax_fn("Ngày"), tickformat="%d/%m"),
-        yaxis=dict(**ax_fn("Nhiệt độ (°C)")),
-        yaxis2=dict(**ax_fn("Mưa (mm)"), overlaying="y", side="right", showgrid=False, rangemode="tozero"),
-        legend=dict(orientation="h", x=0, y=1.12, bgcolor="rgba(0,0,0,0)"),
+        xaxis=dict(**ax_fn("Ngày"), tickformat="%d/%m", tickfont=dict(color="#cbd5e1", size=9), gridcolor="rgba(148,163,184,0.14)"),
+        yaxis=dict(**ax_fn("Nhiệt độ (°C)"), tickfont=dict(color="#fecaca", size=9), gridcolor="rgba(148,163,184,0.22)"),
+        yaxis2=dict(**ax_fn("Mưa (mm)"), overlaying="y", side="right", showgrid=False, rangemode="tozero", tickfont=dict(color="#bfdbfe", size=9)),
+        legend=dict(orientation="h", x=0, y=1.12, bgcolor="rgba(0,0,0,0)", font=dict(color="#e2e8f0")),
         barmode="overlay",
+        hovermode="x unified",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#e2e8f0", size=10, family="Inter"),
     )
     return fig
 
@@ -1915,20 +2155,20 @@ def _plot_wind_rose(hourly_df, ml_fn):
         .size().unstack(fill_value=0)
         .reindex(index=WIND_SECTORS, columns=WIND_SPEED_LABELS, fill_value=0)
     )
-    colors = ["#dbeafe", "#93c5fd", "#60a5fa", "#2563eb", "#1e3a8a"]
+    colors = ["#bae6fd", "#7dd3fc", "#38bdf8", "#0ea5e9", "#0369a1"]
     fig = go.Figure()
     for band, color in zip(WIND_SPEED_LABELS, colors):
         fig.add_trace(go.Barpolar(
             r=pivot[band].values, theta=WIND_SECTORS, name=f"{band} km/h",
-            marker_color=color, marker_line_color="#ffffff",
-            marker_line_width=0.8, opacity=0.92,
+            marker_color=color, marker_line_color="rgba(255,255,255,0.75)",
+            marker_line_width=0.7, opacity=0.94,
             hovertemplate="Hướng %{theta}<br>Tần suất: %{r} giờ<extra></extra>",
         ))
     ml_fn(fig, h=340,
         polar=dict(
             bgcolor="rgba(0,0,0,0)",
-            radialaxis=dict(showticklabels=True, ticks="", gridcolor="rgba(0,0,0,0.08)"),
-            angularaxis=dict(direction="clockwise", rotation=90, gridcolor="rgba(0,0,0,0.06)"),
+            radialaxis=dict(showticklabels=True, ticks="", gridcolor="rgba(0,0,0,0.08)", tickfont=dict(color="#475569", size=9)),
+            angularaxis=dict(direction="clockwise", rotation=90, gridcolor="rgba(0,0,0,0.06)", tickfont=dict(color="#334155", size=9)),
         ),
         legend=dict(orientation="h", x=0, y=1.1, bgcolor="rgba(0,0,0,0)", font=dict(size=9)),
     )
@@ -1945,7 +2185,7 @@ def _plot_pressure_cloud(hourly_df, ml_fn, ax_fn):
         x=valid["pressure"], y=valid["cloud"], mode="markers",
         marker=dict(
             size=marker_size, color=valid["temp"] if "temp" in valid.columns else "#3b82f6",
-            colorscale="YlOrRd", showscale=True,
+            colorscale="RdYlBu_r", showscale=True,
             colorbar=dict(title="°C", thickness=10),
             line=dict(width=0.8, color="rgba(15,23,42,0.20)"), opacity=0.82,
         ),
@@ -1955,9 +2195,41 @@ def _plot_pressure_cloud(hourly_df, ml_fn, ax_fn):
         ], axis=1),
         hovertemplate="Áp suất: %{x:.1f} hPa<br>Mây: %{y:.0f}%<extra></extra>",
     ))
+
+    x_mid = float(valid["pressure"].median())
+    y_mid = 50.0
+    x_min = float(valid["pressure"].min())
+    x_max = float(valid["pressure"].max())
+
+    fig.add_vline(x=x_mid, line_dash="dot", line_color="rgba(51,65,85,0.45)")
+    fig.add_hline(y=y_mid, line_dash="dot", line_color="rgba(51,65,85,0.45)")
+
+    x_left = x_min + (x_mid - x_min) * 0.18 if x_mid > x_min else x_min
+    x_right = x_mid + (x_max - x_mid) * 0.18 if x_max > x_mid else x_max
+    y_low = 14
+    y_high = 86
+    annotations = [
+        (x_left, y_high, "Áp thấp • Mây cao"),
+        (x_right, y_high, "Áp cao • Mây cao"),
+        (x_left, y_low, "Áp thấp • Trời quang"),
+        (x_right, y_low, "Áp cao • Trời quang"),
+    ]
+    for x_val, y_val, label in annotations:
+        fig.add_annotation(
+            x=x_val,
+            y=y_val,
+            text=label,
+            showarrow=False,
+            font=dict(size=9, color="#334155"),
+            bgcolor="rgba(255,255,255,0.72)",
+            bordercolor="rgba(148,163,184,0.40)",
+            borderpad=3,
+        )
+
     ml_fn(fig, h=340,
         xaxis=dict(**ax_fn("Áp suất (hPa)")),
         yaxis=dict(**ax_fn("Mây (%)"), range=[0, 100]),
+        hovermode="closest",
     )
     return fig
 
@@ -2179,14 +2451,19 @@ def render(df: pd.DataFrame):
     st.markdown(_params_section_html(latest, base_day_df), unsafe_allow_html=True)
 
     # ── 10-DAY FORECAST ─────────────────────────────────────────────────────────
-    st.markdown(_html(f"""
-    <div class='wx-forecast-card'>
-        <div class='wx-fc-header'>
-            <div class='wx-fc-title'>Dự báo 10 ngày</div>
-            <a class='wx-fc-link' href='#'>Xem hàng tháng →</a>
-        </div>
-    </div>
-    """), unsafe_allow_html=True)
+    st.markdown(
+        _forecast_hourly_switch_html(
+            forecast_df,
+            day_groups=day_groups,
+            anchor_day=anchor_day,
+            switch_key=f"{selected_city}|{anchor_day_key}",
+        ),
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"<div class='wx-fc-note'>Dải dự báo: {anchor_day:%d/%m/%Y} → {end_day:%d/%m/%Y}. Nhấn vào card ngày để xem dữ liệu giờ tương ứng.</div>",
+        unsafe_allow_html=True,
+    )
 
     month_panel_html = _monthly_calendar_section_html(daily_df, anchor_day, selected_city)
     if month_panel_html:
@@ -2196,9 +2473,11 @@ def render(df: pd.DataFrame):
     detail_summary = _build_location_day_summary(detail_rows)
 
     st.markdown(_html(f"""
-    <div class='wx-analysis-card'>
-      <div class='wx-analysis-title'>Chi tiết theo địa điểm trong tỉnh</div>
-      <div class='wx-analysis-sub'>Ngày mốc {anchor_day:%d/%m/%Y} tại {selected_city}. Nguồn: dữ liệu chi tiết data/aqi.</div>
+    <div class='wx-analysis-card wx-month-tone'>
+            <div class='wx-block-head'>
+                <div class='wx-block-title'>Chi tiết theo địa điểm trong tỉnh</div>
+                <div class='wx-block-sub'>Ngày mốc {anchor_day:%d/%m/%Y} tại {selected_city}. Nguồn: dữ liệu chi tiết data/aqi.</div>
+            </div>
     </div>
     """), unsafe_allow_html=True)
 
@@ -2214,35 +2493,21 @@ def render(df: pd.DataFrame):
         rain_sum_text = _fmt_num(detail_summary["rain"].sum(), 1)
         rain_sum_text = f"{rain_sum_text} mm" if rain_sum_text != "N/A" else "N/A"
 
-        metric_cols = st.columns(4)
-        with metric_cols[0]:
-            st.metric("Số địa điểm", f"{len(detail_summary):,}")
-        with metric_cols[1]:
-            st.metric("Nhiệt độ TB", temp_avg_text)
-        with metric_cols[2]:
-            st.metric("Độ ẩm TB", humidity_avg_text)
-        with metric_cols[3]:
-            st.metric("Mưa cộng dồn", rain_sum_text)
+        st.markdown(
+            _detail_kpi_strip_html(
+                len(detail_summary),
+                temp_avg_text,
+                humidity_avg_text,
+                rain_sum_text,
+            ),
+            unsafe_allow_html=True,
+        )
 
         st.markdown(_location_detail_table_html(detail_summary, max_rows=10), unsafe_allow_html=True)
         if len(detail_summary) > 10:
             st.caption(
                 f"Đang hiển thị 10/{len(detail_summary)} địa điểm đầu tiên (sắp theo AQI giảm dần)."
             )
-
-    st.markdown(
-        _forecast_hourly_switch_html(
-            forecast_df,
-            day_groups=day_groups,
-            anchor_day=anchor_day,
-            switch_key=f"{selected_city}|{anchor_day_key}",
-        ),
-        unsafe_allow_html=True,
-    )
-    st.caption(
-        f"Nhấn vào card ngày để xem Chi tiết theo giờ tương ứng (chuyển tức thì, không tải lại tab). "
-        f"Các phần khác giữ theo ngày mốc {anchor_day:%d/%m/%Y}. Dải dự báo: {anchor_day:%d/%m/%Y} → {end_day:%d/%m/%Y}."
-    )
 
     # ── CHART (temp / daily) ────────────────────────────────────────────────────
     st.markdown("<div class='wx-dark-card'>", unsafe_allow_html=True)
@@ -2268,8 +2533,10 @@ def render(df: pd.DataFrame):
     # ── ADVANCED ANALYSIS ───────────────────────────────────────────────────────
     st.markdown(_html("""
     <div class='wx-analysis-card'>
-      <div class='wx-analysis-title'>Phân tích nâng cao</div>
-      <div class='wx-analysis-sub'>Hoa gió và tương quan áp suất – độ mây.</div>
+            <div class='wx-block-head'>
+                <div class='wx-block-title'>Phân tích nâng cao</div>
+                <div class='wx-block-sub'>Hoa gió và tương quan áp suất – độ mây.</div>
+            </div>
     </div>
     """), unsafe_allow_html=True)
 
