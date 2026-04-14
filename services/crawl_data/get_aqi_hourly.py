@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import glob
 import numpy as np
+import time
 from datetime import date, datetime, timedelta
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -25,13 +26,16 @@ session.mount("https://", HTTPAdapter(max_retries=retries, pool_connections=10, 
 def get_file_metadata(file_path):
     """Đọc nhanh thông tin file bằng cách chỉ lấy dòng cuối cùng"""
     try:
-        # Sử dụng tham số nrows hoặc đọc từ cuối file để tránh nạp cả file vào RAM
         df_tail = pd.read_csv(file_path).tail(1) 
         if df_tail.empty: return None
         
         last_ts = pd.to_datetime(df_tail["timestamp"]).iloc[0]
         
-        if last_ts >= datetime.now().replace(minute=0, second=0, microsecond=0):
+        # Đồng bộ múi giờ Asia/Bangkok
+        now_bkk = pd.Timestamp.utcnow().tz_convert("Asia/Bangkok").tz_localize(None)
+        current_hour = now_bkk.floor("h")
+        
+        if last_ts >= current_hour:
             return "UP_TO_DATE"
             
         return {
@@ -68,13 +72,22 @@ def process_batch(batch_meta):
     """Xử lý một nhóm tọa độ"""
     if not batch_meta: return 0, 0
     
-    # 1. Chuẩn bị tham số Batch
+    # 1. Chuẩn bị thời gian và tham số Batch
+    now_bkk = pd.Timestamp.utcnow().tz_convert("Asia/Bangkok").tz_localize(None)
+    current_hour = now_bkk.floor("h")
+    # Lùi lại chính xác 6 tháng theo giờ
+    cutoff_hour = current_hour - pd.DateOffset(months=6) 
+    
     lats = [str(m["lat"]) for m in batch_meta]
     lons = [str(m["lon"]) for m in batch_meta]
-    # Lấy ngày cũ nhất trong batch để đảm bảo mọi trạm đều có dữ liệu bù
+    
     min_ts = min([m["last_ts"] for m in batch_meta])
+    # Đảm bảo không gọi API lấy dữ liệu cũ hơn 6 tháng (nếu file quá cũ)
+    if min_ts < cutoff_hour:
+        min_ts = cutoff_hour
+        
     start_str = min_ts.strftime("%Y-%m-%d")
-    today_str = date.today().strftime("%Y-%m-%d")
+    today_str = current_hour.strftime("%Y-%m-%d")
     
     params = {
         "latitude": ",".join(lats),
@@ -84,7 +97,6 @@ def process_batch(batch_meta):
         "timezone": "Asia/Bangkok"
     }
     
-    # URL cho Air Quality và Archive
     air_url = "https://air-quality-api.open-meteo.com/v1/air-quality"
     weather_url = "https://archive-api.open-meteo.com/v1/archive"
     
@@ -101,7 +113,6 @@ def process_batch(batch_meta):
         data_air = r_air.json()
         data_weather = r_weather.json()
 
-        # Nếu chỉ có 1 tọa độ, Open-Meteo trả về dict, nếu nhiều trả về list
         if isinstance(data_air, dict):
             data_air = [data_air]
             data_weather = [data_weather]
@@ -109,12 +120,11 @@ def process_batch(batch_meta):
         updated_count = 0
         for i, meta in enumerate(batch_meta):
             try:
-                # Trích xuất dữ liệu cho từng file trong batch
+                # Trích xuất dữ liệu mới
                 df_air = pd.DataFrame(data_air[i]["hourly"])
                 df_weather = pd.DataFrame(data_weather[i]["hourly"])
                 df_new = pd.merge(df_air, df_weather, on="time")
 
-                # Mapping tên cột
                 rename_map = {
                     "time": "timestamp", "temperature_2m": "temp", "relative_humidity_2m": "humidity", 
                     "precipitation": "rain", "wind_speed_10m": "wind_speed", "wind_direction_10m": "wind_dir",
@@ -123,7 +133,6 @@ def process_batch(batch_meta):
                 }
                 df_new.rename(columns=rename_map, inplace=True)
                 
-                # Bổ sung thông tin
                 df_new["province"] = meta["province"]
                 df_new["location"] = meta["location"]
                 df_new["lat"] = meta["lat"]
@@ -131,18 +140,25 @@ def process_batch(batch_meta):
                 df_new["pollution_level"] = df_new["aqi"].apply(get_pollution_level)
                 df_new["pollution_class"] = df_new["aqi"].apply(get_pollution_class)
                 
-                # Format thời gian và tách cột
                 df_new["timestamp"] = pd.to_datetime(df_new["timestamp"])
                 df_new["year"] = df_new["timestamp"].dt.year
                 df_new["month"] = df_new["timestamp"].dt.month
                 df_new["day"] = df_new["timestamp"].dt.day
                 df_new["hour"] = df_new["timestamp"].dt.hour
-                now = datetime.now()
-                df_new = df_new[df_new["timestamp"] <= now]
                 
-                # Gộp dữ liệu
+                # Lọc bỏ các giờ trong tương lai (đã có script forecast lo việc này)
+                df_new = df_new[df_new["timestamp"] <= current_hour]
+                
+                # Gộp dữ liệu cũ và mới
                 df_final = pd.concat([meta["old_df"], df_new], ignore_index=True)
                 df_final["timestamp"] = pd.to_datetime(df_final["timestamp"])
+                
+                # -------------------------------------------------------------
+                # BƯỚC CẮT TỈA: Xóa các bản ghi cũ hơn đúng 6 tháng (tính theo giờ)
+                # -------------------------------------------------------------
+                df_final = df_final[df_final["timestamp"] >= cutoff_hour]
+                
+                # Loại bỏ trùng lặp và sắp xếp lại
                 df_final.drop_duplicates(subset=["timestamp"], keep="last", inplace=True)
                 df_final.sort_values("timestamp", inplace=True)
 
@@ -165,7 +181,6 @@ def run_hourly_update():
     all_metadata = []
     skipped = 0
     
-    # Bước 1: Quét nhanh metadata (dùng đa luồng cho IO)
     print("📋 Đang kiểm tra trạng thái các file...")
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         results = list(tqdm(executor.map(get_file_metadata, csv_files), total=len(csv_files)))
@@ -181,7 +196,6 @@ def run_hourly_update():
         print("✅ Tất cả dữ liệu đã được cập nhật mới nhất!")
         return
 
-    # Bước 2: Chạy Batch Update
     total_updated = 0
     total_errors = 0
     
@@ -192,6 +206,9 @@ def run_hourly_update():
         total_updated += upd
         total_errors += err
         print(f"   ➤ Tiến độ: {min(i + BATCH_SIZE, total_need_update)}/{total_need_update} trạm...")
+        
+        # Thêm độ trễ chống Rate Limit
+        time.sleep(1)
 
     print("-" * 50)
     print(f"✅ HOÀN TẤT CẬP NHẬT!")
