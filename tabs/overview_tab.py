@@ -5,6 +5,7 @@ import streamlit as st
 import base64
 import os
 import textwrap
+from utils.helpers import AQI_DEF, POLLS
 
 
 def _safe_pm25_mean(df):
@@ -170,55 +171,7 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
             f"style=\"background-image:url('data:image/svg+xml;base64,{vietnam_svg_base64}')\"></div>"
         )
 
-    st.markdown(f"""
-    <div class="kpi-strip">
-      <div class="kpi-box accent-blue">
-        <div class="kpi-lbl">AQI phạm vi chọn</div>
-        <div class="kpi-val" style="color:{_col}">{avg_aqi} <span class="u">{_lbl}</span></div>
-        <div class="kpi-sub">WHO khuyến nghị AQI ≤ 50</div>
-      </div>
-      <div class="kpi-box accent-amber">
-        <div class="kpi-lbl">PM2.5 trung bình</div>
-        <div class="kpi-val">{avg_pm25} <span class="u">µg/m³</span></div>
-        <div class="kpi-sub">Vượt ngưỡng WHO ({round(avg_pm25/15*100-100,0):.0f}% so với 15 µg)</div>
-      </div>
-      <div class="kpi-box accent-red">
-        <div class="kpi-lbl">Tương đương thuốc lá</div>
-        <div class="kpi-val">{cig_n} <span class="u">điếu</span></div>
-        <div class="kpi-sub">trong {days} ngày · 22 µg/m³ = 1 điếu</div>
-      </div>
-      <div class="kpi-box accent-slate">
-        <div class="kpi-lbl">Khu vực ô nhiễm nhất</div>
-        <div class="kpi-val" style="font-size:1.1rem;padding-top:4px">{worst}</div>
-        <div class="kpi-sub">AQI trung bình cao nhất</div>
-      </div>
-      <div class="kpi-box accent-red">
-        <div class="kpi-lbl">Giờ AQI nguy hiểm</div>
-        <div class="kpi-val">{dangerp} <span class="u">%</span></div>
-        <div class="kpi-sub">AQI > 150 (Kém → Nguy hại)</div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
 
-    st.markdown(f"""
-    <div class="trend-grid">
-        <div class="trend-card">
-            <div class="trend-kicker">Biến động 24 giờ</div>
-            <div class="trend-main" style="color:{aqi_1d_color}">AQI: {aqi_1d_text}</div>
-            <div class="trend-sub" style="color:{pm_1d_color}">PM2.5: {pm_1d_text}</div>
-        </div>
-        <div class="trend-card">
-            <div class="trend-kicker">Biến động 7 ngày</div>
-            <div class="trend-main" style="color:{aqi_7d_color}">AQI: {aqi_7d_text}</div>
-            <div class="trend-sub" style="color:{pm_7d_color}">PM2.5: {pm_7d_text}</div>
-        </div>
-        <div class="trend-card">
-            <div class="trend-kicker">Thay đổi thứ hạng ô nhiễm (so với ngày trước)</div>
-            <div class="trend-rank-line"><strong>Leo hạng:</strong> {rank_up_line}</div>
-            <div class="trend-rank-line"><strong>Hạ hạng:</strong> {rank_down_line if rank_down_line else "Không có biến động giảm rõ rệt."}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
 
     aqi_reference = [(lo, hi, label) for lo, hi, label, _ in AQI_DEF]
     pm25_warning_map = {
@@ -296,6 +249,137 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
         f"</div>"
     )
     st.markdown(iqair_hybrid_html, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="kpi-strip">
+      <div class="kpi-box accent-blue">
+        <div class="kpi-lbl">AQI phạm vi chọn</div>
+        <div class="kpi-val" style="color:{_col}">{avg_aqi} <span class="u">{_lbl}</span></div>
+        <div class="kpi-sub">WHO khuyến nghị AQI ≤ 50</div>
+      </div>
+      <div class="kpi-box accent-amber">
+        <div class="kpi-lbl">PM2.5 trung bình</div>
+        <div class="kpi-val">{avg_pm25} <span class="u">µg/m³</span></div>
+        <div class="kpi-sub">Vượt ngưỡng WHO ({round(avg_pm25/15*100-100,0):.0f}% so với 15 µg)</div>
+      </div>
+      <div class="kpi-box accent-red">
+        <div class="kpi-lbl">Tương đương thuốc lá</div>
+        <div class="kpi-val">{cig_n} <span class="u">điếu</span></div>
+        <div class="kpi-sub">trong {days} ngày · 22 µg/m³ = 1 điếu</div>
+      </div>
+      <div class="kpi-box accent-slate">
+        <div class="kpi-lbl">Khu vực ô nhiễm nhất</div>
+        <div class="kpi-val" style="font-size:1.1rem;padding-top:4px">{worst}</div>
+        <div class="kpi-sub">AQI trung bình cao nhất</div>
+      </div>
+      <div class="kpi-box accent-red">
+        <div class="kpi-lbl">Giờ AQI nguy hiểm</div>
+        <div class="kpi-val">{dangerp} <span class="u">%</span></div>
+        <div class="kpi-sub">AQI > 150 (Kém → Nguy hại)</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="trend-grid">
+        <div class="trend-card">
+            <div class="trend-kicker">Biến động 24 giờ</div>
+            <div class="trend-main" style="color:{aqi_1d_color}">AQI: {aqi_1d_text}</div>
+            <div class="trend-sub" style="color:{pm_1d_color}">PM2.5: {pm_1d_text}</div>
+        </div>
+        <div class="trend-card">
+            <div class="trend-kicker">Biến động 7 ngày</div>
+            <div class="trend-main" style="color:{aqi_7d_color}">AQI: {aqi_7d_text}</div>
+            <div class="trend-sub" style="color:{pm_7d_color}">PM2.5: {pm_7d_text}</div>
+        </div>
+        <div class="trend-card">
+            <div class="trend-kicker">Thay đổi thứ hạng ô nhiễm (so với ngày trước)</div>
+            <div class="trend-rank-line"><strong>Leo hạng:</strong> {rank_up_line}</div>
+            <div class="trend-rank-line"><strong>Hạ hạng:</strong> {rank_down_line if rank_down_line else "Không có biến động giảm rõ rệt."}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    pollutant_meta = {
+        "pm2_5": {
+            "title": "Vật chất hạt mịn",
+            "subtitle": "(PM2.5)",
+            "icon_file": "pm25.svg",
+        },
+        "pm10": {
+            "title": "Vật chất hạt mịn",
+            "subtitle": "(PM10)",
+            "icon_file": "pm10.svg",
+        },
+        "co": {"title": "Carbon monoxide", "subtitle": "(CO)", "icon_file": "co.svg"},
+        "so2": {
+            "title": "Lưu huỳnh dioxide",
+            "subtitle": "(SO2)",
+            "icon_file": "so2.svg",
+        },
+        "no2": {
+            "title": "Nitrogen dioxide",
+            "subtitle": "(NO2)",
+            "icon_file": "no2.svg",
+        },
+        "o3": {"title": "Ozon", "subtitle": "(O3)", "icon_file": "o3.svg"},
+    }
+
+    def _svg_data_uri(file_name):
+        svg_path = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), "..", "components", file_name)
+        )
+        try:
+            with open(svg_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+            return f"data:image/svg+xml;base64,{encoded}"
+        except Exception:
+            return ""
+
+    available_polls = [k for k in pollutant_meta if k in df.columns]
+    if available_polls:
+        st.markdown(
+            "<div class='card pollutant-card-wrap' style='margin-top:10px'><div class='card-title'><span class='q-tag'>Insights</span>Chỉ số chất ô nhiễm theo thành phần</div>",
+            unsafe_allow_html=True,
+        )
+        ordered = ["pm2_5", "pm10", "co", "so2", "no2", "o3"]
+        card_html = []
+        for poll_key in ordered:
+            if poll_key not in available_polls:
+                continue
+            meta = pollutant_meta[poll_key]
+            series = df[poll_key].dropna()
+            if series.empty:
+                continue
+            current_val = round(series.mean(), 1)
+            unit = POLLS[poll_key]["unit"] if poll_key in POLLS else ""
+            icon_uri = _svg_data_uri(meta["icon_file"])
+            icon_block = (
+                f"<img src='{icon_uri}' class='pollutant-icon' alt='{meta['title']}'/>"
+                if icon_uri
+                else "<div class='pollutant-icon pollutant-icon-fallback'></div>"
+            )
+            card_html.append(
+                (
+                    "<div class='pollutant-mini-card'>"
+                    f"<div class='pollutant-mini-left'>{icon_block}</div>"
+                    "<div class='pollutant-mini-mid'>"
+                    f"<div class='pollutant-mini-title'>{meta['title']}</div>"
+                    f"<div class='pollutant-mini-sub'>{meta['subtitle']}</div>"
+                    "</div>"
+                    "<div class='pollutant-mini-right'>"
+                    f"<div class='pollutant-mini-value'>{current_val:g}</div>"
+                    f"<div class='pollutant-mini-unit'>{unit}</div>"
+                    "</div>"
+                    "<div class='pollutant-mini-arrow'>›</div>"
+                    "</div>"
+                )
+            )
+        st.markdown(
+            f"<div class='pollutant-mini-grid'>{''.join(card_html)}</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
     if is_city_trimmed:
         st.caption(
@@ -669,85 +753,6 @@ def render(df):
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
-    pollutant_meta = {
-        "pm2_5": {
-            "title": "Vật chất hạt mịn",
-            "subtitle": "(PM2.5)",
-            "icon_file": "pm25.svg",
-        },
-        "pm10": {
-            "title": "Vật chất hạt mịn",
-            "subtitle": "(PM10)",
-            "icon_file": "pm10.svg",
-        },
-        "co": {"title": "Carbon monoxide", "subtitle": "(CO)", "icon_file": "co.svg"},
-        "so2": {
-            "title": "Lưu huỳnh dioxide",
-            "subtitle": "(SO2)",
-            "icon_file": "so2.svg",
-        },
-        "no2": {
-            "title": "Nitrogen dioxide",
-            "subtitle": "(NO2)",
-            "icon_file": "no2.svg",
-        },
-        "o3": {"title": "Ozon", "subtitle": "(O3)", "icon_file": "o3.svg"},
-    }
 
-    def _svg_data_uri(file_name):
-        svg_path = os.path.normpath(
-            os.path.join(os.path.dirname(__file__), "..", "components", file_name)
-        )
-        try:
-            with open(svg_path, "rb") as f:
-                encoded = base64.b64encode(f.read()).decode("utf-8")
-            return f"data:image/svg+xml;base64,{encoded}"
-        except Exception:
-            return ""
-
-    available_polls = [k for k in pollutant_meta if k in df.columns]
-    if available_polls:
-        st.markdown(
-            "<div class='card pollutant-card-wrap' style='margin-top:10px'><div class='card-title'><span class='q-tag'>Insights</span>Chỉ số chất ô nhiễm theo thành phần</div>",
-            unsafe_allow_html=True,
-        )
-        ordered = ["pm2_5", "pm10", "co", "so2", "no2", "o3"]
-        card_html = []
-        for poll_key in ordered:
-            if poll_key not in available_polls:
-                continue
-            meta = pollutant_meta[poll_key]
-            series = df[poll_key].dropna()
-            if series.empty:
-                continue
-            current_val = round(series.mean(), 1)
-            unit = POLLS[poll_key]["unit"] if poll_key in POLLS else ""
-            icon_uri = _svg_data_uri(meta["icon_file"])
-            icon_block = (
-                f"<img src='{icon_uri}' class='pollutant-icon' alt='{meta['title']}'/>"
-                if icon_uri
-                else "<div class='pollutant-icon pollutant-icon-fallback'></div>"
-            )
-            card_html.append(
-                (
-                    "<div class='pollutant-mini-card'>"
-                    f"<div class='pollutant-mini-left'>{icon_block}</div>"
-                    "<div class='pollutant-mini-mid'>"
-                    f"<div class='pollutant-mini-title'>{meta['title']}</div>"
-                    f"<div class='pollutant-mini-sub'>{meta['subtitle']}</div>"
-                    "</div>"
-                    "<div class='pollutant-mini-right'>"
-                    f"<div class='pollutant-mini-value'>{current_val:g}</div>"
-                    f"<div class='pollutant-mini-unit'>{unit}</div>"
-                    "</div>"
-                    "<div class='pollutant-mini-arrow'>›</div>"
-                    "</div>"
-                )
-            )
-        st.markdown(
-            f"<div class='pollutant-mini-grid'>{''.join(card_html)}</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
 
     # ══════════════════════════════════════════════
