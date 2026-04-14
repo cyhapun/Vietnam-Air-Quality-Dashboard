@@ -146,6 +146,16 @@ def process_forecast_batch(batch_meta):
                 df_merged["lat"] = float(meta["lat"])
                 df_merged["lon"] = float(meta["lon"])
                 
+                # Recalculate pollution labels after interpolation
+                df_merged["pollution_level"] = df_merged["aqi"].apply(get_pollution_level)
+                df_merged["pollution_class"] = df_merged["aqi"].apply(get_pollution_class)
+
+                # 3. XỬ LÝ MISSING VALUE (Nội suy/Ngoại suy)
+                # Chỉ nội suy các cột số
+                numeric_cols = df_merged.select_dtypes(include=[np.number]).columns
+                df_merged[numeric_cols] = df_merged[numeric_cols].interpolate(method='linear', limit_direction='both')
+                
+                # Sau khi nội suy AQI, tính toán lại level và class cho chính xác
                 df_merged["pollution_level"] = df_merged["aqi"].apply(get_pollution_level)
                 df_merged["pollution_class"] = df_merged["aqi"].apply(get_pollution_class)
 
@@ -219,6 +229,15 @@ def calculate_province_all():
                     pl.col("humidity").cast(pl.Float64, strict=False),
                     pl.col("rain").cast(pl.Float64, strict=False),
                     pl.col("wind_speed").cast(pl.Float64, strict=False),
+                    pl.col("wind_dir").cast(pl.Float64, strict=False),
+                    pl.col("pressure").cast(pl.Float64, strict=False),
+                    pl.col("cloud").cast(pl.Float64, strict=False),
+                    pl.col("pm2_5").cast(pl.Float64, strict=False),
+                    pl.col("pm10").cast(pl.Float64, strict=False),
+                    pl.col("co").cast(pl.Float64, strict=False),
+                    pl.col("no2").cast(pl.Float64, strict=False),
+                    pl.col("o3").cast(pl.Float64, strict=False),
+                    pl.col("so2").cast(pl.Float64, strict=False),
                     pl.col("pollution_level").cast(pl.String),
                     pl.col("pollution_class").cast(pl.Float64, strict=False)
                 ])

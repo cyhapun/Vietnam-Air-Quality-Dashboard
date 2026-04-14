@@ -57,6 +57,113 @@ def load_tier2_data(city_folder, filename):
     except Exception:
         return pd.DataFrame()
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_forecast_data(city_folder, filename):
+    base_dir = os.path.dirname(__file__)
+    file_path = os.path.join(base_dir, "..", "data", "forecast", city_folder, filename)
+    if not os.path.exists(file_path):
+        return pd.DataFrame()
+    try:
+        df = pd.read_csv(file_path)
+        if df.empty: return df
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+        df = df.dropna(subset=["timestamp", "aqi"])
+        # Deduplicate by averaging values for the same timestamp
+        df = df.groupby("timestamp").mean(numeric_only=True).reset_index()
+        df = df.sort_values("timestamp")
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+def render_hourly_forecast(df_forecast, poll_key):
+    if df_forecast.empty:
+        return
+    
+    # Filter for future data (from current hour onwards)
+    # Since it's a dashboard, we might want to show from "now"
+    now = pd.Timestamp.now().replace(minute=0, second=0, microsecond=0)
+    # Adjust for local time if needed, but assuming data is in sync
+    df_future = df_forecast[df_forecast["timestamp"] >= (now - pd.Timedelta(hours=1))].copy()
+    
+    if df_future.empty:
+        return
+
+    st.markdown('<div style="margin-top: 2rem; margin-bottom: 1rem;">'
+                '<div style="font-size: 18px; font-weight: 700; color: #0f172a;">Dự báo theo giờ</div>'
+                '<div style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Dự báo xu hướng chất lượng không khí trong 24-48 giờ tới.</div>'
+                '</div>', unsafe_allow_html=True)
+
+    # Build horizontal scroll container
+    scroll_html = '<div style="display: flex; overflow-x: auto; gap: 12px; padding-bottom: 16px; scrollbar-width: thin;">'
+    
+    for i, (_, row) in enumerate(df_future.head(48).iterrows()):
+        ts = row["timestamp"]
+        val = row[poll_key] if poll_key in row else row["aqi"]
+        lbl, col = val_meta(val, poll_key if poll_key in row else "aqi")
+        
+        hr_str = "Bây giờ" if i == 0 else ts.strftime("%H:%M")
+        
+        # Determine day label (only for i=0 or hour=00:00)
+        day_label = ""
+        is_boundary = False
+        if i == 0 or ts.hour == 0:
+            day_label = ts.strftime("Th %w") if ts.weekday() != 6 else "CN"
+            if i != 0: is_boundary = True # Start of a new day
+
+        border_style = "border-left: 1px dashed #cbd5e1; padding-left: 12px;" if is_boundary else ""
+        
+        scroll_html += f'''<div style="display:flex; flex-direction:column; align-items:center; min-width: 65px; {border_style}">
+<div style="height: 18px; font-size: 11px; font-weight: 700; color: #0f172a; margin-bottom: 4px; text-align: center;">{day_label}</div>
+<div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">{hr_str}</div>
+<div style="background: {col}; color: white; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 13px; min-width: 42px; text-align: center;">{val:.0f}</div>
+</div>'''
+            
+    scroll_html += '</div>'
+    st.markdown(scroll_html, unsafe_allow_html=True)
+
+def render_daily_forecast(df_forecast, poll_key):
+    if df_forecast.empty:
+        return
+        
+    st.markdown('<div style="margin-top: 1rem; margin-bottom: 1rem;">'
+                '<div style="font-size: 18px; font-weight: 700; color: #0f172a;">Dự báo hàng ngày</div>'
+                '</div>', unsafe_allow_html=True)
+                
+    # Group by date
+    df_forecast["date"] = df_forecast["timestamp"].dt.date
+    daily = df_forecast.groupby("date").agg({poll_key: "mean"}).reset_index()
+    
+    # Filter for today and future
+    today = pd.Timestamp.now().date()
+    daily = daily[daily["date"] >= today].head(7)
+    
+    container_html = '<div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">'
+    
+    for i, (_, row) in enumerate(daily.iterrows()):
+        d = row["date"]
+        val = row[poll_key]
+        lbl, col = val_meta(val, poll_key)
+        
+        day_pref = "Hôm nay" if d == today else d.strftime("%A")
+        # Vietnamese translation for days
+        day_map = {"Monday": "Thứ 2", "Tuesday": "Thứ 3", "Wednesday": "Thứ 4", "Thursday": "Thứ 5", "Friday": "Thứ 6", "Saturday": "Thứ 7", "Sunday": "CN"}
+        if d != today:
+             day_pref = day_map.get(d.strftime("%A"), d.strftime("%d/%m"))
+             
+        bg_row = "transparent" if i % 2 == 0 else "#f8fafc"
+        
+        container_html += f'''<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: {bg_row}; border-bottom: 1px solid #f1f5f9;">
+<div style="font-weight: 600; color: #334155; width: 100px;">{day_pref}</div>
+<div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+<div style="background: {col}; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 14px; min-width: 50px; text-align: center;">{val:.0f}</div>
+<div style="margin-left: 12px; font-size: 13px; font-weight: 500; color: {col};">{lbl}</div>
+</div>
+<div style="width: 100px; text-align: right; color: #64748b; font-size: 12px;">{d.strftime("%d/%m/%Y")}</div>
+</div>'''
+        
+    container_html += '</div>'
+    st.markdown(container_html, unsafe_allow_html=True)
+
 def render(global_df):
     ctx = st.session_state.get("dashboard_context", {})
     if ctx: globals().update(ctx)
@@ -172,7 +279,7 @@ def render(global_df):
             st.rerun()
 
     with c4:
-        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng", "6 tháng", "1 năm"]
+        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng", "6 tháng"]
         idx_tr = tr_opts.index(st.session_state["aqi_time_range"]) if st.session_state["aqi_time_range"] in tr_opts else 1
         time_range = st.selectbox("Thời gian", tr_opts, index=idx_tr, key="aqi_time_select")
         if time_range != st.session_state["aqi_time_range"]:
@@ -229,8 +336,7 @@ def render(global_df):
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
         "3 tháng": pd.Timedelta(days=90),
-        "6 tháng": pd.Timedelta(days=180),
-        "1 năm": pd.Timedelta(days=365)
+        "6 tháng": pd.Timedelta(days=180)
     }
     
     min_d = max_d - delta_map[time_range]
@@ -304,8 +410,7 @@ def render(global_df):
             "7 ngày": "6h",
             "30 ngày": "1D",
             "3 tháng": "3D",
-            "6 tháng": "7D",
-            "1 năm": "14D"
+            "6 tháng": "7D"
         }
         rule = rule_map.get(time_range)
         if rule:
@@ -611,17 +716,25 @@ def render(global_df):
         
         adv_title, adv_desc, adv_icon = advice_map.get(avg_lbl, ("Đang cập nhật", "Hệ thống đang kiểm tra mức độ an toàn...", "info"))
         
-        adv_html = f'''
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
-        <div style="margin-top: 1.5rem; background-color: {hex_rgba(avg_c, 0.08)}; border: 1px solid {hex_rgba(avg_c, 0.3)}; border-radius: 10px; padding: 14px;">
-            <div style="display: flex; align-items: center; margin-bottom: 6px;">
-                <span class="material-symbols-rounded" style="color: {avg_c}; font-size: 20px; margin-right: 6px;">{adv_icon}</span>
-                <span style="color: {avg_c}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Khuyến cáo sức khỏe</span>
-            </div>
-            <div style="color: #0f172a; font-size: 14px; font-weight: 700; margin-bottom: 4px;">{adv_title}</div>
-            <div style="color: #475569; font-size: 13px; line-height: 1.5;">{adv_desc}</div>
-        </div>
-        '''
+        adv_html = f'''<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+<div style="margin-top: 1.5rem; background-color: {hex_rgba(avg_c, 0.08)}; border: 1px solid {hex_rgba(avg_c, 0.3)}; border-radius: 10px; padding: 14px;">
+<div style="display: flex; align-items: center; margin-bottom: 6px;">
+<span class="material-symbols-rounded" style="color: {avg_c}; font-size: 20px; margin-right: 6px;">{adv_icon}</span>
+<span style="color: {avg_c}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Khuyến cáo sức khỏe</span>
+</div>
+<div style="color: #0f172a; font-size: 14px; font-weight: 700; margin-bottom: 4px;">{adv_title}</div>
+<div style="color: #475569; font-size: 13px; line-height: 1.5;">{adv_desc}</div>
+</div>'''
         st.markdown(adv_html, unsafe_allow_html=True)
     
+    # ── FORECAST SECTION ──
+    st.markdown('<hr style="margin: 2rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
+    
+    df_forecast = load_forecast_data(folder_name, target_file)
+    if not df_forecast.empty:
+        render_hourly_forecast(df_forecast, selected_poll_key)
+        render_daily_forecast(df_forecast, selected_poll_key)
+    else:
+        st.info("Hiện chưa có dữ liệu dự báo cho khu vực này.")
+        
     st.markdown('</div>', unsafe_allow_html=True)

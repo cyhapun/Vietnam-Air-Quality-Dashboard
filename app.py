@@ -64,7 +64,7 @@ def initialize_background_tasks():
     return "Crawler started"
 
 # Gọi hàm khởi tạo
-initialize_background_tasks()
+#initialize_background_tasks()
 
 st.set_page_config(
     layout="wide",
