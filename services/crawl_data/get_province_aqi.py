@@ -1,7 +1,10 @@
 import polars as pl
 from pathlib import Path
+from tqdm import tqdm 
 
-root_dir = Path('data/aqi')
+# Cấu hình đường dẫn linh hoạt hơn
+BASE_DIR = Path(__file__).resolve().parent.parent.parent # Trỏ về thư mục gốc dự án
+ROOT_DIR = BASE_DIR / "data" / "aqi"
 
 # 1. Định nghĩa danh sách cột mục tiêu và kiểu dữ liệu chuẩn
 TARGET_SCHEMA = {
@@ -33,59 +36,62 @@ TARGET_SCHEMA = {
 
 def clean_and_format_lf(file_path):
     """Hàm này đảm bảo mọi file CSV trả về đúng 1 schema duy nhất"""
-    # Đọc thử 1 dòng để lấy tên cột thực tế (xử lý trường hợp tên cột bị thừa dấu cách)
     actual_columns = pl.read_csv(file_path, n_rows=0).columns
-    # Chuẩn hóa: tạo dictionary ánh xạ tên cột bị thừa khoảng trắng về tên chuẩn
     rename_dict = {c: c.strip() for c in actual_columns if c.strip() in TARGET_SCHEMA}
     
-    lf = pl.scan_csv(file_path, infer_schema_length=0) # Đọc tất cả là String trước để tránh lỗi
+    lf = pl.scan_csv(file_path, infer_schema_length=0)
     lf = lf.rename(rename_dict)
     
+    # --- Lấy schema một lần duy nhất ---
+    current_columns = lf.collect_schema().names() 
+    
     # Chỉ chọn các cột có trong TARGET_SCHEMA
-    existing_cols = [c for c in TARGET_SCHEMA.keys() if c in lf.columns]
+    existing_cols = [c for c in TARGET_SCHEMA.keys() if c in current_columns]
     lf = lf.select(existing_cols)
     
     # Ép kiểu và thêm các cột còn thiếu
     expressions = []
     for col_name, dtype in TARGET_SCHEMA.items():
-        if col_name in lf.columns:
-            # Ép kiểu cột hiện có, dùng strict=False để chuyển lỗi thành Null
+        if col_name in current_columns:
             expressions.append(pl.col(col_name).cast(dtype, strict=False))
         else:
-            # Tạo cột mới hoàn toàn nếu file không có
             expressions.append(pl.lit(None).cast(dtype).alias(col_name))
             
     return lf.with_columns(expressions).select(list(TARGET_SCHEMA.keys()))
 
-def process_data():
-    provinces = [d for d in root_dir.iterdir() if d.is_dir()]
+def run_province_aggregation():
+    if not ROOT_DIR.exists():
+        print(f"⚠️ Thư mục không tồn tại: {ROOT_DIR}")
+        return
 
-    for province_path in provinces:
-        print(f"🚀 Đang xử lý tỉnh: {province_path.name}")
-        
+    provinces = [d for d in ROOT_DIR.iterdir() if d.is_dir()]
+    tqdm.write(f"\nTỔNG HỢP DỮ LIỆU CHO CÁC TỈNH/THÀNH:")
+
+    # Thanh tiến trình chính: Duyệt qua các tỉnh
+    for province_path in tqdm(provinces, desc="Tổng hợp dữ liệu", unit="tỉnh"):
         csv_files = [f for f in province_path.glob("*.csv") if f.name != 'all.csv']
         if not csv_files: continue
 
         lazy_frames = []
-        for file in csv_files:
+        
+        # Thanh tiến trình phụ: Duyệt file trong tỉnh (leave=False giúp thanh này tự biến mất khi xong)
+        for file in tqdm(csv_files, desc=f"Đang đọc: {province_path.name}", unit="file", leave=False):
             try:
-                # Ép khuôn từng file ngay tại đây
                 clean_lf = clean_and_format_lf(file)
                 lazy_frames.append(clean_lf)
-            except Exception as e:
-                print(f"⚠️ Bỏ qua file lỗi {file.name}: {e}")
+            except Exception:
+                # Bỏ qua in lỗi để không làm vỡ giao diện tqdm
+                pass 
 
         if not lazy_frames: continue
 
-        # Gộp dữ liệu - lúc này tất cả đã cùng Schema nên không thể lỗi UNION
+        # Gộp dữ liệu
         combined_df = pl.concat(lazy_frames)
 
-        # Định nghĩa các cột số để tính Mean và cột nhãn để tính Mode
         group_cols = ["timestamp", "year", "month", "day", "hour", "province"]
         mean_cols = ["lat", "lon", "aqi", "temp", "humidity", "rain", "wind_speed", "wind_dir", "pressure", "cloud", "pm2_5", "pm10", "co", "no2", "o3", "so2"]
         mode_cols = ["pollution_level", "pollution_class"]
 
-        print(f"📊 Đang tính toán giá trị đại diện cho {province_path.name}...")
         result = (
             combined_df
             .group_by(group_cols)
@@ -99,7 +105,6 @@ def process_data():
         # Lưu file
         output_file = province_path / "all.csv"
         result.collect().write_csv(output_file)
-        print(f"✅ Xong! Đã lưu {output_file}")
 
 if __name__ == "__main__":
-    process_data()
+    run_province_aggregation()
