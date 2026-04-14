@@ -219,6 +219,15 @@ def calculate_province_all():
                     pl.col("humidity").cast(pl.Float64, strict=False),
                     pl.col("rain").cast(pl.Float64, strict=False),
                     pl.col("wind_speed").cast(pl.Float64, strict=False),
+                    pl.col("wind_dir").cast(pl.Float64, strict=False),
+                    pl.col("pressure").cast(pl.Float64, strict=False),
+                    pl.col("cloud").cast(pl.Float64, strict=False),
+                    pl.col("pm2_5").cast(pl.Float64, strict=False),
+                    pl.col("pm10").cast(pl.Float64, strict=False),
+                    pl.col("co").cast(pl.Float64, strict=False),
+                    pl.col("no2").cast(pl.Float64, strict=False),
+                    pl.col("o3").cast(pl.Float64, strict=False),
+                    pl.col("so2").cast(pl.Float64, strict=False),
                     pl.col("pollution_level").cast(pl.String),
                     pl.col("pollution_class").cast(pl.Float64, strict=False)
                 ])
