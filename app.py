@@ -5,6 +5,7 @@ import time
 from services.crawl_data.update_aqi_hourly import run_hourly_update 
 from services.crawl_data.get_province_aqi import run_province_aggregation 
 from services.crawl_data.get_forecast import run_forecast_update
+import argparse
 
 from components.footer import render_footer
 from components.header import render_header
@@ -40,10 +41,10 @@ def start_crawler_thread():
         try:
             print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler đang chạy ngầm...")
             # Bước 1: Cào dữ liệu mới cho từng trạm (Batch API)
-            # run_hourly_update()
+            run_hourly_update()
             
             # Bước 2: Tính toán lại giá trị đại diện (Mean/Mode) cho từng tỉnh thành
-            # run_province_aggregation()
+            run_province_aggregation()
 
             # 3. Cập nhật dữ liệu Dự báo (Forecast tương lai)
             run_forecast_update()
@@ -63,8 +64,21 @@ def initialize_background_tasks():
     thread.start()
     return "Crawler started"
 
-# Gọi hàm khởi tạo
-initialize_background_tasks()
+parser = argparse.ArgumentParser(description="Tùy chọn cho Vietnam AQI Dashboard")
+parser.add_argument(
+    "--real-time", 
+    action="store_true", 
+    help="Bật tính năng chạy ngầm crawler để cập nhật dữ liệu real-time"
+)
+
+# Sử dụng parse_known_args để bỏ qua các tham số mặc định của lệnh `streamlit run`
+args, unknown = parser.parse_known_args()
+
+if args.real_time:
+    initialize_background_tasks()
+    print("Đang bật chế độ Real-time.")
+else:
+    print("Không sử dụng chế độ Real-time. Thêm cờ '--real-time' khi chạy để bật.")
 
 st.set_page_config(
     layout="wide",
