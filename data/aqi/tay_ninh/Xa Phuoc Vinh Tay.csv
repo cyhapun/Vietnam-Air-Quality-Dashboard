@@ -1,12 +1,4 @@
-﻿timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,pm2_5,pm10,co,no2,so2,o3,temp,humidity,rain,pressure,wind_speed,wind_dir,cloud
-2025-10-14 09:00:00,2025,10,14,9,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,
-2025-10-14 10:00:00,2025,10,14,10,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,
-2025-10-14 11:00:00,2025,10,14,11,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,
-2025-10-14 12:00:00,2025,10,14,12,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,
-2025-10-14 13:00:00,2025,10,14,13,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,
-2025-10-14 14:00:00,2025,10,14,14,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,
-2025-10-14 15:00:00,2025,10,14,15,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,
-2025-10-14 16:00:00,2025,10,14,16,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,
+timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,pm2_5,pm10,co,no2,so2,o3,temp,humidity,rain,pressure,wind_speed,wind_dir,cloud
 2025-10-14 17:00:00,2025,10,14,17,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,
 2025-10-14 18:00:00,2025,10,14,18,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,
 2025-10-14 19:00:00,2025,10,14,19,Tây Ninh,Xã Phước Vĩnh Tây,10.5543248,106.6563493,,Unknown,,,,,,,,,,,,,,

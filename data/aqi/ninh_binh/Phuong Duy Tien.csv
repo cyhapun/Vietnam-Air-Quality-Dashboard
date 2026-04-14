@@ -1,12 +1,4 @@
-﻿timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
-2025-10-14 09:00:00,2025,10,14,9,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,115,Unhealthy for Sensitive Groups,2,25.4,92,0.5,11.5,35,1012.1,100,19.1,20.5,255.0,26.2,31.0,23.4
-2025-10-14 10:00:00,2025,10,14,10,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,115,Unhealthy for Sensitive Groups,2,27.0,88,0.3,10.8,57,1012.0,100,16.8,18.6,239.0,21.0,39.0,21.0
-2025-10-14 11:00:00,2025,10,14,11,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,115,Unhealthy for Sensitive Groups,2,27.9,82,0.2,11.7,81,1011.3,100,13.8,14.7,218.0,18.3,45.0,18.2
-2025-10-14 12:00:00,2025,10,14,12,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,115,Unhealthy for Sensitive Groups,2,29.0,76,0.2,10.7,97,1009.9,100,14.6,15.3,193.0,16.9,50.0,15.3
-2025-10-14 13:00:00,2025,10,14,13,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,115,Unhealthy for Sensitive Groups,2,29.5,71,6.9,12.4,109,1009.7,100,14.9,15.4,180.0,16.9,52.0,13.8
-2025-10-14 14:00:00,2025,10,14,14,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,115,Unhealthy for Sensitive Groups,2,25.6,89,11.7,10.3,169,1009.5,100,16.9,17.5,176.0,17.8,52.0,14.1
-2025-10-14 15:00:00,2025,10,14,15,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,114,Unhealthy for Sensitive Groups,2,26.7,85,0.3,4.0,117,1008.7,100,18.2,18.7,184.0,20.1,50.0,15.7
-2025-10-14 16:00:00,2025,10,14,16,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,114,Unhealthy for Sensitive Groups,2,26.8,85,0.0,5.6,117,1009.0,100,20.5,21.5,227.0,25.0,45.0,18.8
+timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
 2025-10-14 17:00:00,2025,10,14,17,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,114,Unhealthy for Sensitive Groups,2,26.6,86,0.1,2.8,101,1009.2,100,27.0,28.3,346.0,34.9,35.0,24.3
 2025-10-14 18:00:00,2025,10,14,18,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,115,Unhealthy for Sensitive Groups,2,25.1,92,4.5,6.9,121,1010.3,100,42.7,44.9,501.0,47.4,21.0,31.3
 2025-10-14 19:00:00,2025,10,14,19,Ninh Bình,Phường Duy Tiên,20.6304949,105.9850752,115,Unhealthy for Sensitive Groups,2,24.6,92,3.1,1.9,151,1010.3,100,43.9,46.3,595.0,52.8,11.0,33.1

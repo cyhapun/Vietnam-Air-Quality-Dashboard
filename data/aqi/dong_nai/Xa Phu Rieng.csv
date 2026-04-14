@@ -1,12 +1,4 @@
-﻿timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,pm2_5,pm10,co,no2,so2,o3,temp,humidity,rain,pressure,wind_speed,wind_dir,cloud
-2025-10-14 09:00:00,2025,10,14,9,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,
-2025-10-14 10:00:00,2025,10,14,10,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,
-2025-10-14 11:00:00,2025,10,14,11,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,
-2025-10-14 12:00:00,2025,10,14,12,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,
-2025-10-14 13:00:00,2025,10,14,13,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,
-2025-10-14 14:00:00,2025,10,14,14,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,
-2025-10-14 15:00:00,2025,10,14,15,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,
-2025-10-14 16:00:00,2025,10,14,16,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,
+timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,pm2_5,pm10,co,no2,so2,o3,temp,humidity,rain,pressure,wind_speed,wind_dir,cloud
 2025-10-14 17:00:00,2025,10,14,17,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,
 2025-10-14 18:00:00,2025,10,14,18,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,
 2025-10-14 19:00:00,2025,10,14,19,Đồng Nai,Xã Phú Riềng,11.6598579,106.9045766,,Unknown,,,,,,,,,,,,,,

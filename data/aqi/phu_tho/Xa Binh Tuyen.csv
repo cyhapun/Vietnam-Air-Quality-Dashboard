@@ -1,12 +1,4 @@
-﻿timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
-2025-10-14 09:00:00,2025,10,14,9,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,101,Unhealthy for Sensitive Groups,2,24.1,95,0.6,9.1,54,1009.3,100,28.1,28.6,195.0,34.7,23.0,54.1
-2025-10-14 10:00:00,2025,10,14,10,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,102,Unhealthy for Sensitive Groups,2,25.2,89,0.4,8.0,42,1008.8,100,26.4,26.8,171.0,29.7,32.0,52.2
-2025-10-14 11:00:00,2025,10,14,11,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,103,Unhealthy for Sensitive Groups,2,25.6,87,0.2,12.0,44,1008.4,100,24.3,24.7,161.0,25.2,43.0,45.5
-2025-10-14 12:00:00,2025,10,14,12,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,104,Unhealthy for Sensitive Groups,2,26.2,84,0.2,7.1,30,1007.1,100,19.2,19.6,158.0,21.0,55.0,36.3
-2025-10-14 13:00:00,2025,10,14,13,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,104,Unhealthy for Sensitive Groups,2,27.1,80,0.1,7.4,68,1006.6,100,19.6,20.0,158.0,18.6,64.0,29.5
-2025-10-14 14:00:00,2025,10,14,14,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,104,Unhealthy for Sensitive Groups,2,27.8,78,0.0,6.7,74,1005.9,100,21.7,22.1,162.0,18.3,68.0,26.8
-2025-10-14 15:00:00,2025,10,14,15,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,104,Unhealthy for Sensitive Groups,2,27.9,77,0.1,8.0,82,1005.3,100,23.6,24.0,169.0,19.7,68.0,26.4
-2025-10-14 16:00:00,2025,10,14,16,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,105,Unhealthy for Sensitive Groups,2,27.4,79,0.4,8.6,98,1005.3,100,25.1,25.4,180.0,24.0,63.0,27.8
+timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
 2025-10-14 17:00:00,2025,10,14,17,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,105,Unhealthy for Sensitive Groups,2,24.1,93,6.7,6.3,95,1006.3,100,28.2,28.5,193.0,33.3,48.0,31.5
 2025-10-14 18:00:00,2025,10,14,18,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,105,Unhealthy for Sensitive Groups,2,24.1,95,0.1,4.0,39,1006.9,99,34.5,35.0,210.0,45.4,28.0,37.0
 2025-10-14 19:00:00,2025,10,14,19,Phú Thọ,Xã Bình Tuyền,21.3639721,105.6861442,104,Unhealthy for Sensitive Groups,2,24.0,96,0.1,7.9,47,1007.0,100,45.4,46.9,232.0,56.9,14.0,41.4

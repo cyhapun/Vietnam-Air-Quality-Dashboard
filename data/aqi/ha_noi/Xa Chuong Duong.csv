@@ -1,12 +1,4 @@
-﻿timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
-2025-10-14 09:00:00,2025,10,14,9,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,115,Unhealthy for Sensitive Groups,2,24.5,93,0.2,15.5,28,1012.2,100,19.1,20.5,362.0,26.2,31.0,23.4
-2025-10-14 10:00:00,2025,10,14,10,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,115,Unhealthy for Sensitive Groups,2,24.9,93,0.2,12.5,21,1012.2,100,16.8,18.6,322.0,21.0,39.0,21.0
-2025-10-14 11:00:00,2025,10,14,11,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,115,Unhealthy for Sensitive Groups,2,26.0,87,0.1,13.2,52,1011.6,100,13.8,14.7,265.0,18.3,45.0,18.2
-2025-10-14 12:00:00,2025,10,14,12,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,115,Unhealthy for Sensitive Groups,2,27.6,81,0.2,9.9,71,1010.0,100,14.6,15.3,199.0,16.9,50.0,15.3
-2025-10-14 13:00:00,2025,10,14,13,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,115,Unhealthy for Sensitive Groups,2,28.6,75,0.2,9.7,87,1009.8,100,14.9,15.4,166.0,16.9,52.0,13.8
-2025-10-14 14:00:00,2025,10,14,14,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,115,Unhealthy for Sensitive Groups,2,28.3,78,0.3,7.7,129,1009.0,100,16.9,17.5,181.0,17.8,52.0,14.1
-2025-10-14 15:00:00,2025,10,14,15,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,114,Unhealthy for Sensitive Groups,2,25.1,92,3.1,9.5,166,1008.9,100,18.2,18.7,229.0,20.1,50.0,15.7
-2025-10-14 16:00:00,2025,10,14,16,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,114,Unhealthy for Sensitive Groups,2,25.7,89,0.2,3.1,149,1009.0,100,20.5,21.5,308.0,25.0,45.0,18.8
+timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
 2025-10-14 17:00:00,2025,10,14,17,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,114,Unhealthy for Sensitive Groups,2,25.6,90,0.0,3.3,112,1009.2,100,27.0,28.3,451.0,34.9,35.0,24.3
 2025-10-14 18:00:00,2025,10,14,18,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,115,Unhealthy for Sensitive Groups,2,24.8,95,0.8,3.8,93,1010.2,100,42.7,44.9,624.0,47.4,21.0,31.3
 2025-10-14 19:00:00,2025,10,14,19,Hà Nội,Xã Chương Dương,20.8353914,105.8982681,115,Unhealthy for Sensitive Groups,2,25.2,95,1.3,3.3,174,1010.4,100,43.9,46.3,722.0,52.8,11.0,33.1

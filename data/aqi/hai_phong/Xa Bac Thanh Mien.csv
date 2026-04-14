@@ -1,12 +1,4 @@
-﻿timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
-2025-10-14 09:00:00,2025,10,14,9,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,115,Unhealthy for Sensitive Groups,2,26.0,90,0.2,13.3,74,1012.1,100,19.1,20.5,260.0,26.2,31.0,23.4
-2025-10-14 10:00:00,2025,10,14,10,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,115,Unhealthy for Sensitive Groups,2,27.1,85,0.3,11.9,63,1012.0,100,16.8,18.6,251.0,21.0,39.0,21.0
-2025-10-14 11:00:00,2025,10,14,11,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,115,Unhealthy for Sensitive Groups,2,27.6,82,0.1,13.7,92,1011.4,100,13.8,14.7,217.0,18.3,45.0,18.2
-2025-10-14 12:00:00,2025,10,14,12,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,115,Unhealthy for Sensitive Groups,2,29.0,77,0.3,14.5,98,1010.0,98,14.6,15.3,170.0,16.9,50.0,15.3
-2025-10-14 13:00:00,2025,10,14,13,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,115,Unhealthy for Sensitive Groups,2,29.1,73,0.3,12.1,110,1009.9,100,14.9,15.4,138.0,16.9,52.0,13.8
-2025-10-14 14:00:00,2025,10,14,14,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,115,Unhealthy for Sensitive Groups,2,29.0,72,0.1,11.4,125,1008.9,100,16.9,17.5,130.0,17.8,52.0,14.1
-2025-10-14 15:00:00,2025,10,14,15,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,114,Unhealthy for Sensitive Groups,2,26.3,84,4.0,7.7,152,1008.9,100,18.2,18.7,137.0,20.1,50.0,15.7
-2025-10-14 16:00:00,2025,10,14,16,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,114,Unhealthy for Sensitive Groups,2,26.6,84,0.2,7.0,140,1008.9,100,20.5,21.5,159.0,25.0,45.0,18.8
+timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
 2025-10-14 17:00:00,2025,10,14,17,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,114,Unhealthy for Sensitive Groups,2,26.2,87,0.1,5.9,78,1009.2,100,27.0,28.3,204.0,34.9,35.0,24.3
 2025-10-14 18:00:00,2025,10,14,18,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,115,Unhealthy for Sensitive Groups,2,25.4,92,0.1,4.5,92,1010.1,100,42.7,44.9,264.0,47.4,21.0,31.3
 2025-10-14 19:00:00,2025,10,14,19,Hải Phòng,Xã Bắc Thanh Miện,20.809877,106.1936857,115,Unhealthy for Sensitive Groups,2,25.0,94,0.8,2.2,222,1010.2,100,43.9,46.3,312.0,52.8,11.0,33.1

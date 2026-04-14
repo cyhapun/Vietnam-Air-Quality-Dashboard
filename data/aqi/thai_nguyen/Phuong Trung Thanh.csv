@@ -1,12 +1,4 @@
-﻿timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
-2025-10-14 09:00:00,2025,10,14,9,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,101,Unhealthy for Sensitive Groups,2,24.2,94,0.7,12.8,6,1011.9,100,20.4,21.0,223.0,19.5,44.0,24.1
-2025-10-14 10:00:00,2025,10,14,10,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,101,Unhealthy for Sensitive Groups,2,25.0,90,0.2,13.8,29,1011.5,100,18.5,19.2,191.0,14.7,56.0,22.8
-2025-10-14 11:00:00,2025,10,14,11,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,102,Unhealthy for Sensitive Groups,2,26.2,84,0.1,12.0,32,1010.8,100,14.8,15.3,182.0,12.6,62.0,19.7
-2025-10-14 12:00:00,2025,10,14,12,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,102,Unhealthy for Sensitive Groups,2,26.9,83,0.1,7.3,33,1009.4,100,13.9,14.4,184.0,12.0,64.0,15.8
-2025-10-14 13:00:00,2025,10,14,13,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,102,Unhealthy for Sensitive Groups,2,27.0,81,0.1,4.8,37,1009.1,100,14.9,15.4,187.0,12.8,64.0,13.1
-2025-10-14 14:00:00,2025,10,14,14,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,102,Unhealthy for Sensitive Groups,2,27.9,80,0.0,3.6,41,1008.2,98,16.4,16.9,183.0,14.8,61.0,12.4
-2025-10-14 15:00:00,2025,10,14,15,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,102,Unhealthy for Sensitive Groups,2,28.2,77,0.1,4.8,15,1007.6,99,17.1,17.5,180.0,18.3,54.0,13.0
-2025-10-14 16:00:00,2025,10,14,16,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,102,Unhealthy for Sensitive Groups,2,25.5,89,3.3,14.4,126,1008.1,100,18.1,18.7,193.0,23.6,46.0,14.9
+timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
 2025-10-14 17:00:00,2025,10,14,17,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,101,Unhealthy for Sensitive Groups,2,25.0,94,1.9,1.8,79,1008.5,100,24.0,25.0,240.0,32.9,34.0,19.2
 2025-10-14 18:00:00,2025,10,14,18,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,102,Unhealthy for Sensitive Groups,2,24.8,94,0.2,0.8,315,1009.2,100,34.8,36.6,302.0,44.0,20.0,24.9
 2025-10-14 19:00:00,2025,10,14,19,Thái Nguyên,Phường Trung Thành,21.3655865,105.8750945,102,Unhealthy for Sensitive Groups,2,25.0,96,0.2,4.9,39,1009.4,100,43.0,45.8,338.0,54.1,10.0,28.4

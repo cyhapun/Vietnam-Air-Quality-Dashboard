@@ -1,12 +1,4 @@
-﻿timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
-2025-10-14 09:00:00,2025,10,14,9,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,105,Unhealthy for Sensitive Groups,2,21.9,97,7.9,9.8,26,962.5,100,23.8,24.5,216.0,33.8,22.0,38.7
-2025-10-14 10:00:00,2025,10,14,10,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,105,Unhealthy for Sensitive Groups,2,21.6,97,10.0,6.1,50,962.7,100,17.2,17.8,219.0,27.8,29.0,34.5
-2025-10-14 11:00:00,2025,10,14,11,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,106,Unhealthy for Sensitive Groups,2,21.8,96,2.4,3.3,49,962.2,100,14.4,14.8,249.0,23.7,38.0,29.6
-2025-10-14 12:00:00,2025,10,14,12,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,105,Unhealthy for Sensitive Groups,2,22.3,96,0.6,3.1,36,961.0,100,15.7,16.1,291.0,20.6,47.0,24.3
-2025-10-14 13:00:00,2025,10,14,13,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,105,Unhealthy for Sensitive Groups,2,22.9,94,1.6,3.2,27,960.9,100,17.8,18.2,316.0,18.9,54.0,20.5
-2025-10-14 14:00:00,2025,10,14,14,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,105,Unhealthy for Sensitive Groups,2,23.2,95,0.3,4.9,321,960.0,100,19.8,20.2,309.0,18.5,57.0,19.0
-2025-10-14 15:00:00,2025,10,14,15,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,105,Unhealthy for Sensitive Groups,2,23.7,93,0.7,5.4,37,959.5,100,20.3,20.7,285.0,19.5,56.0,18.9
-2025-10-14 16:00:00,2025,10,14,16,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,105,Unhealthy for Sensitive Groups,2,22.9,96,1.9,2.8,63,959.7,100,21.9,22.3,263.0,22.9,52.0,20.1
+timestamp,year,month,day,hour,province,location,lat,lon,aqi,pollution_level,pollution_class,temp,humidity,rain,wind_speed,wind_dir,pressure,cloud,pm2_5,pm10,co,no2,o3,so2
 2025-10-14 17:00:00,2025,10,14,17,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,105,Unhealthy for Sensitive Groups,2,22.6,96,0.3,4.0,100,960.0,100,28.2,28.6,250.0,31.0,42.0,23.1
 2025-10-14 18:00:00,2025,10,14,18,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,106,Unhealthy for Sensitive Groups,2,22.2,98,0.1,0.9,180,960.5,100,38.5,39.3,239.0,41.6,28.0,27.3
 2025-10-14 19:00:00,2025,10,14,19,Phú Thọ,Xã Nật Sơn,20.7457753,105.5263491,106,Unhealthy for Sensitive Groups,2,21.3,99,0.8,1.9,214,960.8,100,45.3,46.4,230.0,51.8,16.0,30.9
