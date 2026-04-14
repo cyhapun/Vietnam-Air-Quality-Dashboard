@@ -287,6 +287,8 @@ def load_province_detail(
 
     df_list = []
     for p in files:
+        if os.path.basename(p).lower() == "all.csv":
+            continue
         try:
             temp_df = _safe_read_csv(p)
             if has_time_filter and "timestamp" in temp_df.columns:
