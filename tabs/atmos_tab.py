@@ -5,6 +5,7 @@ import streamlit as st
 
 from services.data_loader import list_detail_provinces, load_province_detail
 from utils.helpers import AQI_DEF
+from utils.loading import dashboard_loading
 
 
 WIND_BIN_ORDER = ["0–5", "5–10", "10–20", ">20"]
@@ -233,7 +234,12 @@ def render(df):
     else:
         start_arg = str(ctx["s_d"]) if "s_d" in ctx else None
         end_arg = str(ctx["e_d"]) if "e_d" in ctx else None
-        with st.spinner(f"Đang tải dữ liệu chi tiết của {selected_province}..."):
+        with dashboard_loading(
+            f"Đang tải dữ liệu chi tiết của {selected_province}...",
+            hint="Đang tổng hợp theo điểm quan trắc và khung thời gian đã chọn.",
+            overlay=True,
+            min_duration=0.75,
+        ):
             detail_df = load_province_detail(selected_province, start_arg, end_arg)
         scope_text = selected_province
 
