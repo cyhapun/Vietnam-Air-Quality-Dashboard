@@ -143,9 +143,6 @@ def render_dashboard():
     tabs = st.tabs(
         [
             "Tổng quan",
-            "Ví Trí",
-            "Thời Gian",
-            "Khí Tượng & Môi Trường",
             "AQI",
             "Thời tiết",
             "Tương tác",
@@ -155,16 +152,10 @@ def render_dashboard():
     with tabs[0]:
         render_tab_or_blank(overview_tab, state["df"])
     with tabs[1]:
-        render_tab_or_blank(location_tab, state["df"])
-    with tabs[2]:
-        render_tab_or_blank(datetime_tab, state["df"])
-    with tabs[3]:
-        render_tab_or_blank(atmos_tab, state["df"])
-    with tabs[4]:
         render_tab_or_blank(aqi_tab, state["df"])
-    with tabs[5]:
+    with tabs[2]:
         render_tab_or_blank(weather_tab, state["df"])
-    with tabs[6]:
+    with tabs[3]:
         render_tab_or_blank(interaction_tab, state["df"])
 
     render_footer()
