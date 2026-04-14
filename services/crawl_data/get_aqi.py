@@ -4,10 +4,8 @@ import time
 import os
 import glob
 import numpy as np
-import unicodedata
 import re
 import argparse
-from datetime import date, timedelta
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from tqdm import tqdm
@@ -15,7 +13,7 @@ from tqdm import tqdm
 # Lấy mốc thời gian hiện tại theo đúng múi giờ Asia/Bangkok (đồng bộ với tham số API)
 now = pd.Timestamp.utcnow().tz_convert("Asia/Bangkok").tz_localize(None)
 current_hour = now.floor("h") # Làm tròn xuống khung giờ hiện hành
-start_hour = current_hour - pd.DateOffset(months=6) # Lùi lại chính xác 6 tháng
+start_hour = current_hour - pd.DateOffset(months=3) # Lùi lại chính xác 3 tháng
 
 # Cập nhật tham số truyền vào API (chỉ nhận định dạng YYYY-MM-DD)
 START_DATE = start_hour.strftime("%Y-%m-%d")
@@ -23,7 +21,7 @@ END_DATE = current_hour.strftime("%Y-%m-%d")
 
 LOCATION_DIR = "./data/location"
 OUTPUT_DIR = "./data/aqi" 
-BATCH_SIZE = 50
+BATCH_SIZE = 35
 
 session = requests.Session()
 retries = Retry(
@@ -66,7 +64,7 @@ def clean_filename(s):
     s = re.sub(r'[ùúụủũưừứựửữ]', 'u', s)
     s = re.sub(r'[ỳýỵỷỹ]', 'y', s)
     s = re.sub(r'[Đđ]', 'd', s)
-    s = re.sub(r'[^a-zA-Z0-9\s]', '', s).strip().lower()
+    s = re.sub(r'[^a-zA-Z0-9\s_]', '', s).strip().lower()
     return re.sub(r'\s+', '_', s)
 
 def process_and_save_batch(batch_targets):
@@ -195,7 +193,7 @@ def main():
         print(f"Lỗi: Không tìm thấy file CSV nào trong '{LOCATION_DIR}'.")
         return
 
-    print(f"Phát hiện {len(csv_files)} file tỉnh/thành. Bắt đầu crawl dữ liệu 6 tháng qua...")
+    print(f"Phát hiện {len(csv_files)} file tỉnh/thành. Bắt đầu crawl dữ liệu ...")
     
     for file_path in csv_files:
         folder_name = clean_filename(os.path.splitext(os.path.basename(file_path))[0])
@@ -233,8 +231,8 @@ def main():
                 batch = targets_to_fetch[i : i + BATCH_SIZE]
                 process_and_save_batch(batch)
                 
-                # Tránh lỗi Too Many Requests (429) do tải 6 tháng lịch sử rất nặng
-                time.sleep(2) 
+                # Tránh lỗi Too Many Requests (429) 
+                time.sleep(1.1) 
                 
         except Exception as e:
             print(f"Lỗi khi đọc hoặc xử lý file {file_path}: {e}")
