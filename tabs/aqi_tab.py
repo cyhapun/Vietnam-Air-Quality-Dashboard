@@ -173,13 +173,13 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
              
         bg_row = "transparent" if i % 2 == 0 else "#f8fafc"
         
-        container_html += f'''<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: {bg_row}; border-bottom: 1px solid #f1f5f9;">
-<div style="font-weight: 600; color: #334155; width: 100px;">{day_pref}</div>
-<div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+        container_html += f'''<div style="display: flex; align-items: center; padding: 12px 20px; background: {bg_row}; border-bottom: 1px solid #f1f5f9;">
+<div style="width: 80px; font-weight: 600; color: #334155; flex-shrink: 0;">{day_pref}</div>
+<div style="width: 70px; display: flex; justify-content: center; flex-shrink: 0;">
 <div style="background: {col}; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 14px; min-width: 50px; text-align: center;">{val:.0f}</div>
-<div style="margin-left: 12px; font-size: 13px; font-weight: 500; color: {col};">{lbl}</div>
 </div>
-<div style="width: 100px; text-align: right; color: #64748b; font-size: 12px;">{d.strftime("%d/%m/%Y")}</div>
+<div style="flex: 1; margin-left: 15px; font-size: 13px; font-weight: 500; color: {col};">{lbl}</div>
+<div style="width: 90px; text-align: right; color: #64748b; font-size: 12px; flex-shrink: 0;">{d.strftime("%d/%m/%Y")}</div>
 </div>'''
         
     container_html += '</div>'
