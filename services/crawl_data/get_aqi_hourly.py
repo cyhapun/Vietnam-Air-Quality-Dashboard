@@ -208,7 +208,7 @@ def run_hourly_update():
         print(f"   ➤ Tiến độ: {min(i + BATCH_SIZE, total_need_update)}/{total_need_update} trạm...")
         
         # Thêm độ trễ chống Rate Limit
-        time.sleep(1)
+        time.sleep(1.1)
 
     print("-" * 50)
     print(f"✅ HOÀN TẤT CẬP NHẬT!")
