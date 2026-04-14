@@ -2,7 +2,7 @@ import streamlit as st
 import threading
 import time
 
-from Midterm.services.crawl_data.update_aqi_hourly import run_hourly_update 
+from services.crawl_data.update_aqi_hourly import run_hourly_update 
 from services.crawl_data.get_province_aqi import run_province_aggregation 
 from services.crawl_data.get_forecast import run_forecast_update
 
