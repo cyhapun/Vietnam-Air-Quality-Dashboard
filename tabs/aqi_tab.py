@@ -565,12 +565,43 @@ def render(global_df):
             return len(bands) - 1.0
             
         def get_gradient_color(val):
-            score = get_color_score(val)
-            score = max(0, min(len(base_colors)-1.0, score))
-            idx = int(score)
-            if idx >= len(base_colors) - 1: return base_colors[-1]
-            c1, c2 = base_colors[idx], base_colors[idx+1]
-            t = score - idx
+            # Identify the band index
+            idx = 0
+            for i, (lo, hi) in enumerate(bands):
+                if val <= hi:
+                    idx = i
+                    break
+            else:
+                idx = len(bands) - 1
+
+            # Get base colors
+            c_curr = base_colors[idx]
+            
+            # Boundary Smoothing: Only interpolate when very close to the next/prev threshold
+            # This ensures colors within the band match the legend, but the transition is still "mượt"
+            trans_zone = 5 # AQI points for transition zone
+            
+            # Check for next threshold transition
+            if idx < len(bands) - 1:
+                hi_threshold = bands[idx][1]
+                if val > hi_threshold - trans_zone:
+                    c_next = base_colors[idx + 1]
+                    t = (val - (hi_threshold - trans_zone)) / (trans_zone * 2)
+                    t = max(0, min(1, t))
+                    return interpolate_hex(c_curr, c_next, t)
+            
+            # Check for previous threshold transition
+            if idx > 0:
+                lo_threshold = bands[idx][0]
+                if val < lo_threshold + trans_zone:
+                    c_prev = base_colors[idx - 1]
+                    t = (val - (lo_threshold - trans_zone)) / (trans_zone * 2)
+                    t = max(0, min(1, t))
+                    return interpolate_hex(c_prev, c_curr, t)
+
+            return c_curr
+
+        def interpolate_hex(c1, c2, t):
             def hex_to_rgb(h): return tuple(int(h.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
             r1, g1, b1 = hex_to_rgb(c1)
             r2, g2, b2 = hex_to_rgb(c2)
