@@ -146,6 +146,12 @@ def process_forecast_batch(batch_meta):
                 df_merged["lat"] = float(meta["lat"])
                 df_merged["lon"] = float(meta["lon"])
                 
+                # 3. XỬ LÝ MISSING VALUE (Nội suy/Ngoại suy)
+                # Chỉ nội suy các cột số
+                numeric_cols = df_merged.select_dtypes(include=[np.number]).columns
+                df_merged[numeric_cols] = df_merged[numeric_cols].interpolate(method='linear', limit_direction='both')
+                
+                # Sau khi nội suy AQI, tính toán lại level và class cho chính xác
                 df_merged["pollution_level"] = df_merged["aqi"].apply(get_pollution_level)
                 df_merged["pollution_class"] = df_merged["aqi"].apply(get_pollution_class)
 
