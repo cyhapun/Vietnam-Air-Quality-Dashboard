@@ -2348,13 +2348,71 @@ def _plot_weather_metric(metric_df, metric_key, chart_type, ml_fn, ax_fn):
             )
         )
 
-    ml_fn(
-        fig,
-        h=300,
-        xaxis=dict(**ax_fn("Thời gian"), tickformat="%H:%M\n%d/%m"),
-        yaxis=dict(**ax_fn(f"{label} ({unit})" if unit else label)),
-        legend=dict(orientation="h", x=0, y=1.08, bgcolor="rgba(0,0,0,0)"),
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=10, r=10, t=30, b=10),
+        height=400,
+        showlegend=False,
         hovermode="x unified",
+        font=dict(family="'Be Vietnam Pro', sans-serif", size=12, color="#475569"),
+    )
+    return fig
+
+
+def _plot_weather_radar(df: pd.DataFrame, title: str) -> go.Figure:
+    """Create a normalized Radar (Spider) chart for a multi-dimensional weather profile."""
+    if df.empty:
+        return None
+
+    # Define metrics and their normalization ranges [min, max]
+    metrics_config = {
+        "temp": {"label": "Nhiệt độ (°C)", "range": [10, 45]},
+        "humidity": {"label": "Độ ẩm (%)", "range": [0, 100]},
+        "wind_speed": {"label": "Gió (km/h)", "range": [0, 60]},
+        "cloud": {"label": "Mây (%)", "range": [0, 100]},
+        "rain": {"label": "Mưa (mm)", "range": [0, 30]},
+        "pressure": {"label": "Áp suất", "range": [990, 1030]},
+    }
+
+    categories = [cfg["label"] for cfg in metrics_config.values()]
+    values = []
+    raw_values = []
+
+    for key, cfg in metrics_config.items():
+        if key in df.columns:
+            raw_val = df[key].mean()
+            raw_values.append(raw_val)
+            min_v, max_v = cfg["range"]
+            norm_val = max(0, min(100, (raw_val - min_v) / (max_v - min_v) * 100))
+            values.append(norm_val)
+        else:
+            values.append(0)
+            raw_values.append(np.nan)
+
+    # Close the loop
+    categories.append(categories[0])
+    values.append(values[0])
+    raw_values.append(raw_values[0])
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatterpolar(
+        r=values, theta=categories, fill='toself', name='Hiện tại',
+        line=dict(color='#3b82f6', width=2),
+        fillcolor='rgba(59, 130, 246, 0.25)',
+        hoverinfo='text',
+        text=[f"{v:.1f}" if not pd.isna(v) else "N/A" for v in raw_values]
+    ))
+
+    fig.update_layout(
+        polar=dict(
+            bgcolor="rgba(248, 250, 252, 0.5)",
+            radialaxis=dict(visible=True, range=[0, 100], showticklabels=False, gridcolor="rgba(148, 163, 184, 0.2)"),
+            angularaxis=dict(gridcolor="rgba(148, 163, 184, 0.2)", linecolor="rgba(148, 163, 184, 0.2)", tickfont=dict(size=11, color="#475569"))
+        ),
+        paper_bgcolor="rgba(0,0,0,0)", margin=dict(l=60, r=60, t=40, b=40), height=450,
+        showlegend=False,
+        title=dict(text=f"Cấu trúc thời tiết: {title}", font=dict(size=14, color="#0f172a", weight=700), x=0.5, y=0.98)
     )
     return fig
 
@@ -2681,14 +2739,23 @@ def render(df: pd.DataFrame):
     
     with cc2:
         try:
-            chart_opts = [":material/show_chart:", ":material/bar_chart:"]
-            default_icon = ":material/show_chart:" if st.session_state["weather_chart_type"] == "Đường (Spline)" else ":material/bar_chart:"
+            chart_opts = [":material/show_chart:", ":material/bar_chart:", ":material/track_changes:"]
+            mapping = {
+                ":material/show_chart:": "Đường (Spline)",
+                ":material/bar_chart:": "Cột (Bar)",
+                ":material/track_changes:": "Mạng nhện (Radar)"
+            }
+            rev_mapping = {v: k for k, v in mapping.items()}
+            
+            cur_type = st.session_state.get("weather_chart_type", "Đường (Spline)")
+            default_icon = rev_mapping.get(cur_type, ":material/show_chart:")
+            
             raw_sel = st.segmented_control("Loại biểu đồ", options=chart_opts, default=default_icon, key="weather_chart_seg")
-            chart_type = st.session_state["weather_chart_type"] if raw_sel is None else ("Đường (Spline)" if raw_sel == ":material/show_chart:" else "Cột (Bar)")
+            chart_type = mapping.get(raw_sel, cur_type)
         except AttributeError:
             chart_type = st.radio(
-                "Loại biểu đồ", ["Đường (Spline)", "Cột (Bar)"],
-                index=0 if st.session_state["weather_chart_type"] == "Đường (Spline)" else 1,
+                "Loại biểu đồ", ["Đường (Spline)", "Cột (Bar)", "Mạng nhện (Radar)"],
+                index=["Đường (Spline)", "Cột (Bar)", "Mạng nhện (Radar)"].index(st.session_state.get("weather_chart_type", "Đường (Spline)")),
                 horizontal=True, key="weather_chart_radio",
             )
         st.session_state["weather_chart_type"] = chart_type
@@ -2704,11 +2771,16 @@ def render(df: pd.DataFrame):
             "wind_speed": "Gió", "pressure": "Áp suất", "cloud": "Mây",
         }
         metric_cur = st.session_state.get("weather_metric_key", "temp")
+        
+        # Disable parameter selection if Radar is active
+        is_radar = (chart_type == "Mạng nhện (Radar)")
         metric_key = st.selectbox(
             "Thông số", options=metric_opts,
             index=metric_opts.index(metric_cur) if metric_cur in metric_opts else 0,
             format_func=lambda x: metric_fmt.get(x, x),
             key="weather_metric_select",
+            disabled=is_radar,
+            help="Tự động hiển thị tất cả thông số khi ở chế độ Mạng nhện." if is_radar else None
         )
         st.session_state["weather_metric_key"] = metric_key
 
@@ -2762,7 +2834,11 @@ def render(df: pd.DataFrame):
             return ("Có mây", "#94a3b8", "#f8fafc", "Mây che phủ trung bình.")
         return ("Ít mây", "#22c55e", "#f0fdf4", "Trời khá quang, thuận lợi cho hoạt động ngoài trời.")
 
-    hist_source = scope_df.dropna(subset=["timestamp", metric_key]).copy() if metric_key in scope_df.columns else pd.DataFrame()
+    if is_radar:
+        hist_source = scope_df.dropna(subset=["timestamp"]).copy()
+    else:
+        hist_source = scope_df.dropna(subset=["timestamp", metric_key]).copy() if metric_key in scope_df.columns else pd.DataFrame()
+
     if not hist_source.empty:
         val_min = float(hist_source[metric_key].min())
         val_max = float(hist_source[metric_key].max())
@@ -2815,9 +2891,14 @@ def render(df: pd.DataFrame):
             )
 
         with cChart:
-            metric_chart = _plot_weather_metric(hist_source[["timestamp", metric_key]].copy(), metric_key, chart_type, ml_fn, ax_fn)
-            if metric_chart is not None:
-                st.plotly_chart(metric_chart, width="stretch", config={"displayModeBar": False})
+            if chart_type == "Mạng nhện (Radar)":
+                radar_fig = _plot_weather_radar(hist_source, escape(str(selected_location)))
+                if radar_fig:
+                    st.plotly_chart(radar_fig, use_container_width=True, config={"displayModeBar": False})
+            else:
+                metric_chart = _plot_weather_metric(hist_source[["timestamp", metric_key]].copy(), metric_key, chart_type, ml_fn, ax_fn)
+                if metric_chart is not None:
+                    st.plotly_chart(metric_chart, use_container_width=True, config={"displayModeBar": False})
 
         with cRank:
             st.markdown(
