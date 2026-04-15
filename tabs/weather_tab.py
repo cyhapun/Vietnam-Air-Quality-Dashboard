@@ -1457,7 +1457,22 @@ def _build_location_day_summary(detail_rows: pd.DataFrame) -> pd.DataFrame:
     if detail_rows.empty or "location" not in detail_rows.columns:
         return pd.DataFrame()
 
-    grouped = detail_rows.groupby("location", dropna=True)
+    frame = detail_rows.copy()
+    required_numeric_cols = [
+        "temp",
+        "humidity",
+        "rain",
+        "wind_speed",
+        "pressure",
+        "cloud",
+        "aqi",
+        "wind_dir",
+    ]
+    for col in required_numeric_cols:
+        if col not in frame.columns:
+            frame[col] = np.nan
+
+    grouped = frame.groupby("location", dropna=True)
     summary = grouped.agg(
         temp_avg=("temp", "mean"),
         temp_max=("temp", "max"),
@@ -1468,8 +1483,8 @@ def _build_location_day_summary(detail_rows: pd.DataFrame) -> pd.DataFrame:
         pressure=("pressure", "mean"),
         cloud=("cloud", "mean"),
         aqi=("aqi", "mean"),
-        sample_count=("timestamp", "count"),
     )
+    summary["sample_count"] = grouped.size()
     summary["wind_dir"] = grouped["wind_dir"].apply(_circular_mean_deg)
     summary = summary.reset_index()
     summary["condition"] = summary.apply(
@@ -1503,6 +1518,50 @@ def _aqi_badge_html(aqi_value) -> str:
         bg, fg = "#7f1d1d", "#fee2e2"
 
     return f"<span class='wx-aqi-badge' style='background:{bg};color:{fg};'>{int(round(aqi))}</span>"
+
+
+def _aqi_level_meta(aqi_value: float) -> tuple[str, str, str, str]:
+    if aqi_value <= 50:
+        return (
+            "Tốt",
+            "#22c55e",
+            "#f0fdf4",
+            "Chất lượng không khí tốt, không ảnh hưởng tới sức khỏe.",
+        )
+    if aqi_value <= 100:
+        return (
+            "Vừa phải",
+            "#facc15",
+            "#422006",
+            "Chất lượng không khí ở mức chấp nhận được, nhóm nhạy cảm cần theo dõi thêm.",
+        )
+    if aqi_value <= 150:
+        return (
+            "Không lành mạnh cho nhóm nhạy cảm",
+            "#fb923c",
+            "#431407",
+            "Nhóm nhạy cảm có thể bị ảnh hưởng, nên hạn chế hoạt động ngoài trời kéo dài.",
+        )
+    if aqi_value <= 200:
+        return (
+            "Không khỏe mạnh",
+            "#ef4444",
+            "#fff1f2",
+            "Mọi người bắt đầu chịu ảnh hưởng sức khỏe, nhóm nhạy cảm bị ảnh hưởng rõ hơn.",
+        )
+    if aqi_value <= 300:
+        return (
+            "Rất không tốt cho sức khỏe",
+            "#a855f7",
+            "#faf5ff",
+            "Cảnh báo sức khỏe: giảm mạnh hoạt động ngoài trời và tăng biện pháp bảo hộ.",
+        )
+    return (
+        "Nguy hiểm",
+        "#7f1d1d",
+        "#fee2e2",
+        "Cảnh báo khẩn cấp: toàn bộ dân số có thể bị ảnh hưởng nghiêm trọng.",
+    )
 
 
 def _location_detail_table_html(location_df: pd.DataFrame, max_rows: int = 120) -> str:
@@ -2141,6 +2200,10 @@ def _plot_daily_forecast(daily_df, ml_fn, ax_fn):
 
 
 def _plot_wind_rose(hourly_df, ml_fn):
+    if hourly_df is None or hourly_df.empty:
+        return None
+    if "wind_speed" not in hourly_df.columns or "wind_dir" not in hourly_df.columns:
+        return None
     valid = hourly_df.dropna(subset=["wind_speed", "wind_dir"]).copy()
     if valid.empty:
         return None
@@ -2176,6 +2239,10 @@ def _plot_wind_rose(hourly_df, ml_fn):
 
 
 def _plot_pressure_cloud(hourly_df, ml_fn, ax_fn):
+    if hourly_df is None or hourly_df.empty:
+        return None
+    if "pressure" not in hourly_df.columns or "cloud" not in hourly_df.columns:
+        return None
     valid = hourly_df.dropna(subset=["pressure", "cloud"]).copy()
     if valid.empty:
         return None
@@ -2234,6 +2301,69 @@ def _plot_pressure_cloud(hourly_df, ml_fn, ax_fn):
     return fig
 
 
+def _weather_metric_meta(metric_key: str) -> dict:
+    mapping = {
+        "temp": {"label": "Nhiệt độ", "unit": "°C", "color": "#ef4444"},
+        "humidity": {"label": "Độ ẩm", "unit": "%", "color": "#0ea5e9"},
+        "rain": {"label": "Mưa", "unit": "mm", "color": "#2563eb"},
+        "wind_speed": {"label": "Gió", "unit": "km/h", "color": "#10b981"},
+        "pressure": {"label": "Áp suất", "unit": "hPa", "color": "#8b5cf6"},
+        "cloud": {"label": "Mây", "unit": "%", "color": "#64748b"},
+    }
+    return mapping.get(metric_key, {"label": metric_key, "unit": "", "color": "#0ea5e9"})
+
+
+def _plot_weather_metric(metric_df, metric_key, chart_type, ml_fn, ax_fn):
+    if metric_df is None or metric_df.empty or metric_key not in metric_df.columns:
+        return None
+
+    sub = metric_df.dropna(subset=[metric_key]).copy()
+    if sub.empty:
+        return None
+
+    meta = _weather_metric_meta(metric_key)
+    label = meta["label"]
+    unit = meta["unit"]
+    color = meta["color"]
+
+    fig = go.Figure()
+    if chart_type == "Cột (Bar)":
+        fig.add_trace(
+            go.Bar(
+                x=sub["timestamp"],
+                y=sub[metric_key],
+                marker=dict(color=color, line=dict(width=0.5, color="#ffffff")),
+                opacity=0.9,
+                hovertemplate=f"%{{x|%H:%M %d/%m}}<br>{label}: %{{y:.1f}} {unit}<extra></extra>",
+                name=label,
+            )
+        )
+    else:
+        fig.add_trace(
+            go.Scatter(
+                x=sub["timestamp"],
+                y=sub[metric_key],
+                mode="lines+markers",
+                line=dict(color=color, width=2.6, shape="spline", smoothing=0.9),
+                marker=dict(size=5),
+                fill="tozeroy",
+                fillcolor="rgba(14,165,233,0.10)" if metric_key != "temp" else "rgba(239,68,68,0.12)",
+                hovertemplate=f"%{{x|%H:%M %d/%m}}<br>{label}: %{{y:.1f}} {unit}<extra></extra>",
+                name=label,
+            )
+        )
+
+    ml_fn(
+        fig,
+        h=300,
+        xaxis=dict(**ax_fn("Thời gian"), tickformat="%H:%M\n%d/%m"),
+        yaxis=dict(**ax_fn(f"{label} ({unit})" if unit else label)),
+        legend=dict(orientation="h", x=0, y=1.08, bgcolor="rgba(0,0,0,0)"),
+        hovermode="x unified",
+    )
+    return fig
+
+
 def _render_mode_switch(options, key, prefix):
     if key not in st.session_state or st.session_state[key] not in options:
         st.session_state[key] = options[0]
@@ -2283,18 +2413,81 @@ def render(df: pd.DataFrame):
 
     if "weather_scope" not in st.session_state:
         st.session_state.weather_scope = "72h"
+    if "weather_chart_type" not in st.session_state:
+        st.session_state.weather_chart_type = "Đường (Spline)"
+    if "weather_metric_key" not in st.session_state:
+        st.session_state.weather_metric_key = "temp"
+    if "weather_location_scope" not in st.session_state:
+        st.session_state.weather_location_scope = ""
 
-    # Controls
-    c1, c2 = st.columns([1.5, 1.0], gap="small")
+    # Controls (AQI-style)
+    c1, c2, c3, c4, c5 = st.columns([1.5, 1.5, 1.2, 1.0, 1.0], gap="small")
     with c1:
         selected_city = st.selectbox("Khu vực", options=cities, key="weather_city",
                                      help="Chọn khu vực xem thời tiết.")
+
+    city_df_all = weather_df[weather_df["city"] == selected_city].sort_values("timestamp").copy()
+    location_options = [f"Tổng quan ({selected_city})"]
+    if "location" in city_df_all.columns:
+        locs = sorted(city_df_all["location"].dropna().astype(str).unique().tolist())
+        location_options += locs
+
     with c2:
+        cur_scope = st.session_state.get("weather_location_scope", location_options[0])
+        if cur_scope not in location_options:
+            cur_scope = location_options[0]
+        selected_location = st.selectbox(
+            "Đơn vị (Huyện/Xã/Phường)",
+            options=location_options,
+            index=location_options.index(cur_scope),
+            key="weather_location_scope",
+        )
+
+    with c3:
+        try:
+            chart_opts = [":material/show_chart:", ":material/bar_chart:"]
+            default_icon = ":material/show_chart:" if st.session_state["weather_chart_type"] == "Đường (Spline)" else ":material/bar_chart:"
+            raw_sel = st.segmented_control("Loại biểu đồ", options=chart_opts, default=default_icon, key="weather_chart_seg")
+            chart_type = st.session_state["weather_chart_type"] if raw_sel is None else ("Đường (Spline)" if raw_sel == ":material/show_chart:" else "Cột (Bar)")
+        except AttributeError:
+            chart_type = st.radio(
+                "Loại biểu đồ",
+                ["Đường (Spline)", "Cột (Bar)"],
+                index=0 if st.session_state["weather_chart_type"] == "Đường (Spline)" else 1,
+                horizontal=True,
+                key="weather_chart_radio",
+            )
+        st.session_state["weather_chart_type"] = chart_type
+
+    with c4:
         scope_label = st.selectbox("Khung thời gian",
                                    options=["24h", "72h", "7 ngày", "30 ngày"],
                                    key="weather_scope")
+    with c5:
+        metric_opts = ["temp", "humidity", "rain", "wind_speed", "pressure", "cloud"]
+        metric_fmt = {
+            "temp": "Nhiệt độ",
+            "humidity": "Độ ẩm",
+            "rain": "Mưa",
+            "wind_speed": "Gió",
+            "pressure": "Áp suất",
+            "cloud": "Mây",
+        }
+        metric_cur = st.session_state.get("weather_metric_key", "temp")
+        if metric_cur not in metric_opts:
+            metric_cur = "temp"
+        st.session_state["weather_metric_key"] = st.selectbox(
+            "Thông số",
+            options=metric_opts,
+            index=metric_opts.index(metric_cur),
+            format_func=lambda x: metric_fmt.get(x, x),
+            key="weather_metric_select",
+        )
 
-    city_df = weather_df[weather_df["city"] == selected_city].sort_values("timestamp").copy()
+    city_df = city_df_all.copy()
+    if selected_location != f"Tổng quan ({selected_city})" and "location" in city_df.columns:
+        city_df = city_df[city_df["location"].astype(str) == str(selected_location)].copy()
+
     if city_df.empty:
         st.warning("Khu vực này chưa có dữ liệu.")
         return
@@ -2509,50 +2702,297 @@ def render(df: pd.DataFrame):
                 f"Đang hiển thị 10/{len(detail_summary)} địa điểm đầu tiên (sắp theo AQI giảm dần)."
             )
 
-    # ── CHART (temp / daily) ────────────────────────────────────────────────────
-    st.markdown("<div class='wx-dark-card'>", unsafe_allow_html=True)
-    forecast_mode = _render_mode_switch(["Giờ", "Ngày"], "weather_forecast_mode", "weather_mode_btn")
-    if forecast_mode == "Giờ":
-        fig_hour = _plot_hourly_temp(base_day_df, ml_fn, ax_fn)
-        if fig_hour is None:
-            st.info("Chưa đủ dữ liệu theo giờ.")
-        else:
-            st.markdown("<div class='wx-dark-card-title'>Biểu đồ nhiệt độ & độ ẩm theo giờ</div>",
-                        unsafe_allow_html=True)
-            st.plotly_chart(fig_hour, width="stretch", config={"displayModeBar": False})
-    else:
-        fig_daily = _plot_daily_forecast(forecast_df, ml_fn, ax_fn)
-        if fig_daily is None:
-            st.info("Chưa đủ dữ liệu 10 ngày.")
-        else:
-            st.markdown("<div class='wx-dark-card-title'>Dự báo nhiệt độ & lượng mưa 10 ngày</div>",
-                        unsafe_allow_html=True)
-            st.plotly_chart(fig_daily, width="stretch", config={"displayModeBar": False})
-    st.markdown("</div>", unsafe_allow_html=True)
+    # ── WEATHER HISTORICAL ANALYTICS (AQI-style layout) ──────────────────────
+    metric_key = st.session_state.get("weather_metric_key", "temp")
+    metric_meta = _weather_metric_meta(metric_key)
+    metric_label = metric_meta["label"]
+    metric_unit = metric_meta["unit"]
+    chart_type = st.session_state.get("weather_chart_type", "Đường (Spline)")
 
-    # ── ADVANCED ANALYSIS ───────────────────────────────────────────────────────
-    st.markdown(_html("""
-    <div class='wx-analysis-card'>
-            <div class='wx-block-head'>
-                <div class='wx-block-title'>Phân tích nâng cao</div>
-                <div class='wx-block-sub'>Hoa gió và tương quan áp suất – độ mây.</div>
+    def _weather_level(value: float) -> tuple[str, str, str, str]:
+        if metric_key == "temp":
+            if value >= 35:
+                return ("Nắng nóng", "#ef4444", "#fff1f2", "Nhiệt độ cao, nên hạn chế ra ngoài vào khung giờ nắng gắt.")
+            if value >= 30:
+                return ("Nóng", "#fb923c", "#fff7ed", "Trời khá nóng, cần bổ sung nước và theo dõi thể trạng.")
+            if value >= 20:
+                return ("Dễ chịu", "#22c55e", "#f0fdf4", "Mức nhiệt độ tương đối dễ chịu cho phần lớn hoạt động ngoài trời.")
+            return ("Mát", "#38bdf8", "#ecfeff", "Nhiệt độ thấp, nên giữ ấm nếu hoạt động ngoài trời kéo dài.")
+        if metric_key == "humidity":
+            if value >= 85:
+                return ("Ẩm cao", "#0ea5e9", "#eff6ff", "Độ ẩm cao có thể gây oi bức, cần không gian thông thoáng.")
+            if value >= 40:
+                return ("Ổn định", "#22c55e", "#f0fdf4", "Độ ẩm nằm trong vùng tương đối dễ chịu.")
+            return ("Khô", "#f59e0b", "#fffbeb", "Không khí khô, nên bổ sung nước và dưỡng ẩm.")
+        if metric_key == "rain":
+            if value >= 10:
+                return ("Mưa lớn", "#1d4ed8", "#eff6ff", "Có khả năng mưa mạnh, chú ý an toàn khi di chuyển.")
+            if value > 0:
+                return ("Có mưa", "#0ea5e9", "#ecfeff", "Có mưa rải rác, nên chuẩn bị áo mưa/ô.")
+            return ("Khô ráo", "#22c55e", "#f0fdf4", "Thời tiết khô ráo, thuận lợi cho hoạt động ngoài trời.")
+        if metric_key == "wind_speed":
+            if value >= 30:
+                return ("Gió mạnh", "#0f766e", "#f0fdfa", "Gió mạnh, cần thận trọng với hoạt động ngoài trời.")
+            if value >= 15:
+                return ("Có gió", "#14b8a6", "#f0fdfa", "Điều kiện gió trung bình, tương đối ổn định.")
+            return ("Gió nhẹ", "#22c55e", "#f0fdf4", "Gió nhẹ, điều kiện thời tiết ổn định.")
+        if metric_key == "pressure":
+            if value < 1000:
+                return ("Áp thấp", "#f97316", "#fff7ed", "Áp suất thấp, thời tiết có thể biến động.")
+            if value > 1020:
+                return ("Áp cao", "#22c55e", "#f0fdf4", "Áp suất cao, xu hướng thời tiết khá ổn định.")
+            return ("Ổn định", "#0ea5e9", "#eff6ff", "Áp suất trong ngưỡng ổn định.")
+        if value >= 80:
+            return ("Nhiều mây", "#64748b", "#f8fafc", "Mây che phủ cao, khả năng nắng giảm đáng kể.")
+        if value >= 40:
+            return ("Có mây", "#94a3b8", "#f8fafc", "Mây che phủ trung bình.")
+        return ("Ít mây", "#22c55e", "#f0fdf4", "Trời khá quang, thuận lợi cho hoạt động ngoài trời.")
+
+    hist_source = scope_df.dropna(subset=["timestamp", metric_key]).copy() if metric_key in scope_df.columns else pd.DataFrame()
+    if not hist_source.empty:
+        val_min = float(hist_source[metric_key].min())
+        val_max = float(hist_source[metric_key].max())
+        row_min = hist_source.loc[hist_source[metric_key].idxmin()]
+        row_max = hist_source.loc[hist_source[metric_key].idxmax()]
+        lbl_min, clr_min, _, _ = _weather_level(val_min)
+        lbl_max, clr_max, _, _ = _weather_level(val_max)
+        str_min_time = pd.to_datetime(row_min["timestamp"]).strftime("%H:%M, %d/%m/%Y")
+        str_max_time = pd.to_datetime(row_max["timestamp"]).strftime("%H:%M, %d/%m/%Y")
+
+        st.markdown('<hr style="margin: 1.5rem 0 1rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
+        cChart, cRank = st.columns([2.8, 1.2], gap="large")
+        cT1, cT2 = cChart.columns([1.4, 1], gap="small")
+
+        with cT1:
+            st.markdown(
+                f"""
+                <div>
+                    <div style="color:#64748b; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Dữ liệu thời tiết lịch sử</div>
+                    <div style="font-size:22px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:4px;">Biểu đồ {metric_label}</div>
+                    <div style="color:#334155; font-size:14px; font-weight:500;">{escape(str(selected_location))}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        with cT2:
+            st.markdown(
+                f"""
+                <div style="display:flex; justify-content: flex-end; gap: 12px; align-items:center; height:100%;">
+                    <div style="background:{clr_min}1F; border: 1.5px solid {clr_min}66; padding: 10px 14px; border-radius: 10px; display:flex; flex-direction:column; min-width:140px;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                            <span style="font-size:22px; font-weight:700; color:{clr_min}; line-height:1;">{val_min:.1f}{metric_unit}</span>
+                            <span style="font-size:11px; padding:2px 6px; background:{clr_min}; color:#fff; border-radius:4px; font-weight:600;">{lbl_min}</span>
+                        </div>
+                        <div style="color:#64748b; font-size:11px; display:flex; align-items:center;"><span style="margin-right:4px;">↓ Tối thiểu</span></div>
+                        <div style="color:#94a3b8; font-size:10px; font-weight:500;">lúc {str_min_time}</div>
+                    </div>
+                    <div style="background:{clr_max}1F; border: 1.5px solid {clr_max}66; padding: 10px 14px; border-radius: 10px; display:flex; flex-direction:column; min-width:140px;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                            <span style="font-size:22px; font-weight:700; color:{clr_max}; line-height:1;">{val_max:.1f}{metric_unit}</span>
+                            <span style="font-size:11px; padding:2px 6px; background:{clr_max}; color:#fff; border-radius:4px; font-weight:600;">{lbl_max}</span>
+                        </div>
+                        <div style="color:#64748b; font-size:11px; display:flex; align-items:center;"><span style="margin-right:4px;">↑ Tối đa</span></div>
+                        <div style="color:#94a3b8; font-size:10px; font-weight:500;">lúc {str_max_time}</div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        with cChart:
+            metric_chart = _plot_weather_metric(hist_source[["timestamp", metric_key]].copy(), metric_key, chart_type, ml_fn, ax_fn)
+            if metric_chart is not None:
+                st.plotly_chart(metric_chart, width="stretch", config={"displayModeBar": False})
+
+        with cRank:
+            st.markdown(
+                f"<div style=\"font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;\">Top 8 {metric_label} ({scope_label})</div>",
+                unsafe_allow_html=True,
+            )
+
+            top_list_html = f"""
+            <div style="display:flex; font-size:12px; font-weight:600; color:#64748b; padding-bottom: 10px; border-bottom: 2px solid rgba(148,163,184,0.1); margin-bottom: 12px; text-transform:uppercase;">
+                <div style="flex:4;">Địa điểm</div>
+                <div style="flex:3; text-align:center;">Trạng thái</div>
+                <div style="flex:2; text-align:right;">{metric_label}</div>
             </div>
-    </div>
-    """), unsafe_allow_html=True)
+            """
 
-    col1, col2 = st.columns(2, gap="small")
-    with col1:
-        fig_wind = _plot_wind_rose(base_day_df, ml_fn)
-        if fig_wind is None:
-            st.info("Chưa đủ dữ liệu gió.")
+            if "location" in city_df_all.columns:
+                rank_df = city_df_all[
+                    (city_df_all["timestamp"] >= start_ts)
+                    & (city_df_all["timestamp"] <= end_ts)
+                ].copy()
+                rank_df = rank_df.dropna(subset=["location", metric_key]) if metric_key in rank_df.columns else pd.DataFrame()
+            else:
+                rank_df = pd.DataFrame()
+
+            detail_metric_col = "temp_avg" if metric_key == "temp" else metric_key
+            use_detail_fallback = rank_df.empty and (not detail_summary.empty) and (detail_metric_col in detail_summary.columns)
+
+            if use_detail_fallback:
+                top_df = (
+                    detail_summary.dropna(subset=["location", detail_metric_col])
+                    .sort_values(detail_metric_col, ascending=False)
+                    .head(8)
+                    .copy()
+                )
+                top_df = top_df.rename(columns={detail_metric_col: "metric_value"})
+            elif not rank_df.empty:
+                top_df = (
+                    rank_df.groupby("location", as_index=False)[metric_key]
+                    .mean()
+                    .sort_values(metric_key, ascending=False)
+                    .head(8)
+                    .rename(columns={metric_key: "metric_value"})
+                )
+            else:
+                top_df = pd.DataFrame()
+
+            if not top_df.empty:
+                for row in top_df.itertuples(index=False):
+                    loc_name = str(row.location)
+                    val = float(getattr(row, "metric_value"))
+                    lbl, clr, _, _ = _weather_level(val)
+                    top_list_html += (
+                        "<div style='display:flex; align-items:center; background-color: rgba(248,250,252,0.6); padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(148,163,184,0.15);'>"
+                        f"<div style='flex:4; font-size:13px; font-weight:600; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:8px;' title='{escape(loc_name)}'>{escape(loc_name)}</div>"
+                        f"<div style='flex:3; display:flex; justify-content:center;'><span style='background-color: {clr}; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight:600; white-space:nowrap;'>{lbl}</span></div>"
+                        f"<div style='flex:2; text-align:right; font-size:15px; font-weight:700; color:#0f172a;'>{val:.1f}{metric_unit}</div>"
+                        "</div>"
+                    )
+                if use_detail_fallback:
+                    top_list_html += (
+                        f"<div style='margin-top:6px;color:#64748b;font-size:11px;font-style:italic;'>"
+                        f"* Top 8 lấy từ dữ liệu địa điểm của ngày mốc {anchor_day:%d/%m/%Y} do chưa đủ dữ liệu theo giờ trong khung {scope_label}."
+                        "</div>"
+                    )
+            else:
+                top_list_html += "<div style='color:#64748b; font-size:13px; font-style:italic; text-align:center; padding: 20px 0;'>Không có dữ liệu theo địa điểm trong khung thời gian này</div>"
+
+            st.markdown(top_list_html, unsafe_allow_html=True)
+
+    # ── WEATHER FORECAST STYLE (lower part) ───────────────────────────────────
+
+    metric_source = city_df.dropna(subset=["timestamp", metric_key]).copy() if metric_key in city_df.columns else pd.DataFrame()
+    if metric_source.empty:
+        st.info(f"Chưa có dữ liệu {metric_label.lower()} cho khu vực đã chọn.")
+    else:
+        metric_source["timestamp"] = pd.to_datetime(metric_source["timestamp"], errors="coerce")
+        metric_source = metric_source.dropna(subset=["timestamp"])
+
+        hourly_metric = (
+            metric_source.set_index("timestamp")[[metric_key]]
+            .resample("1h")
+            .mean()
+            .dropna()
+            .reset_index()
+        )
+        hourly_view = hourly_metric.tail(24).copy()
+
+        if metric_key == "temp" and "temp_avg" in forecast_df.columns:
+            daily_view = forecast_df[["timestamp", "temp_avg"]].rename(columns={"temp_avg": "value"}).dropna().tail(4).copy()
+        elif metric_key in forecast_df.columns:
+            daily_view = forecast_df[["timestamp", metric_key]].rename(columns={metric_key: "value"}).dropna().tail(4).copy()
         else:
-            st.plotly_chart(fig_wind, width="stretch", config={"displayModeBar": False})
-    with col2:
-        fig_pc = _plot_pressure_cloud(base_day_df, ml_fn, ax_fn)
-        if fig_pc is None:
-            st.info("Chưa đủ dữ liệu áp suất/mây.")
+            daily_view = (
+                metric_source.set_index("timestamp")[[metric_key]]
+                .resample("1D")
+                .mean()
+                .dropna()
+                .reset_index()
+                .rename(columns={metric_key: "value"})
+                .tail(4)
+                .copy()
+            )
+
+        if hourly_view.empty or daily_view.empty:
+            st.info("Chưa đủ dữ liệu để dựng phần dự báo theo giờ/hằng ngày.")
         else:
-            st.plotly_chart(fig_pc, width="stretch", config={"displayModeBar": False})
+            scope_name = selected_location if selected_location != f"Tổng quan ({selected_city})" else selected_city
+
+            hour_items = []
+            for i, row in enumerate(hourly_view.itertuples(index=False)):
+                ts = pd.to_datetime(row.timestamp)
+                val = float(getattr(row, metric_key))
+                level, col_bg, col_fg, _ = _weather_level(val)
+                hour_label = "Bây giờ" if i == len(hourly_view) - 1 else ts.strftime("%H:%M")
+                day_label = ts.strftime("Th %w") if ts.weekday() != 6 else "CN"
+                hour_items.append(
+                    f"<div style='min-width:76px;text-align:center;'>"
+                    f"<div style='font-size:11px;color:#64748b;font-weight:700;'>{day_label}</div>"
+                    f"<div style='font-size:12px;color:#64748b;margin:4px 0 8px;'>{hour_label}</div>"
+                    f"<div style='display:inline-block;background:{col_bg};color:{col_fg};padding:4px 10px;border-radius:7px;font-size:14px;font-weight:800;'>{val:.0f}{metric_unit}</div>"
+                    f"<div style='font-size:10px;color:#64748b;margin-top:5px;'>{level}</div>"
+                    "</div>"
+                )
+
+            st.markdown(
+                f"""
+                <div class='wx-analysis-card'>
+                    <div style='font-size:34px;font-weight:800;color:#0f172a;line-height:1.0;'>Dự báo {metric_label} theo giờ</div>
+                    <div style='margin-top:6px;color:#64748b;font-size:14px;'>Khu vực: <b style='color:#334155'>{escape(str(scope_name))}</b></div>
+                    <div style='margin-top:14px;display:flex;overflow-x:auto;gap:12px;padding-bottom:8px;'>
+                        {''.join(hour_items)}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            c_daily, c_advice = st.columns([1.6, 1.0], gap="small")
+            with c_daily:
+                rows = []
+                for idx, row in enumerate(daily_view.itertuples(index=False)):
+                    d = pd.to_datetime(row.timestamp)
+                    val = float(row.value)
+                    label, col_bg, col_fg, _ = _weather_level(val)
+                    day_name = "Hôm nay" if idx == len(daily_view) - 1 else _weekday_vi(d)
+                    row_bg = "#ffffff" if idx % 2 == 0 else "#f8fafc"
+                    rows.append(
+                        f"<div style='display:flex;align-items:center;padding:12px 16px;background:{row_bg};border-bottom:1px solid #eef2f7;'>"
+                        f"<div style='width:90px;font-weight:700;color:#334155;'>{day_name}</div>"
+                        f"<div style='width:86px;'><span style='display:inline-block;background:{col_bg};color:{col_fg};padding:4px 12px;border-radius:7px;font-weight:800;'>{val:.0f}{metric_unit}</span></div>"
+                        f"<div style='flex:1;color:#334155;font-weight:600;'>{label}</div>"
+                        f"<div style='width:100px;text-align:right;color:#64748b;font-size:12px;'>{d.strftime('%d/%m/%Y')}</div>"
+                        "</div>"
+                    )
+
+                st.markdown(
+                    f"""
+                    <div class='wx-analysis-card' style='padding:0;overflow:hidden;'>
+                        <div style='padding:14px 16px 10px;'>
+                            <div style='font-size:36px;font-weight:800;color:#0f172a;line-height:1.0;'>Dự báo {metric_label} hằng ngày</div>
+                            <div style='margin-top:4px;color:#64748b;'>Dự báo tại {escape(str(scope_name))} trong {len(daily_view)} ngày tới</div>
+                        </div>
+                        {''.join(rows)}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            with c_advice:
+                avg_val = float(daily_view["value"].mean())
+                advice_label, advice_bg, advice_fg, advice_desc = _weather_level(avg_val)
+                st.markdown(
+                    f"""
+                    <div class='wx-analysis-card' style='border:1.5px solid {advice_bg};background:{advice_fg}10;'>
+                        <div style='font-size:26px;font-weight:800;color:{advice_bg};line-height:1.1;'>KHUYẾN CÁO THỜI TIẾT</div>
+                        <div style='margin-top:14px;display:flex;align-items:center;gap:10px;'>
+                            <div style='width:12px;height:12px;border-radius:50%;background:{advice_bg};'></div>
+                            <div style='font-size:40px;font-weight:900;color:#0f172a;line-height:1.0;'>{advice_label}</div>
+                        </div>
+                        <div style='margin-top:14px;color:#334155;font-size:15px;line-height:1.55;font-weight:500;'>
+                            {advice_desc}
+                        </div>
+                        <div style='margin-top:16px;padding-top:10px;border-top:1px dashed {advice_bg};font-size:12px;color:#64748b;font-style:italic;'>
+                            * Khuyến cáo dựa trên giá trị trung bình phần dự báo theo thông số đã chọn.
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
     # Data coverage footer
     coverage_cols = [c for c in WEATHER_FEATURES if c in city_df.columns]
