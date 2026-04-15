@@ -57,6 +57,183 @@ def load_tier2_data(city_folder, filename):
     except Exception:
         return pd.DataFrame()
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_forecast_data(city_folder, filename):
+    base_dir = os.path.dirname(__file__)
+    # Try exact match first
+    file_path = os.path.join(base_dir, "..", "data", "forecast", city_folder, filename)
+    
+    if not os.path.exists(file_path):
+        # Mismatch logic: Forecast files are often normalized (lowercase, no accents, underscores)
+        # We try to normalize the filename to match.
+        import re
+        s = filename.replace(".csv", "")
+        # Standard normalization used in get_forecast.py
+        s = re.sub(r'[àáạảãâầấậẩẫăằắặẳẵÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]', 'a', s)
+        s = re.sub(r'[èéẹẻẽêềếệểễÈÉẸẺẼÊỀẾỆỂỄ]', 'e', s)
+        s = re.sub(r'[òóọỏõôồốộổỗơờớợởỡÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]', 'o', s)
+        s = re.sub(r'[ìíịỉĩÌÍỊỈĨ]', 'i', s)
+        s = re.sub(r'[ùúụủũưừứựửữÙÚỤỦŨƯỪỨỰỬỮ]', 'u', s)
+        s = re.sub(r'[ỳýỵỷỹỲÝỴỶỸ]', 'y', s)
+        s = re.sub(r'[đĐ]', 'd', s)
+        s = re.sub(r'[^a-zA-Z0-9\s]', '', s).strip().lower()
+        normalized_filename = re.sub(r'\s+', '_', s) + ".csv"
+        
+        file_path = os.path.join(base_dir, "..", "data", "forecast", city_folder, normalized_filename)
+
+    if not os.path.exists(file_path):
+        return pd.DataFrame()
+        
+    try:
+        df = pd.read_csv(file_path)
+        if df.empty: return df
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+        df = df.dropna(subset=["timestamp", "aqi"])
+        # Deduplicate by averaging values for the same timestamp
+        df = df.groupby("timestamp").mean(numeric_only=True).reset_index()
+        df = df.sort_values("timestamp")
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_name):
+    if df_forecast.empty:
+        return
+    
+    # Filter for future data (from current hour onwards)
+    now = pd.Timestamp.now().replace(minute=0, second=0, microsecond=0)
+    df_future = df_forecast[df_forecast["timestamp"] >= (now - pd.Timedelta(hours=1))].copy()
+    
+    if df_future.empty:
+        return
+
+    # Clean location string: if 'Tổng quan' is in unit_name, just show city_name
+    if "Tổng quan" in unit_name:
+        location_str = city_name
+    else:
+        location_str = f"{city_name} - {unit_name}"
+    
+    st.markdown(f'''<div style="margin-top: 1rem; margin-bottom: 1rem;">
+<div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Dự báo {poll_label} theo giờ</div>
+<div style="font-size: 14px; color: #64748b;">Khu vực: <span style="font-weight: 600; color: #334155;">{location_str}</span></div>
+</div>''', unsafe_allow_html=True)
+
+    # Build horizontal scroll container
+    scroll_html = '<div style="display: flex; overflow-x: auto; gap: 12px; padding-bottom: 16px; scrollbar-width: thin;">'
+    
+    for i, (_, row) in enumerate(df_future.head(48).iterrows()):
+        ts = row["timestamp"]
+        val = row[poll_key] if poll_key in row else row["aqi"]
+        lbl, col = val_meta(val, poll_key if poll_key in row else "aqi")
+        
+        hr_str = "Bây giờ" if i == 0 else ts.strftime("%H:%M")
+        
+        # Determine day label (only for i=0 or hour=00:00)
+        day_label = ""
+        is_boundary = False
+        if i == 0 or ts.hour == 0:
+            day_label = ts.strftime("Th %w") if ts.weekday() != 6 else "CN"
+            if i != 0: is_boundary = True # Start of a new day
+
+        border_style = "border-left: 1px dashed #cbd5e1; padding-left: 12px;" if is_boundary else ""
+        
+        scroll_html += f'''<div style="display:flex; flex-direction:column; align-items:center; min-width: 65px; {border_style}">
+<div style="height: 18px; font-size: 11px; font-weight: 700; color: #0f172a; margin-bottom: 4px; text-align: center;">{day_label}</div>
+<div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">{hr_str}</div>
+<div style="background: {col}; color: white; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 13px; min-width: 42px; text-align: center;">{val:.0f}</div>
+</div>'''
+            
+    scroll_html += '</div>'
+    st.markdown(scroll_html, unsafe_allow_html=True)
+
+def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_name):
+    if df_forecast.empty:
+        return
+        
+    # Group by date
+    df_forecast["date"] = df_forecast["timestamp"].dt.date
+    daily = df_forecast.groupby("date").agg({poll_key: "mean"}).reset_index()
+    
+    # Filter for today and future
+    today = pd.Timestamp.now().date()
+    daily = daily[daily["date"] >= today].head(7)
+    
+    container_html = '<div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">'
+    
+    for i, (_, row) in enumerate(daily.iterrows()):
+        d = row["date"]
+        val = row[poll_key]
+        lbl, col = val_meta(val, poll_key)
+        
+        day_pref = "Hôm nay" if d == today else d.strftime("%A")
+        # Vietnamese translation for days
+        day_map = {"Monday": "Thứ 2", "Tuesday": "Thứ 3", "Wednesday": "Thứ 4", "Thursday": "Thứ 5", "Friday": "Thứ 6", "Saturday": "Thứ 7", "Sunday": "CN"}
+        if d != today:
+             day_pref = day_map.get(d.strftime("%A"), d.strftime("%d/%m"))
+             
+        bg_row = "transparent" if i % 2 == 0 else "#f8fafc"
+        
+        container_html += f'''<div style="display: flex; align-items: center; padding: 12px 20px; background: {bg_row}; border-bottom: 1px solid #f1f5f9;">
+<div style="width: 80px; font-weight: 600; color: #334155; flex-shrink: 0;">{day_pref}</div>
+<div style="width: 70px; display: flex; justify-content: center; flex-shrink: 0;">
+<div style="background: {col}; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 14px; min-width: 50px; text-align: center;">{val:.0f}</div>
+</div>
+<div style="flex: 1; margin-left: 15px; font-size: 13px; font-weight: 500; color: {col};">{lbl}</div>
+<div style="width: 90px; text-align: right; color: #64748b; font-size: 12px; flex-shrink: 0;">{d.strftime("%d/%m/%Y")}</div>
+</div>'''
+        
+    container_html += '</div>'
+    st.markdown(container_html, unsafe_allow_html=True)
+
+def render_health_advice_box(avg_val, poll_type):
+    lbl, clr = val_meta(avg_val, poll_type)
+    
+    advice_content = {
+        "Tốt": "Chất lượng không khí tốt, không ảnh hưởng tới sức khỏe",
+        "Vừa phải": "Chất lượng không khí ở mức chấp nhận được. Tuy nhiên đối với những người nhạy cảm (người cao tuổi, trẻ em, người mắc các bệnh hô hấp, tim mạch…) có thể chịu những tác động nhất định tới sức khỏe.",
+        "Không lành mạnh cho nhóm nhạy cảm": "Những người nhạy cảm gặp phải các vấn đề về sức khỏe, những người bình thường ít ảnh hưởng.",
+        "Không khỏe mạnh": "Những người bình thường bắt đầu có các ảnh hưởng tới sức khỏe, nhóm người nhạy cảm có thể gặp những vấn đề sức khỏe nghiêm trọng hơn.",
+        "Rất không tốt cho sức khỏe": "Cảnh báo hưởng tới sức khỏe: mọi người bị ảnh hưởng tới sức khỏe nghiêm trọng hơn.",
+        "Nguy hiểm": "Cảnh báo khẩn cấp về sức khỏe: Toàn bộ dân số bị ảnh hưởng tới sức khỏe tới mức nghiêm trọng."
+    }
+    
+    icon_map = {
+        "Tốt": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_green.svg",
+        "Vừa phải": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_yellow.svg",
+        "Không lành mạnh cho nhóm nhạy cảm": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_orange.svg",
+        "Không khỏe mạnh": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_red.svg",
+        "Rất không tốt cho sức khỏe": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_purple.svg",
+        "Nguy hiểm": "https://www.iqair.com/dl/assets/svg/aqi/ic_face_48_maroon.svg"
+    }
+    
+    icon_url = icon_map.get(lbl)
+    desc = advice_content.get(lbl, "Hệ thống đang cập nhật khuyến cáo cho mức độ này...")
+    
+    # Header with dynamic icon (SVG or Material Fallback)
+    if icon_url:
+        icon_html = f'<img src="{icon_url}" style="width: 38px; height: 38px; margin-right: 12px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" />'
+    else:
+        # Fallback for "Nguy hiểm" or others
+        icon_html = f'<span class="material-symbols-rounded" style="color: {clr}; font-size: 32px; margin-right: 10px;">warning</span>'
+
+    st.markdown(f'''<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+<div style="height: 100%; min-height: 380px; background-color: {hex_rgba(clr, 0.08)}; border: 1.5px solid {hex_rgba(clr, 0.3)}; border-radius: 12px; padding: 24px; display: flex; flex-direction: column;">
+    <div style="display: flex; align-items: center; margin-bottom: 12px;">
+        {icon_html}
+        <span style="color: {clr}; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">KHUYẾN CÁO SỨC KHỎE</span>
+    </div>
+    <div style="color: #0f172a; font-size: 20px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center;">
+        <div style="width: 12px; height: 12px; background: {clr}; border-radius: 50%; margin-right: 10px;"></div>
+        {lbl}
+    </div>
+    <div style="color: #334155; font-size: 15px; line-height: 1.6; flex: 1; font-weight: 500;">
+        {desc}
+    </div>
+    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed {hex_rgba(clr, 0.4)}; color: #64748b; font-size: 12px; font-style: italic;">
+        * Khuyến cáo dựa trên mức độ ô nhiễm trung bình dự báo.
+    </div>
+</div>''', unsafe_allow_html=True)
+
 def render(global_df):
     ctx = st.session_state.get("dashboard_context", {})
     if ctx: globals().update(ctx)
@@ -81,13 +258,6 @@ def render(global_df):
         
     c1, c2, c3, c4, c5 = st.columns([1.6, 1.6, 1.2, 1.0, 1.0])
     
-    def on_city_change():
-        new_city = st.session_state["aqi_city_select"]
-        st.session_state["aqi_selected_city"] = new_city
-        st.session_state["aqi_selected_tier2"] = f"Tổng quan ({new_city})"
-        if "aqi_tier2_select" in st.session_state:
-            del st.session_state["aqi_tier2_select"]
-
     with c1:
         # Safe fallback for index
         idx_city = 0
@@ -98,9 +268,14 @@ def render(global_df):
             "Thành phố / Tỉnh", 
             options=cities, 
             index=idx_city,
-            key="aqi_city_select",
-            on_change=on_city_change
+            key="aqi_city_select"
         )
+        
+        if selected_city != st.session_state.get("aqi_selected_city"):
+            st.session_state["aqi_city_version"] = st.session_state.get("aqi_city_version", 0) + 1
+            st.session_state["aqi_selected_city"] = selected_city
+            st.session_state["aqi_selected_tier2"] = f"Tổng quan ({selected_city})"
+            st.rerun()
 
     # Locate Tier 2 units dynamically
     folder_name = CITY_FOLDERS.get(selected_city, "ho_chi_minh")
@@ -129,20 +304,21 @@ def render(global_df):
     # Reset tier2 selection if not found
     if st.session_state["aqi_selected_tier2"] not in tier2_options:
         st.session_state["aqi_selected_tier2"] = tier2_options[0]
-        if "aqi_tier2_select" in st.session_state:
-            del st.session_state["aqi_tier2_select"]
-            
-    def on_tier2_change():
-        st.session_state["aqi_selected_tier2"] = st.session_state["aqi_tier2_select"]
 
     with c2:
+        v = st.session_state.get("aqi_city_version", 0)
+        widget_key = f"aqi_tier2_select_{selected_city}_{v}"
+        
         selected_tier2 = st.selectbox(
             "Đơn vị (Huyện/Xã/Phường)", 
             options=tier2_options,
             index=tier2_options.index(st.session_state["aqi_selected_tier2"]),
-            key="aqi_tier2_select",
-            on_change=on_tier2_change
+            key=widget_key
         )
+        
+        if selected_tier2 != st.session_state.get("aqi_selected_tier2"):
+            st.session_state["aqi_selected_tier2"] = selected_tier2
+            st.rerun()
 
     with c3:
         # Use native segmented_control with Material Icons style if supported
@@ -173,7 +349,7 @@ def render(global_df):
             st.rerun()
 
     with c4:
-        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng", "6 tháng", "1 năm"]
+        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng", "6 tháng"]
         idx_tr = tr_opts.index(st.session_state["aqi_time_range"]) if st.session_state["aqi_time_range"] in tr_opts else 1
         time_range = st.selectbox("Thời gian", tr_opts, index=idx_tr, key="aqi_time_select")
         if time_range != st.session_state["aqi_time_range"]:
@@ -230,8 +406,7 @@ def render(global_df):
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
         "3 tháng": pd.Timedelta(days=90),
-        "6 tháng": pd.Timedelta(days=180),
-        "1 năm": pd.Timedelta(days=365)
+        "6 tháng": pd.Timedelta(days=180)
     }
     
     min_d = max_d - delta_map[time_range]
@@ -305,8 +480,7 @@ def render(global_df):
             "7 ngày": "6h",
             "30 ngày": "1D",
             "3 tháng": "3D",
-            "6 tháng": "7D",
-            "1 năm": "14D"
+            "6 tháng": "7D"
         }
         rule = rule_map.get(time_range)
         if rule:
@@ -391,12 +565,43 @@ def render(global_df):
             return len(bands) - 1.0
             
         def get_gradient_color(val):
-            score = get_color_score(val)
-            score = max(0, min(len(base_colors)-1.0, score))
-            idx = int(score)
-            if idx >= len(base_colors) - 1: return base_colors[-1]
-            c1, c2 = base_colors[idx], base_colors[idx+1]
-            t = score - idx
+            # Identify the band index
+            idx = 0
+            for i, (lo, hi) in enumerate(bands):
+                if val <= hi:
+                    idx = i
+                    break
+            else:
+                idx = len(bands) - 1
+
+            # Get base colors
+            c_curr = base_colors[idx]
+            
+            # Boundary Smoothing: Only interpolate when very close to the next/prev threshold
+            # This ensures colors within the band match the legend, but the transition is still "mượt"
+            trans_zone = 5 # AQI points for transition zone
+            
+            # Check for next threshold transition
+            if idx < len(bands) - 1:
+                hi_threshold = bands[idx][1]
+                if val > hi_threshold - trans_zone:
+                    c_next = base_colors[idx + 1]
+                    t = (val - (hi_threshold - trans_zone)) / (trans_zone * 2)
+                    t = max(0, min(1, t))
+                    return interpolate_hex(c_curr, c_next, t)
+            
+            # Check for previous threshold transition
+            if idx > 0:
+                lo_threshold = bands[idx][0]
+                if val < lo_threshold + trans_zone:
+                    c_prev = base_colors[idx - 1]
+                    t = (val - (lo_threshold - trans_zone)) / (trans_zone * 2)
+                    t = max(0, min(1, t))
+                    return interpolate_hex(c_prev, c_curr, t)
+
+            return c_curr
+
+        def interpolate_hex(c1, c2, t):
             def hex_to_rgb(h): return tuple(int(h.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
             r1, g1, b1 = hex_to_rgb(c1)
             r2, g2, b2 = hex_to_rgb(c2)
@@ -546,7 +751,7 @@ def render(global_df):
         
     with cRank:
         # Title of Rank
-        st.markdown(f'''<div style="font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;">Top 5 Ô nhiễm ({time_range})</div>''', unsafe_allow_html=True)
+        st.markdown(f'''<div style="font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;">Top 8 Ô nhiễm ({time_range})</div>''', unsafe_allow_html=True)
         
         top_list_html = f'''<div style="display:flex; font-size:12px; font-weight:600; color:#64748b; padding-bottom: 10px; border-bottom: 2px solid rgba(148,163,184,0.1); margin-bottom: 12px; text-transform:uppercase;">
             <div style="flex:4;">Địa điểm</div>
@@ -577,7 +782,7 @@ def render(global_df):
                 continue
             
         if top_locations:
-            top_df = pd.DataFrame(top_locations).sort_values(by="val", ascending=False).head(5)
+            top_df = pd.DataFrame(top_locations).sort_values(by="val", ascending=False).head(8)
             for _, row in top_df.iterrows():
                 v = row["val"]
                 loc_name_full = row["loc"]
@@ -596,33 +801,38 @@ def render(global_df):
             top_list_html += '''<div style="color:#64748b; font-size:13px; font-style:italic; text-align:center; padding: 20px 0;">Không có dữ liệu trong khoảng thời gian này</div>'''
 
         st.markdown(top_list_html, unsafe_allow_html=True)
-        
-        # Recommendations
-        advice_map = {
-            "Tốt": ("Không khí trong lành", "Lý tưởng cho các hoạt động ngoài trời. Bạn có thể thoải mái tận hưởng không khí.", "local_florist"),
-            "Vừa phải": ("Chất lượng ở mức chấp nhận được", "Những người quá nhạy cảm nên cân nhắc giảm bớt các hoạt động gắng sức ngoài trời.", "sentiment_neutral"),
-            "Không lành mạnh cho nhóm nhạy cảm": ("Ảnh hưởng tới nhóm nhạy cảm", "Trẻ em, người già và người bị bệnh hô hấp nên hạn chế hoạt động ngoài trời.", "masks"),
-            "Không khỏe mạnh": ("Bắt đầu ảnh hưởng sức khỏe", "Mọi người nên giảm hoạt động ngoài trời. Nhóm nhạy cảm nên ở trong nhà.", "warning"),
-            "Rất không tốt cho sức khỏe": ("Cảnh báo sức khỏe khẩn cấp", "Rất có hại cho sức khỏe. Tốt nhất nên ở trong nhà và đóng kín cửa sổ.", "error_outline"),
-            "Nguy hiểm": ("Báo động khẩn", "Nguy cơ cao về sức khỏe. Mọi người nên ở trong nhà và sử dụng máy lọc không khí.", "coronavirus")
-        }
-        
-        avg_selected = df_sub[y_col].mean()
-        avg_lbl, avg_c = val_meta(avg_selected, y_col)
-        
-        adv_title, adv_desc, adv_icon = advice_map.get(avg_lbl, ("Đang cập nhật", "Hệ thống đang kiểm tra mức độ an toàn...", "info"))
-        
-        adv_html = f'''
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
-        <div style="margin-top: 1.5rem; background-color: {hex_rgba(avg_c, 0.08)}; border: 1px solid {hex_rgba(avg_c, 0.3)}; border-radius: 10px; padding: 14px;">
-            <div style="display: flex; align-items: center; margin-bottom: 6px;">
-                <span class="material-symbols-rounded" style="color: {avg_c}; font-size: 20px; margin-right: 6px;">{adv_icon}</span>
-                <span style="color: {avg_c}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Khuyến cáo sức khỏe</span>
-            </div>
-            <div style="color: #0f172a; font-size: 14px; font-weight: 700; margin-bottom: 4px;">{adv_title}</div>
-            <div style="color: #475569; font-size: 13px; line-height: 1.5;">{adv_desc}</div>
-        </div>
-        '''
-        st.markdown(adv_html, unsafe_allow_html=True)
     
+    # ── FORECAST SECTION ──
+    st.markdown('<hr style="margin: 1.5rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
+    
+    df_forecast = load_forecast_data(folder_name, target_file)
+    if not df_forecast.empty:
+        # Lấy nhãn hiển thị từ từ điển POLLS có sẵn
+        poll_label = POLLS.get(selected_poll_key, {}).get("label", selected_poll_key.upper())
+        
+        render_hourly_forecast(df_forecast, selected_poll_key, poll_label, selected_city, selected_tier2)
+
+        # Forecast Header (Moved outside to ensure alignment)
+        if "Tổng quan" in selected_tier2:
+            location_str = selected_city
+        else:
+            location_str = f"{selected_city} - {selected_tier2}"
+
+        st.markdown(f'''<div style="margin-top: 1.5rem; margin-bottom: 0.8rem;">
+<div style="font-size: 19px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Dự báo {poll_label} hàng ngày</div>
+<div style="font-size: 14px; color: #64748b;">Dự báo tại <span style="font-weight: 600;">{location_str}</span> trong 7 ngày tới</div>
+</div>''', unsafe_allow_html=True)
+        
+        # Daily Forecast & Advice Side-by-Side
+        cDaily, cAdvice = st.columns([1.6, 1], gap="medium")
+        with cDaily:
+            render_daily_forecast(df_forecast, selected_poll_key, poll_label, selected_city, selected_tier2)
+        with cAdvice:
+            # Get average forecast for advice
+            avg_forecast = df_forecast[selected_poll_key].mean()
+            # Removed spacer to align with the list start
+            render_health_advice_box(avg_forecast, selected_poll_key)
+    else:
+        st.info("Hiện chưa có dữ liệu dự báo cho khu vực này.")
+        
     st.markdown('</div>', unsafe_allow_html=True)

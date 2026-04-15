@@ -4,30 +4,36 @@ import time
 import os
 import glob
 import numpy as np
-import unicodedata
 import re
 import argparse
-from datetime import date, timedelta
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from tqdm import tqdm
 
-START_DATE = "2025-01-01"
-END_DATE = (date.today() - timedelta(days=5)).strftime("%Y-%m-%d")
-LOCATION_DIR = "../../data/location"
-OUTPUT_DIR = "../../data/aqi" 
+# Lấy mốc thời gian hiện tại theo đúng múi giờ Asia/Bangkok (đồng bộ với tham số API)
+now = pd.Timestamp.utcnow().tz_convert("Asia/Bangkok").tz_localize(None)
+current_hour = now.floor("h") # Làm tròn xuống khung giờ hiện hành
+start_hour = current_hour - pd.DateOffset(months=3) # Lùi lại chính xác 3 tháng
+
+# Cập nhật tham số truyền vào API (chỉ nhận định dạng YYYY-MM-DD)
+START_DATE = start_hour.strftime("%Y-%m-%d")
+END_DATE = current_hour.strftime("%Y-%m-%d")
+
+LOCATION_DIR = "./data/location"
+OUTPUT_DIR = "./data/aqi" 
+BATCH_SIZE = 35
 
 session = requests.Session()
 retries = Retry(
-    total=3,                # Chỉ thử lại tối đa 3 lần
-    backoff_factor=2,       # Thời gian chờ sẽ là: 2s, 4s, 8s (tối đa chờ 14s cho 1 địa điểm lỗi)
+    total=5,                # Tăng lên 5 lần để an toàn hơn
+    backoff_factor=2,       # Thời gian chờ sẽ là: 2s, 4s, 8s...
     status_forcelist=[429, 500, 502, 503, 504]
 )
-session.mount("http://", HTTPAdapter(max_retries=retries))
-session.mount("https://", HTTPAdapter(max_retries=retries))
+session.mount("http://", HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10))
+session.mount("https://", HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10))
 
-# Time Skeleton
-full_time_range = pd.date_range(start=START_DATE, end=END_DATE, freq="h")
+# Time Skeleton - Dải thời gian sẽ được giới hạn nghiêm ngặt từ start_hour tới current_hour
+full_time_range = pd.date_range(start=start_hour, end=current_hour, freq="h")
 FULL_TIME_STRINGS = full_time_range.strftime("%Y-%m-%dT%H:%M").tolist()
 
 def get_pollution_level(aqi):
@@ -50,6 +56,7 @@ def get_pollution_class(aqi):
 
 def clean_filename(s):
     """Hàm giúp xóa dấu tiếng Việt và ký tự đặc biệt"""
+    s = str(s)
     s = re.sub(r'[àáạảãâầấậẩẫăằắặẳẵ]', 'a', s)
     s = re.sub(r'[èéẹẻẽêềếệểễ]', 'e', s)
     s = re.sub(r'[òóọỏõôồốộổỗơờớợởỡ]', 'o', s)
@@ -57,105 +64,115 @@ def clean_filename(s):
     s = re.sub(r'[ùúụủũưừứựửữ]', 'u', s)
     s = re.sub(r'[ỳýỵỷỹ]', 'y', s)
     s = re.sub(r'[Đđ]', 'd', s)
-    return s
+    s = re.sub(r'[^a-zA-Z0-9\s_]', '', s).strip().lower()
+    return re.sub(r'\s+', '_', s)
 
-def fetch_data(lat, lon, location_name):
-    df_skeleton = pd.DataFrame({"time": FULL_TIME_STRINGS})
+def process_and_save_batch(batch_targets):
+    """Hàm xử lý gọi API dạng Batch và lưu file cho danh sách mục tiêu"""
+    if not batch_targets: return
+    
+    lats = [t["lat"] for t in batch_targets]
+    lons = [t["lon"] for t in batch_targets]
+
+    air_url = "https://air-quality-api.open-meteo.com/v1/air-quality"
+    air_params = {
+        "latitude": ",".join(lats),
+        "longitude": ",".join(lons),
+        "start_date": START_DATE, 
+        "end_date": END_DATE,
+        "hourly": "us_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone",
+        "timezone": "Asia/Bangkok"
+    }
+    weather_url = "https://archive-api.open-meteo.com/v1/archive"
+    weather_params = {
+        "latitude": ",".join(lats),
+        "longitude": ",".join(lons),
+        "start_date": START_DATE, 
+        "end_date": END_DATE,
+        "hourly": "temperature_2m,relative_humidity_2m,precipitation,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover",
+        "timezone": "Asia/Bangkok"
+    }
+
     try:
-        air_url = "https://air-quality-api.open-meteo.com/v1/air-quality"
-        air_params = {
-            "latitude": lat, "longitude": lon,
-            "start_date": START_DATE, "end_date": END_DATE,
-            "hourly": "us_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone",
-            "timezone": "Asia/Bangkok"
-        }
-        weather_url = "https://archive-api.open-meteo.com/v1/archive"
-        weather_params = {
-            "latitude": lat, "longitude": lon,
-            "start_date": START_DATE, "end_date": END_DATE,
-            "hourly": "temperature_2m,relative_humidity_2m,precipitation,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover",
-            "timezone": "Asia/Bangkok"
-        }
-
         r_air = session.get(air_url, params=air_params, timeout=30)
         r_weather = session.get(weather_url, params=weather_params, timeout=30)
         
-        if r_air.status_code == 200 and r_weather.status_code == 200:
-            df_air = pd.DataFrame(r_air.json()["hourly"])
-            df_weather = pd.DataFrame(r_weather.json()["hourly"])
-            
-            df_merged = pd.merge(df_air, df_weather, on="time", how="inner")
-            df_final = pd.merge(df_skeleton, df_merged, on="time", how="left")
-        else:
-            print(f"\nError: API failed cho {location_name} (Code: {r_air.status_code}|{r_weather.status_code}) -> Dùng dữ liệu trống")
-            df_final = df_skeleton
+        if r_air.status_code != 200 or r_weather.status_code != 200:
+            tqdm.write(f"🚨 Lỗi API (Air: {r_air.status_code}, Weather: {r_weather.status_code})")
+            return
+
+        data_air = r_air.json()
+        data_weather = r_weather.json()
+
+        # Xử lý format trả về của API (dict nếu 1 vị trí, list nếu nhiều vị trí)
+        if isinstance(data_air, dict):
+            data_air = [data_air]
+            data_weather = [data_weather]
+
+        df_skeleton = pd.DataFrame({"time": FULL_TIME_STRINGS})
+
+        for i, target in enumerate(batch_targets):
+            try:
+                df_air = pd.DataFrame(data_air[i]["hourly"])
+                df_weather = pd.DataFrame(data_weather[i]["hourly"])
+                
+                # Merge dữ liệu
+                df_merged = pd.merge(df_air, df_weather, on="time", how="inner")
+                df_final = pd.merge(df_skeleton, df_merged, on="time", how="left")
+                
+                # Xử lý các trường thông tin
+                df_final["province"] = target["province"]
+                df_final["location"] = target["location"]
+                df_final["lat"] = float(target["lat"])
+                df_final["lon"] = float(target["lon"])
+
+                if "us_aqi" not in df_final.columns:
+                    df_final["us_aqi"] = np.nan
+                    
+                df_final["pollution_level"] = df_final["us_aqi"].apply(get_pollution_level)
+                df_final["pollution_class"] = df_final["us_aqi"].apply(get_pollution_class)
+                
+                rename = {
+                    "time": "timestamp", "temperature_2m": "temp", "relative_humidity_2m": "humidity", 
+                    "precipitation": "rain", "wind_speed_10m": "wind_speed", "wind_direction_10m": "wind_dir",
+                    "surface_pressure": "pressure", "cloud_cover": "cloud", "carbon_monoxide": "co", 
+                    "nitrogen_dioxide": "no2", "sulphur_dioxide": "so2", "ozone": "o3", "us_aqi": "aqi"
+                }
+                df_final.rename(columns=rename, inplace=True)
+                
+                # Trích xuất thời gian
+                df_final["timestamp"] = pd.to_datetime(df_final["timestamp"])
+                df_final["year"] = df_final["timestamp"].dt.year
+                df_final["month"] = df_final["timestamp"].dt.month
+                df_final["day"] = df_final["timestamp"].dt.day
+                df_final["hour"] = df_final["timestamp"].dt.hour
+                
+                # Sắp xếp và định hình cột
+                cols = [
+                    "timestamp", "year", "month", "day", "hour", 
+                    "province", "location", "lat", "lon", 
+                    "aqi", "pollution_level", "pollution_class", 
+                    "temp", "humidity", "rain", "wind_speed", "wind_dir", "pressure", "cloud", 
+                    "pm2_5", "pm10", "co", "no2", "o3", "so2"
+                ]
+                df_final = df_final[[c for c in cols if c in df_final.columns]]
+                
+                # Ghi file
+                df_final.to_csv(target["out_file"], index=False, encoding="utf-8-sig")
+
+            except Exception as e:
+                tqdm.write(f"❌ Lỗi ghi file cho trạm {target['location']}: {e}")
 
     except Exception as e:
-        print(f"\nError: Lỗi mạng tại {location_name}: {e} -> Dùng dữ liệu trống")
-        df_final = df_skeleton
+        tqdm.write(f"🚨 Lỗi gọi API Batch: {e}")
 
-    return df_final
-
-def process_and_save(df_raw, folder_name, province_name, unit_name, lat, lon):
-    df = df_raw.copy()
-    
-    df["province"] = province_name
-    df["location"] = unit_name
-    df["lat"] = lat
-    df["lon"] = lon
-
-    if "us_aqi" not in df.columns:
-        df["us_aqi"] = np.nan
-        
-    df["pollution_level"] = df["us_aqi"].apply(get_pollution_level)
-    df["pollution_class"] = df["us_aqi"].apply(get_pollution_class)
-    
-    rename = {
-        "time": "timestamp", 
-        "temperature_2m": "temp", 
-        "relative_humidity_2m": "humidity", 
-        "precipitation": "rain",
-        "wind_speed_10m": "wind_speed", 
-        "wind_direction_10m": "wind_dir",
-        "surface_pressure": "pressure", 
-        "cloud_cover": "cloud",
-        "carbon_monoxide": "co", 
-        "nitrogen_dioxide": "no2", 
-        "sulphur_dioxide": "so2",
-        "ozone": "o3", 
-        "us_aqi": "aqi"
-    }
-    df.rename(columns=rename, inplace=True)
-    
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
-    df["year"] = df["timestamp"].dt.year
-    df["month"] = df["timestamp"].dt.month
-    df["day"] = df["timestamp"].dt.day
-    df["hour"] = df["timestamp"].dt.hour
-    
-    cols = [
-        "timestamp", "year", "month", "day", "hour", 
-        "province", "location", "lat", "lon", 
-        "aqi", "pollution_level", "pollution_class", 
-        "temp", "humidity", "rain", "wind_speed", "wind_dir", "pressure", "cloud", 
-        "pm2_5", "pm10", "co", "no2", "o3", "so2"
-    ]
-    df = df[[c for c in cols if c in df.columns]]
-    
-    out_folder = os.path.join(OUTPUT_DIR, folder_name)
-    os.makedirs(out_folder, exist_ok=True)
-    
-    safe_unit_name = clean_filename(unit_name)
-    out_file = os.path.join(out_folder, f"{safe_unit_name}.csv")
-    
-    df.to_csv(out_file, index=False, encoding="utf-8-sig")
 
 def main():
     parser = argparse.ArgumentParser(description="Script crawl dữ liệu AQI cho các tỉnh/thành")
     parser.add_argument(
         '--provinces', 
         nargs='*', 
-        help="Danh sách tên các file tỉnh/thành cần chạy, không có đuôi .csv (vd: --provinces ha_noi ho_chi_minh). Nếu không truyền sẽ chạy tất cả."
+        help="Danh sách tên các file tỉnh/thành cần chạy, không có đuôi .csv (vd: --provinces ha_noi ho_chi_minh)."
     )
     args = parser.parse_args()
 
@@ -176,7 +193,7 @@ def main():
         print(f"Lỗi: Không tìm thấy file CSV nào trong '{LOCATION_DIR}'.")
         return
 
-    print(f"Phát hiện {len(csv_files)} file tỉnh/thành. Bắt đầu crawl dữ liệu...")
+    print(f"Phát hiện {len(csv_files)} file tỉnh/thành. Bắt đầu crawl dữ liệu ...")
     
     for file_path in csv_files:
         folder_name = clean_filename(os.path.splitext(os.path.basename(file_path))[0])
@@ -185,42 +202,43 @@ def main():
         try:
             df_locations = pd.read_csv(file_path)
             total_units = len(df_locations)
+            os.makedirs(out_folder, exist_ok=True)
             
-            # BỎ QUA CẢ TỈNH/THÀNH NẾU ĐÃ ĐỦ SỐ LƯỢNG FILE
-            if os.path.exists(out_folder):
-                existing_files = glob.glob(os.path.join(out_folder, "*.csv"))
-                if len(existing_files) >= total_units:
-                    print(f"\n[BỎ QUA] '{folder_name}' - Đã hoàn thành ({len(existing_files)}/{total_units} file).")
-                    continue
-            else:
-                os.makedirs(out_folder, exist_ok=True)
-
-            print(f"\n[{folder_name}] Đang xử lý {total_units} đơn vị hành chính...")
-            
-            for _, row in tqdm(df_locations.iterrows(), total=total_units, unit="đơn vị"):
-                province_name = row["Tỉnh/Thành"]
+            # KIỂM TRA: Gom danh sách các phường/xã CHƯA có file
+            targets_to_fetch = []
+            for _, row in df_locations.iterrows():
                 unit_name = row["Tên đơn vị"]
-                lat = row["Vĩ độ"]
-                lon = row["Kinh độ"]
-                
-                # BỎ QUA XÃ/PHƯỜNG CỤ THỂ NẾU FILE ĐÃ TỒN TẠI (Resume)
                 safe_unit_name = clean_filename(unit_name)
                 out_file = os.path.join(out_folder, f"{safe_unit_name}.csv")
                 
-                if os.path.exists(out_file):
-                    continue # Bỏ qua vòng lặp này, nhảy sang xã/phường tiếp theo
+                if not os.path.exists(out_file):
+                    targets_to_fetch.append({
+                        "province": row["Tỉnh/Thành"],
+                        "location": unit_name,
+                        "lat": str(row["Vĩ độ"]),
+                        "lon": str(row["Kinh độ"]),
+                        "out_file": out_file
+                    })
+
+            if not targets_to_fetch:
+                print(f"\n[BỎ QUA] '{folder_name}' - Đã hoàn thành ({total_units}/{total_units} file).")
+                continue
+
+            print(f"\n[{folder_name}] Đang xử lý {len(targets_to_fetch)} đơn vị hành chính còn thiếu...")
+            
+            # CHẠY API THEO BATCH
+            for i in tqdm(range(0, len(targets_to_fetch), BATCH_SIZE), desc="Đang Fetch (Batch)", unit="batch"):
+                batch = targets_to_fetch[i : i + BATCH_SIZE]
+                process_and_save_batch(batch)
                 
-                # Fetch dữ liệu
-                df_raw = fetch_data(lat, lon, unit_name)
-                process_and_save(df_raw, folder_name, province_name, unit_name, lat, lon)
-                
-                time.sleep(0.1) 
+                # Tránh lỗi Too Many Requests (429) 
+                time.sleep(1.1) 
                 
         except Exception as e:
             print(f"Lỗi khi đọc hoặc xử lý file {file_path}: {e}")
 
-    print("\n" + "="*40)
-    print(f"Hoàn thành toàn bộ quá trình! Dữ liệu được lưu tại thư mục: '{OUTPUT_DIR}'")
+    print("\n" + "="*50)
+    print(f"✅ Hoàn thành toàn bộ quá trình! Dữ liệu được lưu tại thư mục: '{OUTPUT_DIR}'")
 
 if __name__ == "__main__":
     main()

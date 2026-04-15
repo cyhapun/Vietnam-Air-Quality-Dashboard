@@ -1,8 +1,14 @@
 import streamlit as st
+import threading
+import time
+
+from services.crawl_data.update_aqi_hourly import run_hourly_update 
+from services.crawl_data.get_province_aqi import run_province_aggregation 
+from services.crawl_data.get_forecast import run_forecast_update
+import argparse
 
 from components.footer import render_footer
 from components.header import render_header
-from components.overview import render_overview
 from components.sidebar import render_sidebar
 from services.data_loader import load_data
 from tabs import overview_tab, location_tab, datetime_tab, atmos_tab, aqi_tab, weather_tab, interaction_tab
@@ -28,6 +34,51 @@ from utils.helpers import (
     rank_rows_html,
 )
 
+# Hàm chạy ngầm để lập lịch
+def start_crawler_thread():
+    time.sleep(20)
+    while True:
+        try:
+            print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler đang chạy ngầm...")
+            # Bước 1: Cào dữ liệu mới cho từng trạm (Batch API)
+            run_hourly_update()
+            
+            # Bước 2: Tính toán lại giá trị đại diện (Mean/Mode) cho từng tỉnh thành
+            run_province_aggregation()
+
+            # 3. Cập nhật dữ liệu Dự báo (Forecast tương lai)
+            run_forecast_update()
+
+            print("Đã hoàn tất cập nhật dữ liệu!")
+        except Exception as e:
+            print(f"❌ Lỗi crawler: {e}")
+        
+        # Ngủ 1 tiếng (3610 giây) rồi chạy tiếp (chừa 10s để API cập nhật dữ liệu tránh lỗi)
+        time.sleep(3610) 
+
+# Sử dụng decorator cache để đảm bảo thread này CHỈ KHỞI TẠO 1 LẦN 
+# ngay cả khi Streamlit rerun (do user thao tác trên web)
+@st.cache_resource
+def initialize_background_tasks():
+    thread = threading.Thread(target=start_crawler_thread, daemon=True)
+    thread.start()
+    return "Crawler started"
+
+parser = argparse.ArgumentParser(description="Tùy chọn cho Vietnam AQI Dashboard")
+parser.add_argument(
+    "--real-time", 
+    action="store_true", 
+    help="Bật tính năng chạy ngầm crawler để cập nhật dữ liệu real-time"
+)
+
+# Sử dụng parse_known_args để bỏ qua các tham số mặc định của lệnh `streamlit run`
+args, unknown = parser.parse_known_args()
+
+if args.real_time:
+    initialize_background_tasks()
+    print("Đang bật chế độ Real-time.")
+else:
+    print("Không sử dụng chế độ Real-time. Thêm cờ '--real-time' khi chạy để bật.")
 
 st.set_page_config(
     layout="wide",
@@ -138,7 +189,6 @@ def render_dashboard():
     st.session_state["dashboard_context"] = state
 
     render_header(state, logo_html)
-    render_overview(state)
 
     tabs = st.tabs(
         [
@@ -150,7 +200,70 @@ def render_dashboard():
     )
 
     with tabs[0]:
-        render_tab_or_blank(overview_tab, state["df"])
+        overview_df = state["df"]
+        province_col = "province" if "province" in overview_df.columns else "city"
+        province_options = sorted(overview_df[province_col].dropna().astype(str).unique().tolist())
+        if "overview_scope_mode" not in st.session_state:
+            st.session_state["overview_scope_mode"] = "Cả nước"
+        c_filter_mode, c_filter_target, c_filter_meta = st.columns([1.2, 1.6, 1.2], gap="small")
+        with c_filter_mode:
+            st.markdown("<div class='ov-filter-label'>Phạm vi</div>", unsafe_allow_html=True)
+            if "overview_scope_mode" not in st.session_state:
+                st.session_state.overview_scope_mode = "Cả nước"
+
+            b1, b2 = st.columns(2, gap="small")
+            if b1.button("Cả nước", type="primary" if st.session_state.overview_scope_mode == "Cả nước" else "secondary", use_container_width=True):
+                st.session_state.overview_scope_mode = "Cả nước"
+                st.rerun()
+            if b2.button("Theo tỉnh/thành", type="primary" if st.session_state.overview_scope_mode == "Theo tỉnh/thành" else "secondary", use_container_width=True):
+                st.session_state.overview_scope_mode = "Theo tỉnh/thành"
+                st.rerun()
+                
+            scope_mode = st.session_state.overview_scope_mode
+        selected_scope_label = "Việt Nam"
+        with c_filter_target:
+            if scope_mode == "Theo tỉnh/thành":
+                st.markdown("<div class='ov-filter-label'>Khu vực cụ thể</div>", unsafe_allow_html=True)
+                selected_province = st.selectbox(
+                    "Chọn tỉnh/thành",
+                    options=province_options,
+                    index=None,
+                    key="overview_scope_province",
+                    placeholder="Vui lòng chọn tỉnh thành",
+                    label_visibility="collapsed",
+                )
+                if selected_province:
+                    try:
+                        from services.data_loader import load_province_detail, _apply_aqi_labels
+                        s_arg = str(state["s_d"]) if "s_d" in state else None
+                        e_arg = str(state["e_d"]) if "e_d" in state else None
+                        detail_raw = load_province_detail(selected_province, s_arg, e_arg)
+                        overview_df = _apply_aqi_labels(detail_raw.copy())
+                    except Exception:
+                        overview_df = overview_df[overview_df[province_col] == selected_province].copy()
+                    selected_scope_label = selected_province
+                else:
+                    overview_df = overview_df.iloc[0:0] 
+            else:
+                st.markdown("<div style='height:26px'></div>", unsafe_allow_html=True)
+        with c_filter_meta:
+            st.markdown(
+                f"""
+                <div class="ov-filter-meta-dark">
+                    <div class="ov-filter-meta-dark-k">PHẠM VI ĐANG XEM</div>
+                    <div class="ov-filter-meta-dark-v">{selected_scope_label}</div>
+                    <div class="ov-filter-meta-dark-sub">{len(overview_df):,} bản ghi</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        if overview_df.empty:
+            st.info("Không có dữ liệu cho phạm vi đã chọn.")
+        else:
+            overview_tab.render_overview(
+                state, df_override=overview_df, scope_label=selected_scope_label
+            )
+            render_tab_or_blank(overview_tab, overview_df)
     with tabs[1]:
         render_tab_or_blank(aqi_tab, state["df"])
     with tabs[2]:

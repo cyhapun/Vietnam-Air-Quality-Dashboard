@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 from io import StringIO
-from geopy.geocoders import OpenCage
+from geopy.geocoders import Nominatim
 import time
 import re
 import os
@@ -28,7 +28,7 @@ def format_filename(province_name):
     return f"{name}.csv"
 
 # Kiểm tra và tạo thư mục lưu trữ dữ liệu nếu chưa có
-os.makedirs("../../data/location", exist_ok=True)
+os.makedirs("./data/location", exist_ok=True)
 
 # Danh sách các nguồn dữ liệu cần thu thập
 sources = [
@@ -39,7 +39,8 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
 }
 
-geolocator = OpenCage("463ebb9169564a7bab4caea9311901d0")
+# Thay đổi logic: Sử dụng Nominatim (OpenStreetMap) thay vì OpenCage
+geolocator = Nominatim(user_agent="vietnam_ward_geocoder")
 extracted_data_by_province = {}
 
 # Bước đầu tiên Thực hiện quét dữ liệu từ các trang web
@@ -86,7 +87,7 @@ for idx, item in enumerate(sources):
         print(f"Gặp lỗi khi quét dữ liệu tỉnh {province} chi tiết {e}")
 
 # Bước tiếp theo Tìm tọa độ địa lý và xuất ra file
-print("\nBắt đầu phần 2: Tìm kiếm tọa độ và lưu file")
+print("\nBắt đầu phần 2: Tìm kiếm tọa độ và lưu file (Sử dụng Nominatim)")
 
 prefix_pattern = r'^(?i)(Phường|Xã|Thị trấn|Đặc khu)\s+'
 total_saved_files = 0
@@ -105,9 +106,11 @@ for province, wards in extracted_data_by_province.items():
     
     for place in ward_list:
         try:
+            # Logic lấy tọa độ bằng Nominatim
             search_query = f"{place}, {province}, Vietnam"
             location = geolocator.geocode(search_query, timeout=10)
             
+            # Logic fallback: thử bỏ tiền tố hoặc thêm tiền tố nếu không tìm thấy
             if not location:
                 has_prefix = re.match(prefix_pattern, place)
                 if has_prefix:
@@ -120,7 +123,7 @@ for province, wards in extracted_data_by_province.items():
                             break
 
             if location:
-                print(f"Tìm thấy '{place}' tại tọa độ ({location.latitude}, {location.longitude})")
+                print(f"[OK] Tìm thấy '{place}' tại tọa độ ({location.latitude}, {location.longitude})")
                 province_results.append({
                     "Tỉnh/Thành": province,
                     "Tên đơn vị": place,
@@ -128,15 +131,16 @@ for province, wards in extracted_data_by_province.items():
                     "Kinh độ": location.longitude
                 })
             else:
-                print(f"Không tìm thấy tọa độ cho {place}")
+                print(f"[FAIL] Không tìm thấy tọa độ cho {place}")
                 failed_wards.append(place)
                 
-            time.sleep(1) 
+            # Bắt buộc sleep >= 1s với Nominatim để tránh lỗi Too Many Requests (429)
+            time.sleep(1.5) 
             
         except Exception as e:
             print(f"Lỗi kết nối khi xử lý {place} chi tiết {e}")
             failed_wards.append(place)
-            time.sleep(1.5)
+            time.sleep(2)
 
     # Thực hiện lưu kết quả ngay khi xử lý xong mỗi tỉnh
     if province_results:
@@ -145,7 +149,7 @@ for province, wards in extracted_data_by_province.items():
         
         # Tạo tên file theo quy chuẩn đã định nghĩa
         file_name = format_filename(province)
-        file_path = f"../../data/location/{file_name}"
+        file_path = f"./data/location/{file_name}"
         
         df_province.to_csv(file_path, index=False, encoding="utf-8-sig")
         total_saved_files += 1

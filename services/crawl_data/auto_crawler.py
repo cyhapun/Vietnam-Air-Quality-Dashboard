@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 import schedule # pip install schedule
-from get_aqi_hourly import run_hourly_update
+from Midterm.services.crawl_data.update_aqi_hourly import run_hourly_update
 
 def job():
     now = datetime.now()
