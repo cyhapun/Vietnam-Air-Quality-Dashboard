@@ -156,7 +156,7 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
     
     # Filter for today and future
     today = pd.Timestamp.now().date()
-    daily = daily[daily["date"] >= today].head(7)
+    daily = daily[daily["date"] >= today].head(4)
     
     container_html = '<div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">'
     
@@ -173,7 +173,7 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
              
         bg_row = "transparent" if i % 2 == 0 else "#f8fafc"
         
-        container_html += f'''<div style="display: flex; align-items: center; padding: 12px 20px; background: {bg_row}; border-bottom: 1px solid #f1f5f9;">
+        container_html += f'''<div style="display: flex; align-items: center; padding: 18px 20px; background: {bg_row}; border-bottom: 1px solid #f1f5f9;">
 <div style="width: 80px; font-weight: 600; color: #334155; flex-shrink: 0;">{day_pref}</div>
 <div style="width: 70px; display: flex; justify-content: center; flex-shrink: 0;">
 <div style="background: {col}; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 14px; min-width: 50px; text-align: center;">{val:.0f}</div>
@@ -217,7 +217,7 @@ def render_health_advice_box(avg_val, poll_type):
         icon_html = f'<span class="material-symbols-rounded" style="color: {clr}; font-size: 32px; margin-right: 10px;">warning</span>'
 
     st.markdown(f'''<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
-<div style="height: 100%; min-height: 380px; background-color: {hex_rgba(clr, 0.08)}; border: 1.5px solid {hex_rgba(clr, 0.3)}; border-radius: 12px; padding: 24px; display: flex; flex-direction: column;">
+<div style="height: 100%; min-height: 270px; background-color: {hex_rgba(clr, 0.08)}; border: 1.5px solid {hex_rgba(clr, 0.3)}; border-radius: 12px; padding: 22px 24px; display: flex; flex-direction: column;">
     <div style="display: flex; align-items: center; margin-bottom: 12px;">
         {icon_html}
         <span style="color: {clr}; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">KHUYẾN CÁO SỨC KHỎE</span>
@@ -233,6 +233,223 @@ def render_health_advice_box(avg_val, poll_type):
         * Khuyến cáo dựa trên mức độ ô nhiễm trung bình dự báo.
     </div>
 </div>''', unsafe_allow_html=True)
+
+def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
+    if df.empty or poll_key not in df.columns:
+        return
+        
+    last_ts = df["timestamp"].max()
+    curr_val = df.loc[df["timestamp"] == last_ts, poll_key].values[0]
+    
+    # New Point-to-Point Logic
+    delta_map = {
+        "24h": pd.Timedelta(days=1),
+        "7 ngày": pd.Timedelta(days=7),
+        "30 ngày": pd.Timedelta(days=30),
+        "3 tháng": pd.Timedelta(days=90)
+    }
+    label_map = {
+        "24h": "Hôm qua",
+        "7 ngày": "7 ngày trước",
+        "30 ngày": "30 ngày trước",
+        "3 tháng": "3 tháng trước"
+    }
+    
+    delta = delta_map.get(time_range, pd.Timedelta(days=1))
+    period_lbl = f"{label_map.get(time_range, 'Trước')} (cùng giờ)"
+    
+    prev_ts = last_ts - delta
+    # Find the record closest to (but not after) the target past timestamp
+    prev_rows = df[df["timestamp"] <= prev_ts]
+    
+    if not prev_rows.empty:
+        # Check if the closest record is reasonably close (within 3 hours) to be valid "same hour"
+        closest_row = prev_rows.iloc[-1]
+        time_diff = abs((closest_row["timestamp"] - prev_ts).total_seconds()) / 3600
+        
+        if time_diff <= 3: # Allow 3hr window for missing samples
+            prev_val = closest_row[poll_key]
+        else:
+            prev_val = None
+    else:
+        prev_val = None
+
+    if prev_val is None:
+        st.info(f"Không tìm thấy dữ liệu đối chứng tại cùng khung giờ cho mốc {time_range}.")
+        return
+
+    diff = curr_val - prev_val
+    pct = (diff / prev_val * 100) if prev_val != 0 else 0
+    
+    # UI logic for the Delta Box
+    status_color = "#16a34a" if diff <= 0 else "#dc2626"
+    status_msg = "Cải thiện" if diff <= 0 else "Kém đi"
+    arrow = "↓" if diff <= 0 else "↑"
+    
+    # Header with integrated Delta Badge
+    st.markdown(f'''<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+        <div>
+            <div style="font-size: 16px; font-weight: 700; color: #0f172a;">Biến động nồng độ {poll_label}</div>
+            <div style="font-size: 12px; color: #64748b;">So sánh dữ liệu hiện tại với {period_lbl.lower()}</div>
+        </div>
+        <div style="background: {hex_rgba(status_color, 0.12)}; border: 1.5px solid {hex_rgba(status_color, 0.25)}; padding: 8px 15px; border-radius: 10px; text-align: right; min-width: 110px;">
+            <div style="color: {status_color}; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">{status_msg}</div>
+            <div style="font-size: 20px; font-weight: 900; color: {status_color};">{arrow}{abs(pct):.1f}%</div>
+        </div>
+    </div>''', unsafe_allow_html=True)
+    
+    # Get semantic colors and apply alpha
+    _, curr_c = val_meta(curr_val, poll_key)
+    _, prev_c = val_meta(prev_val, poll_key)
+    curr_color = hex_rgba(curr_c, 0.88)
+    prev_color = hex_rgba(prev_c, 0.88)
+    
+    fig = go.Figure()
+    
+    # Add a horizontal reference line from the previous value
+    fig.add_shape(
+        type="line", line=dict(color="#94a3b8", width=1.5, dash="dash"),
+        x0=-0.5, x1=1.5, y0=prev_val, y1=prev_val
+    )
+    
+    # Past Bar
+    fig.add_trace(go.Bar(
+        x=[period_lbl],
+        y=[prev_val],
+        name=period_lbl,
+        marker_color=hex_rgba(prev_c, 0.4), # More subtle past
+        marker_line=dict(width=2, color=prev_c),
+        hovertemplate=f"{period_lbl}: <b>%{{y:.1f}}</b><extra></extra>"
+    ))
+    
+    # Current Bar
+    fig.add_trace(go.Bar(
+        x=["Hiện tại"],
+        y=[curr_val],
+        name="Hiện tại",
+        marker_color=curr_color, # Stronger current
+        marker_line=dict(width=2, color="white"),
+        hovertemplate=f"Hiện tại: <b>%{{y:.1f}}</b><extra></extra>"
+    ))
+    
+    fig.update_layout(
+        showlegend=False,
+        height=450,
+        margin=dict(l=10, r=10, t=40, b=10), # More top margin for text labels
+        yaxis={**ax(), "gridcolor": "rgba(148,163,184,0.08)", "zeroline": False},
+        xaxis=dict(**ax()),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        bargap=0.5, # Thinner, more elegant bars
+    )
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=f"comp_chart_{poll_key}")
+
+def render_correlation_heatmap(df_sub, time_range):
+    # Select only pollutant columns
+    cols = ["aqi", "pm2_5", "pm10", "o3", "no2", "co", "so2"]
+    available_cols = [c for c in cols if c in df_sub.columns]
+    
+    if len(available_cols) < 2:
+        return
+        
+    # Filter for numeric columns and ensure they ARE numeric
+    # CSV uses 'pm2_5' instead of 'pm2.5'
+    pollutant_cols = ["aqi", "pm2_5", "pm10", "o3", "no2", "co", "so2"]
+    available_cols = [c for c in pollutant_cols if c in df_sub.columns]
+    
+    if len(available_cols) < 2:
+        return
+
+    # Ensure numeric types and drop NaNs
+    df_corr = df_sub[available_cols].copy()
+    for col in available_cols:
+        df_corr[col] = pd.to_numeric(df_corr[col], errors='coerce')
+        
+    """
+    # DYNAMIC AQI LOGIC - Commented out per user request
+    # This was used to fix low correlation issues due to static file data
+    def get_aqi_sub(val, bps, index_range=[0, 50, 100, 150, 200, 300, 400, 500]):
+        if val <= bps[0]: return 0
+        for i in range(len(bps)-1):
+            if val <= bps[i+1]:
+                return index_range[i] + (index_range[i+1]-index_range[i])/(bps[i+1]-bps[i]) * (val-bps[i])
+        return 500
+    
+    def calc_comprehensive_aqi(row):
+        aqis = []
+        if "pm2_5" in row and not pd.isna(row["pm2_5"]):
+            aqis.append(get_aqi_sub(row["pm2_5"], [0, 12, 35.4, 55.4, 150.4, 250.4, 350.4, 500.4]))
+        if "pm10" in row and not pd.isna(row["pm10"]):
+            aqis.append(get_aqi_sub(row["pm10"], [0, 54, 154, 254, 354, 424, 504, 604]))
+        if "no2" in row and not pd.isna(row["no2"]):
+            aqis.append(get_aqi_sub(row["no2"], [0, 53, 100, 360, 649, 1249, 1649, 2049]))
+        if "so2" in row and not pd.isna(row["so2"]):
+            aqis.append(get_aqi_sub(row["so2"], [0, 35, 75, 185, 304, 604, 804, 1004]))
+        if "co" in row and not pd.isna(row["co"]):
+            aqis.append(get_aqi_sub(row["co"]/1145, [0, 4.4, 9.4, 12.4, 15.4, 30.4, 40.4, 50.4]))
+        return max(aqis) if aqis else 0
+    
+    df_corr["aqi"] = df_corr.apply(calc_comprehensive_aqi, axis=1)
+    """
+
+    df_corr = df_corr.dropna()
+    
+    if len(df_corr) < 3:
+        st.info("Cần thêm dữ liệu sạch để tính toán tương quan.")
+        return
+        
+    corr_matrix = df_corr.corr()
+    
+    # Map back to labels
+    labels = []
+    for c in available_cols:
+        if c == "aqi": labels.append("AQI")
+        elif c == "pm2_5": labels.append("PM2.5") # Map back to display name
+        else: labels.append(POLLS[c]["label"])
+        
+    # Create mask for triangular heatmap (keep only lower triangle, exclude diagonal)
+    mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=0)
+    df_masked = corr_matrix.where(~mask)
+    z = df_masked.values
+    
+    # Custom hover text matrix to avoid "NaN" on empty areas
+    custom_hover = []
+    for i in range(len(labels)):
+        row = []
+        for j in range(len(labels)):
+            if i > j: # Only lower triangle
+                val = corr_matrix.values[i, j]
+                row.append(f"Tương quan giữa <b>{labels[j]}</b> và <b>{labels[i]}</b>: <b>{val:.2f}</b>")
+            else:
+                row.append("") # Empty for hidden cells
+        custom_hover.append(row)
+
+    # Standard scientific colorscale: Red (Positive Correlation) to Blue (Negative Correlation)
+    fig = go.Figure(data=go.Heatmap(
+        z=z,
+        x=labels,
+        y=labels,
+        customdata=custom_hover,
+        colorscale='RdBu_r', 
+        zmin=-1, zmax=1,
+        xgap=2, ygap=2,
+        hovertemplate="%{customdata}<extra></extra>"
+    ))
+    
+    fig.update_layout(
+        height=450, # Further increased for maximum visibility
+        margin=dict(l=10, r=10, t=10, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        xaxis=dict(tickfont=dict(size=11, color="#475569"), side="bottom"),
+        yaxis=dict(tickfont=dict(size=11, color="#475569"), autorange="reversed")
+    )
+    
+    st.markdown(f'''<div style="margin-bottom: 20px;">
+        <div style="font-size: 16px; font-weight: 700; color: #0f172a;">Tương quan đa biến</div>
+        <div style="font-size: 12px; color: #64748b;">Mối liên hệ giữa các chất trong {time_range}</div>
+    </div>''', unsafe_allow_html=True)
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=f"corr_heatmap_{time_range}")
 
 def render(global_df):
     ctx = st.session_state.get("dashboard_context", {})
@@ -256,6 +473,42 @@ def render(global_df):
     if "aqi_pollutant" not in st.session_state:
         st.session_state["aqi_pollutant"] = "aqi"
         
+    # Inject local CSS for Blue Theme on Chart Type widget (Frames only)
+    st.markdown(f"""
+        <style>
+        /* Segmented Control Group Border & Width */
+        div[data-testid="stSegmentedControl"] {{
+            border-radius: 12px !important;
+            width: 100% !important;
+            display: flex !important;
+        }}
+        /* All buttons in the control - Adjusted height and width to match Selectbox */
+        div[data-testid="stSegmentedControl"] button {{
+            flex: 1 !important; /* Expand to fill width */
+            border-color: rgba(14, 165, 233, 0.2) !important;
+            height: 42px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }}
+        /* Active button state (The blue theme requested) */
+        div[data-testid="stSegmentedControl"] button[aria-checked="true"] {{
+            background-color: rgba(14, 165, 233, 0.1) !important;
+            border: 1.5px solid #0ea5e9 !important;
+            color: #0ea5e9 !important;
+        }}
+        /* Icon color when active */
+        div[data-testid="stSegmentedControl"] button[aria-checked="true"] span {{
+            color: #0ea5e9 !important;
+        }}
+        /* Hover effect */
+        div[data-testid="stSegmentedControl"] button:hover {{
+            border-color: #0ea5e9 !important;
+            color: #0ea5e9 !important;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
     c1, c2, c3, c4, c5 = st.columns([1.6, 1.6, 1.2, 1.0, 1.0])
     
     with c1:
@@ -349,7 +602,7 @@ def render(global_df):
             st.rerun()
 
     with c4:
-        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng", "6 tháng"]
+        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng"]
         idx_tr = tr_opts.index(st.session_state["aqi_time_range"]) if st.session_state["aqi_time_range"] in tr_opts else 1
         time_range = st.selectbox("Thời gian", tr_opts, index=idx_tr, key="aqi_time_select")
         if time_range != st.session_state["aqi_time_range"]:
@@ -405,12 +658,14 @@ def render(global_df):
         "24h": pd.Timedelta(hours=24),
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
-        "3 tháng": pd.Timedelta(days=90),
-        "6 tháng": pd.Timedelta(days=180)
+        "3 tháng": pd.Timedelta(days=90)
     }
     
     min_d = max_d - delta_map[time_range]
     df_sub = df[df["timestamp"] >= min_d].copy()
+    
+    # Keep a full copy for advanced analysis before any resampling for chart visuals
+    df_analysis = df_sub.copy()
     
     if df_sub.empty:
         st.warning(f"Không có dữ liệu thu thập được trong khoảng {time_range} qua.")
@@ -479,8 +734,7 @@ def render(global_df):
         rule_map = {
             "7 ngày": "6h",
             "30 ngày": "1D",
-            "3 tháng": "3D",
-            "6 tháng": "7D"
+            "3 tháng": "3D"
         }
         rule = rule_map.get(time_range)
         if rule:
@@ -820,7 +1074,7 @@ def render(global_df):
 
         st.markdown(f'''<div style="margin-top: 1.5rem; margin-bottom: 0.8rem;">
 <div style="font-size: 19px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Dự báo {poll_label} hàng ngày</div>
-<div style="font-size: 14px; color: #64748b;">Dự báo tại <span style="font-weight: 600;">{location_str}</span> trong 7 ngày tới</div>
+<div style="font-size: 14px; color: #64748b;">Dự báo tại <span style="font-weight: 600;">{location_str}</span> trong 4 ngày tới</div>
 </div>''', unsafe_allow_html=True)
         
         # Daily Forecast & Advice Side-by-Side
@@ -832,6 +1086,19 @@ def render(global_df):
             avg_forecast = df_forecast[selected_poll_key].mean()
             # Removed spacer to align with the list start
             render_health_advice_box(avg_forecast, selected_poll_key)
+            
+        # ── ADVANCED ANALYSIS SECTION ──
+        st.markdown('<hr style="margin: 1.5rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
+        st.markdown(f'''<div style="margin-bottom: 1.5rem;">
+            <div style="font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Phân tích Nâng cao</div>
+            <div style="font-size: 14px; color: #64748b;">Phát hiện các đặc tính ô nhiễm tại <span style="font-weight: 600;">{location_str}</span> qua chuỗi thời gian</div>
+        </div>''', unsafe_allow_html=True)
+        
+        col_comp, col_heat = st.columns([1.25, 1.25], gap="large")
+        with col_comp:
+            render_comparison_bar_chart(df, selected_poll_key, time_range, poll_lbl)
+        with col_heat:
+            render_correlation_heatmap(df_analysis, time_range)
     else:
         st.info("Hiện chưa có dữ liệu dự báo cho khu vực này.")
         
