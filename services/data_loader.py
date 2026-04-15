@@ -167,7 +167,7 @@ def _apply_aqi_labels(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=3700, show_spinner=False)
 def _province_name_slug_map() -> dict[str, str]:
     base = os.path.dirname(__file__)
     location_dir = _resolve_location_dir(base)
@@ -188,7 +188,7 @@ def _province_name_slug_map() -> dict[str, str]:
     return mapping
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=3700, show_spinner=False)
 def list_detail_provinces() -> list[str]:
     base = os.path.dirname(__file__)
     location_dir = _resolve_location_dir(base)
@@ -216,7 +216,7 @@ def list_detail_provinces() -> list[str]:
     )
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3700)
 def _load_raw() -> pd.DataFrame:
     """Load + postprocess (cached). AQI labels added separately to avoid stale cache."""
     base = os.path.dirname(__file__)
@@ -245,7 +245,7 @@ def _load_raw() -> pd.DataFrame:
     st.error("Không tìm thấy nguồn dữ liệu (data/aqi/*/all.csv hoặc vietnam_air_quality.csv)")
     st.stop()
 
-
+@st.cache_data(ttl=3700)
 def load_data() -> pd.DataFrame:
     """Return data with AQI labels always matching current AQI_DEF."""
     df = _load_raw().copy()
@@ -293,6 +293,8 @@ def load_province_detail(
 
     df_list = []
     for p in files:
+        if os.path.basename(p).lower() == "all.csv":
+            continue
         try:
             temp_df = _safe_read_csv(p)
             if has_time_filter and "timestamp" in temp_df.columns:
