@@ -12,6 +12,7 @@ import re
 import unicodedata
 from pathlib import Path
 from tqdm import tqdm  
+import subprocess
 
 # --- CẤU HÌNH ĐƯỜNG DẪN ---
 base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -58,6 +59,25 @@ def clean_filename(s):
     s = re.sub(r'[^a-zA-Z0-9\s]', '', s).strip().lower()
     return re.sub(r'\s+', '_', s)
 
+def get_last_historical_timestamp(province, location):
+    """Lấy mốc timestamp mới nhất từ dữ liệu lịch sử của trạm này."""
+    prov_slug = clean_filename(province)
+    loc_slug = clean_filename(location)
+    file_path = os.path.join(HISTORICAL_DIR, prov_slug, f"{loc_slug}.csv")
+    
+    if os.path.exists(file_path):
+        try:
+            # Dùng tail -n 1 để lấy dòng cuối cùng nhanh nhất
+            last_line = subprocess.check_output(['tail', '-n', '1', file_path], stderr=subprocess.DEVNULL).decode('utf-8').strip()
+            if last_line:
+                last_ts_str = last_line.split(',')[0]
+                return pd.to_datetime(last_ts_str)
+        except Exception:
+            pass
+            
+    # Mặc định quay về giờ hiện tại nếu không tìm thấy hoặc lỗi
+    return datetime.now().replace(minute=0, second=0, microsecond=0)
+
 def extract_locations_from_history():
     """Quét thư mục historical để lấy danh sách tọa độ và thông tin tỉnh/trạm"""
     csv_files = glob.glob(os.path.join(HISTORICAL_DIR, "**", "*.csv"), recursive=True)
@@ -92,6 +112,7 @@ def process_forecast_batch(batch_meta):
         "latitude": ",".join(lats),
         "longitude": ",".join(lons),
         "timezone": "Asia/Bangkok",
+        "past_days": 2,  # Lấy thêm 2 ngày quá khứ để vá khoảng hở nếu có
         "forecast_days": 7  
     }
     
@@ -116,7 +137,6 @@ def process_forecast_batch(batch_meta):
             data_air = [data_air]
 
         updated_count = 0
-        current_hour = datetime.now().replace(minute=0, second=0, microsecond=0)
 
         for i, meta in enumerate(batch_meta):
             try:
@@ -162,9 +182,14 @@ def process_forecast_batch(batch_meta):
                 df_merged["pollution_level"] = df_merged["aqi"].apply(get_pollution_level)
                 df_merged["pollution_class"] = df_merged["aqi"].apply(get_pollution_class)
 
-                # Chuyển đổi timestamp và LỌC BỎ QUÁ KHỨ
+                # Chuyển đổi timestamp và nối tiếp dữ liệu
                 df_merged["timestamp"] = pd.to_datetime(df_merged["timestamp"])
-                df_merged = df_merged[df_merged["timestamp"] >= current_hour].copy()
+                
+                # Lấy mốc thời gian cuối cùng của trạm này
+                last_ts = get_last_historical_timestamp(meta["province"], meta["location"])
+                
+                # Chỉ lấy dữ liệu MỚI hơn mốc lịch sử
+                df_merged = df_merged[df_merged["timestamp"] > last_ts].copy()
                 
                 # Bổ sung cột thời gian chi tiết
                 df_merged["year"] = df_merged["timestamp"].dt.year
