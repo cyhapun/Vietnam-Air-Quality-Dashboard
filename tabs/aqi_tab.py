@@ -156,7 +156,7 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
     
     # Filter for today and future
     today = pd.Timestamp.now().date()
-    daily = daily[daily["date"] >= today].head(7)
+    daily = daily[daily["date"] >= today].head(4)
     
     container_html = '<div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">'
     
@@ -173,7 +173,7 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
              
         bg_row = "transparent" if i % 2 == 0 else "#f8fafc"
         
-        container_html += f'''<div style="display: flex; align-items: center; padding: 12px 20px; background: {bg_row}; border-bottom: 1px solid #f1f5f9;">
+        container_html += f'''<div style="display: flex; align-items: center; padding: 18px 20px; background: {bg_row}; border-bottom: 1px solid #f1f5f9;">
 <div style="width: 80px; font-weight: 600; color: #334155; flex-shrink: 0;">{day_pref}</div>
 <div style="width: 70px; display: flex; justify-content: center; flex-shrink: 0;">
 <div style="background: {col}; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 14px; min-width: 50px; text-align: center;">{val:.0f}</div>
@@ -217,7 +217,7 @@ def render_health_advice_box(avg_val, poll_type):
         icon_html = f'<span class="material-symbols-rounded" style="color: {clr}; font-size: 32px; margin-right: 10px;">warning</span>'
 
     st.markdown(f'''<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
-<div style="height: 100%; min-height: 380px; background-color: {hex_rgba(clr, 0.08)}; border: 1.5px solid {hex_rgba(clr, 0.3)}; border-radius: 12px; padding: 24px; display: flex; flex-direction: column;">
+<div style="height: 100%; min-height: 270px; background-color: {hex_rgba(clr, 0.08)}; border: 1.5px solid {hex_rgba(clr, 0.3)}; border-radius: 12px; padding: 22px 24px; display: flex; flex-direction: column;">
     <div style="display: flex; align-items: center; margin-bottom: 12px;">
         {icon_html}
         <span style="color: {clr}; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">KHUYẾN CÁO SỨC KHỎE</span>
@@ -349,7 +349,7 @@ def render(global_df):
             st.rerun()
 
     with c4:
-        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng", "6 tháng"]
+        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng"]
         idx_tr = tr_opts.index(st.session_state["aqi_time_range"]) if st.session_state["aqi_time_range"] in tr_opts else 1
         time_range = st.selectbox("Thời gian", tr_opts, index=idx_tr, key="aqi_time_select")
         if time_range != st.session_state["aqi_time_range"]:
@@ -405,8 +405,7 @@ def render(global_df):
         "24h": pd.Timedelta(hours=24),
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
-        "3 tháng": pd.Timedelta(days=90),
-        "6 tháng": pd.Timedelta(days=180)
+        "3 tháng": pd.Timedelta(days=90)
     }
     
     min_d = max_d - delta_map[time_range]
@@ -479,8 +478,7 @@ def render(global_df):
         rule_map = {
             "7 ngày": "6h",
             "30 ngày": "1D",
-            "3 tháng": "3D",
-            "6 tháng": "7D"
+            "3 tháng": "3D"
         }
         rule = rule_map.get(time_range)
         if rule:
@@ -820,7 +818,7 @@ def render(global_df):
 
         st.markdown(f'''<div style="margin-top: 1.5rem; margin-bottom: 0.8rem;">
 <div style="font-size: 19px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Dự báo {poll_label} hàng ngày</div>
-<div style="font-size: 14px; color: #64748b;">Dự báo tại <span style="font-weight: 600;">{location_str}</span> trong 7 ngày tới</div>
+<div style="font-size: 14px; color: #64748b;">Dự báo tại <span style="font-weight: 600;">{location_str}</span> trong 4 ngày tới</div>
 </div>''', unsafe_allow_html=True)
         
         # Daily Forecast & Advice Side-by-Side
