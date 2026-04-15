@@ -61,6 +61,12 @@ footer {
     background: var(--pri-900) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
     padding: 0 !important;
+    min-width: 74px !important;
+    max-width: 74px !important;
+    transition: min-width .22s ease, max-width .22s ease !important;
+}
+
+[data-testid="stSidebar"]:hover {
     min-width: 270px !important;
     max-width: 270px !important;
 }
@@ -68,6 +74,84 @@ footer {
 [data-testid="stSidebar"]>div:first-child {
     padding: 0 !important;
     background: var(--pri-900) !important;
+}
+
+/* Sidebar navigation (icon rail + expand labels on hover) */
+.sb-nav-wrap {
+    padding: 10px 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 10px;
+}
+
+.sb-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    border-radius: 10px;
+    text-decoration: none !important;
+    color: #cbd5e1 !important;
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    border: 1px solid transparent;
+    transition: background .18s ease, border-color .18s ease, color .18s ease;
+}
+
+.sb-nav-item:hover {
+    background: rgba(59, 130, 246, 0.14);
+    border-color: rgba(125, 211, 252, 0.38);
+    color: #e2e8f0 !important;
+}
+
+.sb-nav-item.is-active {
+    background: linear-gradient(135deg, #ff8a00 0%, #ff6a00 100%);
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.25);
+}
+
+.sb-nav-icon {
+    width: 20px;
+    min-width: 20px;
+    text-align: center;
+    font-size: 1.02rem;
+    line-height: 1;
+}
+
+.sb-nav-label {
+    font-size: .84rem;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-6px);
+    pointer-events: none;
+    transition: opacity .18s ease, transform .18s ease;
+}
+
+[data-testid="stSidebar"]:hover .sb-nav-label {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Keep only nav rail visible when collapsed */
+[data-testid="stSidebar"]:not(:hover) .sidebar-section-title,
+[data-testid="stSidebar"]:not(:hover) .sidebar-header-card,
+[data-testid="stSidebar"]:not(:hover) .sidebar-selection-summary,
+[data-testid="stSidebar"]:not(:hover) .sidebar-hint,
+[data-testid="stSidebar"]:not(:hover) .stSelectbox,
+[data-testid="stSidebar"]:not(:hover) .stMultiSelect,
+[data-testid="stSidebar"]:not(:hover) .stDateInput,
+[data-testid="stSidebar"]:not(:hover) .stSlider,
+[data-testid="stSidebar"]:not(:hover) .stToggle,
+[data-testid="stSidebar"]:not(:hover) .stExpander,
+[data-testid="stSidebar"]:not(:hover) .stDownloadButton,
+[data-testid="stSidebar"]:not(:hover) .stSuccess,
+[data-testid="stSidebar"]:not(:hover) .stWarning {
+    display: none !important;
+}
+
+[data-testid="stSidebar"]:not(:hover) .stButton {
+    display: none !important;
 }
 
 /* Sidebar scrollbar */
@@ -3270,4 +3354,137 @@ div[data-testid="stSelectbox"] [data-baseweb="select"]>div {
     .app-loader-theme-art {
         animation: none !important;
     }
+}
+
+/* ════════════════════════════════
+   SIDEBAR NAV RAIL FINAL OVERRIDES
+════════════════════════════════ */
+section[data-testid="stSidebar"] {
+    background: #ffffff !important;
+    border-right: 1px solid #dbe7f2 !important;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.10) !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+    width: 80px !important;
+    transition: min-width .22s ease, max-width .22s ease, width .22s ease !important;
+    overflow: hidden !important;
+    z-index: 90 !important;
+}
+
+section[data-testid="stSidebar"] > div:first-child {
+    background: #ffffff !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+    width: 80px !important;
+    overflow: hidden !important;
+}
+
+section[data-testid="stSidebar"]:hover {
+    min-width: 268px !important;
+    max-width: 268px !important;
+    width: 268px !important;
+}
+
+section[data-testid="stSidebar"]:hover > div:first-child {
+    min-width: 268px !important;
+    max-width: 268px !important;
+    width: 268px !important;
+}
+
+/* Force true collapsed width even when Streamlit keeps aria-expanded=true */
+section[data-testid="stSidebar"][aria-expanded="true"]:not(:hover) {
+    min-width: 80px !important;
+    max-width: 80px !important;
+    width: 80px !important;
+}
+
+section[data-testid="stSidebar"][aria-expanded="true"]:not(:hover) > div:first-child {
+    min-width: 80px !important;
+    max-width: 80px !important;
+    width: 80px !important;
+}
+
+section[data-testid="stSidebar"][aria-expanded="true"]:hover {
+    min-width: 268px !important;
+    max-width: 268px !important;
+    width: 268px !important;
+}
+
+section[data-testid="stSidebar"][aria-expanded="true"]:hover > div:first-child {
+    min-width: 268px !important;
+    max-width: 268px !important;
+    width: 268px !important;
+}
+
+section[data-testid="stSidebar"][aria-expanded="false"] {
+    min-width: 80px !important;
+    max-width: 80px !important;
+    width: 80px !important;
+    border-right: 1px solid #e2e8f0 !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+    overflow: hidden !important;
+}
+
+section[data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
+    min-width: 80px !important;
+    max-width: 80px !important;
+    width: 80px !important;
+    overflow: hidden !important;
+}
+
+.sb-nav-wrap {
+    padding: 14px 10px !important;
+    border-bottom: 1px solid #eef2f7 !important;
+}
+
+.sb-nav-item {
+    color: #35506b !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    border-radius: 12px !important;
+    margin-bottom: 6px !important;
+    min-height: 42px !important;
+}
+
+.sb-nav-item:hover {
+    background: #eef5ff !important;
+    border-color: #c7dcff !important;
+    color: #133a75 !important;
+}
+
+.sb-nav-item.is-active {
+    background: linear-gradient(135deg, #1e4ed8 0%, #0f3ea8 100%) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.sb-nav-icon {
+    color: inherit !important;
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 22px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.sb-nav-icon svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+.sb-nav-label {
+    color: inherit !important;
+    opacity: 0 !important;
+    transform: translateX(-8px) !important;
+}
+
+section[data-testid="stSidebar"]:hover .sb-nav-label {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+}
+
+/* no toggle button, purely hover-expand */
+[data-testid="stSidebarCollapsedControl"] {
+    display: none !important;
 }

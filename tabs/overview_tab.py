@@ -393,10 +393,7 @@ def render(df):
         st.error("Thiếu ngữ cảnh dashboard.")
         st.stop()
     globals().update(ctx)
-    st.markdown(
-        '<div class="card"><div class="card-title"><span class="q-tag">Overview</span>Bản đồ AQI theo khu vực</div><div class="card-sub">Màu sắc biểu diễn AQI trung bình, kích thước điểm phản ánh PM2.5.</div>',
-        unsafe_allow_html=True,
-    )
+    map_col, donut_col = st.columns([2.2, 1.2], gap="small")
     city_geo = (
         df.groupby("city")
         .agg(
@@ -494,202 +491,55 @@ def render(df):
             center=dict(
                 lat=float(city_geo["lat"].mean()), lon=float(city_geo["lon"].mean())
             ),
-            zoom=4.5,
+            zoom=4.2,
         ),
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="left",
+                x=0.01,
+                y=0.99,
+                xanchor="left",
+                yanchor="top",
+                showactive=False,
+                bgcolor="rgba(255,255,255,0.94)",
+                bordercolor="rgba(148,163,184,0.65)",
+                borderwidth=1,
+                pad=dict(r=6, t=2, b=2, l=2),
+                buttons=[
+                    dict(
+                        label="↺",
+                        method="relayout",
+                        args=[
+                            {
+                                "mapbox.center.lat": float(city_geo["lat"].mean()),
+                                "mapbox.center.lon": float(city_geo["lon"].mean()),
+                                "mapbox.zoom": 4.2,
+                            }
+                        ],
+                    )
+                ],
+            )
+        ],
         margin=dict(l=2, r=2, t=6, b=2),
         height=430,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family="Be Vietnam Pro", size=10, color="#334155"),
     )
-    st.plotly_chart(
-        fig_map,
-        width="stretch",
-        config={"displayModeBar": False, "scrollZoom": True},
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    rank_now = city_geo.sort_values("aqi", ascending=False).head(8).copy()
-    rank_clean = city_geo.sort_values("aqi", ascending=True).head(8).copy()
-
-    def _aqi_badge(val):
-        _, badge_col = aqi_meta(float(val))
-        badge_text = "#ffffff" if float(val) >= 151 else "#0f172a"
-        return badge_col, badge_text
-
-    def _rows_html(rank_df):
-        rows = []
-        for idx, row in enumerate(rank_df.itertuples(index=False), start=1):
-            badge_col, badge_text = _aqi_badge(row.aqi)
-            highlight_cls = " ov-live-row-top" if idx == 1 else ""
-            rows.append(
-                f"<div class='ov-live-row{highlight_cls}'>"
-                f"<div class='ov-live-col ov-live-no'>{idx}</div>"
-                f"<div class='ov-live-col ov-live-city'><span class='ov-flag-icon'>★</span> {row.city}</div>"
-                f"<div class='ov-live-col ov-live-aqi'><span class='ov-aqi-pill' style='background:{badge_col};color:{badge_text}'>{row.aqi:.0f}</span></div>"
-                "</div>"
-            )
-        return "".join(rows)
-
-
-    year_city = (
-        df.assign(year=df["timestamp"].dt.year)
-        .groupby(["year", "city"], as_index=False)["aqi"]
-        .mean()
-        .dropna()
-    )
-    target_year = 2025
-
-    def _year_stat(target_year, polluted=True):
-        if target_year is None:
-            return "N/A", "Chưa có dữ liệu", np.nan
-        ydf = year_city[year_city["year"] == target_year]
-        if ydf.empty:
-            return str(target_year), "Chưa có dữ liệu", np.nan
-        row = ydf.sort_values("aqi", ascending=not polluted).iloc[0]
-        return str(int(target_year)), str(row["city"]), float(row["aqi"])
-
-    now_hot_year, now_hot_city, now_hot_val = _year_stat(target_year, polluted=True)
-    now_clean_year, now_clean_city, now_clean_val = _year_stat(
-        target_year, polluted=False
-    )
-
-    def _badge_html(v):
-        if pd.isna(v):
-            return "<span class='ov-aqi-pill ov-aqi-pill-na'>N/A</span>"
-        bg, tx = _aqi_badge(v)
-        return f"<span class='ov-aqi-pill' style='background:{bg};color:{tx}'>{v:.0f}</span>"
-
-    rank_left, rank_right = st.columns(2, gap="small")
-    with rank_left:
+    with map_col:
         st.markdown(
-            f"""
-            <div class="ov-live-card">
-                <div class="ov-live-head">Xếp hạng trực tiếp thành phố ô nhiễm nhất</div>
-                <div class="ov-live-sub">Xếp hạng thành phố ô nhiễm nhất tại Việt Nam theo thời gian thực</div>
-                <div class="ov-live-table-head">
-                    <div>#</div><div>Thành phố</div><div>AQI Mỹ</div>
-                </div>
-                {_rows_html(rank_now)}
-                <div class="ov-year-cell ov-year-hot">
-                    <div class="ov-year-title">{now_hot_year} thành phố ô nhiễm nhất tại Việt Nam</div>
-                    <div class="ov-year-row">
-                        <div class="ov-year-city">{now_hot_city}</div>
-                        {_badge_html(now_hot_val)}
-                    </div>
-                </div>
-            </div>
-            """,
+            '<div class="card"><div class="card-title"><span class="q-tag">Overview</span>Bản đồ AQI theo khu vực</div><div class="card-sub">Màu sắc biểu diễn AQI trung bình, kích thước điểm phản ánh PM2.5.</div>',
             unsafe_allow_html=True,
-        )
-
-    with rank_right:
-        st.markdown(
-            f"""
-            <div class="ov-live-card">
-                <div class="ov-live-head">Xếp hạng trực tiếp thành phố sạch nhất</div>
-                <div class="ov-live-sub">Xếp hạng thành phố sạch nhất tại Việt Nam theo thời gian thực</div>
-                <div class="ov-live-table-head">
-                    <div>#</div><div>Thành phố</div><div>AQI Mỹ</div>
-                </div>
-                {_rows_html(rank_clean)}
-                <div class="ov-year-cell ov-year-clean">
-                    <div class="ov-year-title">{now_clean_year} thành phố sạch nhất tại Việt Nam</div>
-                    <div class="ov-year-row">
-                        <div class="ov-year-city">{now_clean_city}</div>
-                        {_badge_html(now_clean_val)}
-                    </div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    cO3, cO4 = st.columns([2.5, 1.5], gap="small")
-    with cO3:
-        period_labels = {"Ngày": "D", "Tuần": "W", "Tháng": "ME"}
-        if "ov_trend_period" not in st.session_state:
-            st.session_state["ov_trend_period"] = "Ngày"
-        st.markdown(
-            '<div class="card trend-card"><div class="card-title"><span class="q-tag">Overview</span>Xu hướng AQI và PM2.5</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown('<div class="pill-group-wrap">', unsafe_allow_html=True)
-        pill_cols = st.columns([1, 1, 1, 3])
-        for idx, label in enumerate(period_labels):
-            is_active = st.session_state["ov_trend_period"] == label
-            with pill_cols[idx]:
-                if st.button(
-                    label,
-                    key=f"ov_p_{label}",
-                    type="primary" if is_active else "secondary",
-                    width="stretch",
-                ):
-                    st.session_state["ov_trend_period"] = label
-                    st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-        freq = period_labels[st.session_state["ov_trend_period"]]
-        trend_data = (
-            df.set_index("timestamp")[["aqi", "pm2_5"]]
-            .resample(freq)
-            .mean()
-            .dropna()
-            .reset_index()
-        )
-        aqi_line_color = "#0ea5e9"
-        pm25_line_color = "#f97316"
-        fig_ov = go.Figure()
-        fig_ov.add_trace(
-            go.Scatter(
-                x=trend_data["timestamp"],
-                y=trend_data["aqi"].round(1),
-                mode="lines",
-                name="AQI",
-                line=dict(color=aqi_line_color, width=2.4),
-                fill="tozeroy",
-                fillcolor="rgba(14,165,233,0.08)",
-                hovertemplate="%{x}<br>AQI: %{y:.1f}<extra></extra>",
-            )
-        )
-        fig_ov.add_trace(
-            go.Scatter(
-                x=trend_data["timestamp"],
-                y=trend_data["pm2_5"].round(1),
-                mode="lines",
-                name="PM2.5",
-                line=dict(color=pm25_line_color, width=2),
-                yaxis="y2",
-                hovertemplate="%{x}<br>PM2.5: %{y:.1f} µg/m³<extra></extra>",
-            )
-        )
-        ml(
-            fig_ov,
-            h=310,
-            xaxis=dict(**ax()),
-            yaxis=dict(**ax("AQI")),
-            yaxis2=dict(
-                title=dict(text="PM2.5", font=dict(size=9, color=pm25_line_color)),
-                overlaying="y",
-                side="right",
-                tickfont=dict(size=9, color=pm25_line_color),
-                showgrid=False,
-            ),
-            legend=dict(
-                bgcolor="rgba(0,0,0,0)",
-                font_size=9,
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="left",
-                x=0,
-            ),
         )
         st.plotly_chart(
-            fig_ov, width="stretch", config={"displayModeBar": False}
+            fig_map,
+            width="stretch",
+            config={"displayModeBar": False, "scrollZoom": True},
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
-    with cO4:
+    with donut_col:
         st.markdown(
             '<div class="card donut-card"><div class="card-title"><span class="q-tag">Overview</span>Cơ cấu mức AQI</div><div class="card-sub">Phân bố tỷ trọng các mức chất lượng không khí.</div>',
             unsafe_allow_html=True,
@@ -753,6 +603,58 @@ def render(df):
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
+    rank_now = city_geo.sort_values("aqi", ascending=False).head(8).copy()
+    rank_clean = city_geo.sort_values("aqi", ascending=True).head(8).copy()
 
+    def _aqi_badge(val):
+        _, badge_col = aqi_meta(float(val))
+        badge_text = "#ffffff" if float(val) >= 151 else "#0f172a"
+        return badge_col, badge_text
+
+    def _rows_html(rank_df):
+        rows = []
+        for idx, row in enumerate(rank_df.itertuples(index=False), start=1):
+            badge_col, badge_text = _aqi_badge(row.aqi)
+            highlight_cls = " ov-live-row-top" if idx == 1 else ""
+            rows.append(
+                f"<div class='ov-live-row{highlight_cls}'>"
+                f"<div class='ov-live-col ov-live-no'>{idx}</div>"
+                f"<div class='ov-live-col ov-live-city'><span class='ov-flag-icon'>★</span> {row.city}</div>"
+                f"<div class='ov-live-col ov-live-aqi'><span class='ov-aqi-pill' style='background:{badge_col};color:{badge_text}'>{row.aqi:.0f}</span></div>"
+                "</div>"
+            )
+        return "".join(rows)
+
+
+    rank_left, rank_right = st.columns(2, gap="small")
+    with rank_left:
+        st.markdown(
+            f"""
+            <div class="ov-live-card">
+                <div class="ov-live-head">Xếp hạng trực tiếp thành phố ô nhiễm nhất</div>
+                <div class="ov-live-sub">Xếp hạng thành phố ô nhiễm nhất tại Việt Nam theo thời gian thực</div>
+                <div class="ov-live-table-head">
+                    <div>#</div><div>Thành phố</div><div>AQI Mỹ</div>
+                </div>
+                {_rows_html(rank_now)}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with rank_right:
+        st.markdown(
+            f"""
+            <div class="ov-live-card">
+                <div class="ov-live-head">Xếp hạng trực tiếp thành phố sạch nhất</div>
+                <div class="ov-live-sub">Xếp hạng thành phố sạch nhất tại Việt Nam theo thời gian thực</div>
+                <div class="ov-live-table-head">
+                    <div>#</div><div>Thành phố</div><div>AQI Mỹ</div>
+                </div>
+                {_rows_html(rank_clean)}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # ══════════════════════════════════════════════

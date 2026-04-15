@@ -190,19 +190,9 @@ def render_dashboard():
 
     render_header(state, logo_html)
 
-    tabs = st.tabs(
-        [
-            "Tổng quan",
-            "Ví Trí",
-            "Thời Gian",
-            "Khí Tượng & Môi Trường",
-            "AQI",
-            "Thời tiết",
-            "Tương tác",
-        ]
-    )
+    active_tab = state.get("active_tab", "overview")
 
-    with tabs[0]:
+    if active_tab == "overview":
         overview_df = state["df"]
         province_col = "province" if "province" in overview_df.columns else "city"
         province_options = sorted(overview_df[province_col].dropna().astype(str).unique().tolist())
@@ -267,18 +257,20 @@ def render_dashboard():
                 state, df_override=overview_df, scope_label=selected_scope_label
             )
             render_tab_or_blank(overview_tab, overview_df)
-    with tabs[1]:
+    elif active_tab == "location":
         render_tab_or_blank(location_tab, state["df"])
-    with tabs[2]:
+    elif active_tab == "datetime":
         render_tab_or_blank(datetime_tab, state["df"])
-    with tabs[3]:
+    elif active_tab == "atmos":
         render_tab_or_blank(atmos_tab, state["df"])
-    with tabs[4]:
+    elif active_tab == "aqi":
         render_tab_or_blank(aqi_tab, state["df"])
-    with tabs[5]:
+    elif active_tab == "weather":
         render_tab_or_blank(weather_tab, state["df"])
-    with tabs[6]:
+    elif active_tab == "interaction":
         render_tab_or_blank(interaction_tab, state["df"])
+    else:
+        render_tab_or_blank(overview_tab, state["df"])
 
     render_footer()
 
