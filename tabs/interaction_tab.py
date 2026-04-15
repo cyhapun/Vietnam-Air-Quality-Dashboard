@@ -932,7 +932,7 @@ def render(df: pd.DataFrame):
     if "interaction_province_select" not in st.session_state:
         st.session_state["interaction_province_select"] = "Tất cả"
     if "interaction_time_range" not in st.session_state:
-        st.session_state["interaction_time_range"] = "24h"
+        st.session_state["interaction_time_range"] = "3 tháng"
     if "interaction_rank_focus" not in st.session_state:
         st.session_state["interaction_rank_focus"] = "AQI"
 
@@ -988,9 +988,12 @@ def render(df: pd.DataFrame):
         )
 
     with c3:
+        time_options = ["24h", "7 ngày", "30 ngày", "3 tháng"]
+        if st.session_state.get("interaction_time_range") not in time_options:
+            st.session_state["interaction_time_range"] = "3 tháng"
         time_range = st.selectbox(
             "Thời gian",
-            options=["24h", "7 ngày", "30 ngày", "3 tháng", "6 tháng", "1 năm"],
+            options=time_options,
             key="interaction_time_range",
         )
         delta_map = {
@@ -998,8 +1001,6 @@ def render(df: pd.DataFrame):
             "7 ngày": pd.Timedelta(days=7),
             "30 ngày": pd.Timedelta(days=30),
             "3 tháng": pd.Timedelta(days=90),
-            "6 tháng": pd.Timedelta(days=180),
-            "1 năm": pd.Timedelta(days=365),
         }
         end_ts = work["timestamp"].max()
         start_ts = max(work["timestamp"].min(), end_ts - delta_map[time_range])
