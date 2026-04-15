@@ -221,19 +221,11 @@ def render_dashboard():
                 st.session_state.overview_scope_mode = "Cả nước"
 
             b1, b2 = st.columns(2, gap="small")
-            if b1.button(
-                "Cả nước",
-                type="primary" if st.session_state.overview_scope_mode == "Cả nước" else "secondary",
-                use_container_width=True,
-            ):
+            if b1.button("Cả nước", type="primary" if st.session_state.overview_scope_mode == "Cả nước" else "secondary", width='stretch'):
                 st.session_state.overview_scope_mode = "Cả nước"
                 st.session_state["overview_scope_province"] = None
                 st.rerun()
-            if b2.button(
-                "Theo tỉnh/thành",
-                type="primary" if st.session_state.overview_scope_mode == "Theo tỉnh/thành" else "secondary",
-                use_container_width=True,
-            ):
+            if b2.button("Theo tỉnh/thành", type="primary" if st.session_state.overview_scope_mode == "Theo tỉnh/thành" else "secondary", width='stretch'):
                 st.session_state.overview_scope_mode = "Theo tỉnh/thành"
                 if not st.session_state.get("overview_scope_province") and hcm_default:
                     st.session_state["overview_scope_province"] = hcm_default

@@ -2894,11 +2894,11 @@ def render(df: pd.DataFrame):
             if chart_type == "Mạng nhện (Radar)":
                 radar_fig = _plot_weather_radar(hist_source, escape(str(selected_location)))
                 if radar_fig:
-                    st.plotly_chart(radar_fig, use_container_width=True, config={"displayModeBar": False})
+                    st.plotly_chart(radar_fig, width='stretch', config={"displayModeBar": False})
             else:
                 metric_chart = _plot_weather_metric(hist_source[["timestamp", metric_key]].copy(), metric_key, chart_type, ml_fn, ax_fn)
                 if metric_chart is not None:
-                    st.plotly_chart(metric_chart, use_container_width=True, config={"displayModeBar": False})
+                    st.plotly_chart(metric_chart, width='stretch', config={"displayModeBar": False})
 
         with cRank:
             st.markdown(
