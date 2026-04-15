@@ -74,11 +74,13 @@ parser.add_argument(
 # Sử dụng parse_known_args để bỏ qua các tham số mặc định của lệnh `streamlit run`
 args, unknown = parser.parse_known_args()
 
-if args.real_time:
-    initialize_background_tasks()
-    print("Đang bật chế độ Real-time.")
-else:
-    print("Không sử dụng chế độ Real-time. Thêm cờ '--real-time' khi chạy để bật.")
+# if args.real_time:
+#     initialize_background_tasks()
+#     print("Đang bật chế độ Real-time.")
+# else:
+#     print("Không sử dụng chế độ Real-time. Thêm cờ '--real-time' khi chạy để bật.")
+
+print("⚠️ CHẾ ĐỘ CRAWL NGẦM ĐÃ ĐƯỢC TẠM TẮT ĐỂ TIỆN TEST. (Mở app.py để bỏ comment nếu cần)")
 
 st.set_page_config(
     layout="wide",

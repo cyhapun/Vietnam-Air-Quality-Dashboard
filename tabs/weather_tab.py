@@ -1491,11 +1491,6 @@ def _build_location_day_summary(detail_rows: pd.DataFrame) -> pd.DataFrame:
         lambda row: _condition_from_weather(row.get("rain", np.nan), row.get("cloud", np.nan)),
         axis=1,
     )
-    summary = summary.sort_values(
-        by=["aqi", "location"],
-        ascending=[False, True],
-        na_position="last",
-    ).reset_index(drop=True)
     return summary
 
 
@@ -2420,80 +2415,62 @@ def render(df: pd.DataFrame):
     if "weather_location_scope" not in st.session_state:
         st.session_state.weather_location_scope = ""
 
-    # Controls (AQI-style)
-    c1, c2, c3, c4, c5 = st.columns([1.5, 1.5, 1.2, 1.0, 1.0], gap="small")
-    with c1:
+    # ── TOP CONTROLS ──
+    c_top1, c_top2, c_top3 = st.columns([1.5, 1.5, 2], gap="small")
+    with c_top1:
         selected_city = st.selectbox("Khu vực", options=cities, key="weather_city",
                                      help="Chọn khu vực xem thời tiết.")
 
+    # We need city_df_all to get valid date range for the date picker
     city_df_all = weather_df[weather_df["city"] == selected_city].sort_values("timestamp").copy()
+    day_series_all = pd.to_datetime(city_df_all["timestamp"]).dt.normalize()
+    min_day = day_series_all.min().date()
+    max_day = day_series_all.max().date()
+    default_anchor = day_series_all.iloc[max(0, len(day_series_all) - 10)].date()
+
+    if "weather_anchor_picker" not in st.session_state:
+        st.session_state["weather_anchor_picker"] = default_anchor
+    if (st.session_state["weather_anchor_picker"] < min_day or st.session_state["weather_anchor_picker"] > max_day):
+        st.session_state["weather_anchor_picker"] = default_anchor
+
+    with c_top2:
+        anchor_pick = st.date_input(
+            "Ngày mốc dự báo",
+            min_value=min_day,
+            max_value=max_day,
+            key="weather_anchor_picker",
+            help="Chọn ngày khởi đầu để xem chi tiết và dự báo."
+        )
+
+    # Variables for the lower controls (moved from above)
     location_options = [f"Tổng quan ({selected_city})"]
     if "location" in city_df_all.columns:
         locs = sorted(city_df_all["location"].dropna().astype(str).unique().tolist())
         location_options += locs
 
-    with c2:
-        cur_scope = st.session_state.get("weather_location_scope", location_options[0])
-        if cur_scope not in location_options:
-            cur_scope = location_options[0]
-        selected_location = st.selectbox(
-            "Đơn vị (Huyện/Xã/Phường)",
-            options=location_options,
-            index=location_options.index(cur_scope),
-            key="weather_location_scope",
-        )
+    if "weather_location_scope" not in st.session_state:
+        st.session_state.weather_location_scope = location_options[0]
+    if "weather_chart_type" not in st.session_state:
+        st.session_state.weather_chart_type = "Đường (Spline)"
+    if "weather_scope" not in st.session_state:
+        st.session_state.weather_scope = "72h"
+    if "weather_metric_key" not in st.session_state:
+        st.session_state.weather_metric_key = "temp"
 
-    with c3:
-        try:
-            chart_opts = [":material/show_chart:", ":material/bar_chart:"]
-            default_icon = ":material/show_chart:" if st.session_state["weather_chart_type"] == "Đường (Spline)" else ":material/bar_chart:"
-            raw_sel = st.segmented_control("Loại biểu đồ", options=chart_opts, default=default_icon, key="weather_chart_seg")
-            chart_type = st.session_state["weather_chart_type"] if raw_sel is None else ("Đường (Spline)" if raw_sel == ":material/show_chart:" else "Cột (Bar)")
-        except AttributeError:
-            chart_type = st.radio(
-                "Loại biểu đồ",
-                ["Đường (Spline)", "Cột (Bar)"],
-                index=0 if st.session_state["weather_chart_type"] == "Đường (Spline)" else 1,
-                horizontal=True,
-                key="weather_chart_radio",
-            )
-        st.session_state["weather_chart_type"] = chart_type
-
-    with c4:
-        scope_label = st.selectbox("Khung thời gian",
-                                   options=["24h", "72h", "7 ngày", "30 ngày"],
-                                   key="weather_scope")
-    with c5:
-        metric_opts = ["temp", "humidity", "rain", "wind_speed", "pressure", "cloud"]
-        metric_fmt = {
-            "temp": "Nhiệt độ",
-            "humidity": "Độ ẩm",
-            "rain": "Mưa",
-            "wind_speed": "Gió",
-            "pressure": "Áp suất",
-            "cloud": "Mây",
-        }
-        metric_cur = st.session_state.get("weather_metric_key", "temp")
-        if metric_cur not in metric_opts:
-            metric_cur = "temp"
-        st.session_state["weather_metric_key"] = st.selectbox(
-            "Thông số",
-            options=metric_opts,
-            index=metric_opts.index(metric_cur),
-            format_func=lambda x: metric_fmt.get(x, x),
-            key="weather_metric_select",
-        )
-
+    # Final dataset for display (initially matching session state)
     city_df = city_df_all.copy()
-    if selected_location != f"Tổng quan ({selected_city})" and "location" in city_df.columns:
-        city_df = city_df[city_df["location"].astype(str) == str(selected_location)].copy()
+    cur_loc = st.session_state.get("weather_location_scope", location_options[0])
+    if cur_loc != f"Tổng quan ({selected_city})" and "location" in city_df.columns:
+        if cur_loc in location_options:
+            city_df = city_df[city_df["location"].astype(str) == str(cur_loc)].copy()
 
     if city_df.empty:
-        st.warning("Khu vực này chưa có dữ liệu.")
+        st.warning("Khu vực này được chọn chưa có dữ liệu chi tiết.")
         return
 
     cache_sig = (
         selected_city,
+        str(cur_loc),
         int(len(city_df)),
         str(city_df["timestamp"].min()),
         str(city_df["timestamp"].max()),
@@ -2523,39 +2500,21 @@ def render(df: pd.DataFrame):
         st.warning("Không đủ dữ liệu theo giờ.")
         return
 
+    # scope_df for current view
+    cur_scope_label = st.session_state.get("weather_scope", "72h")
     hours_map = {"24h": 24, "72h": 72, "7 ngày": 24 * 7, "30 ngày": 24 * 30}
-    scope_hours = hours_map.get(scope_label, 72)
+    scope_hours = hours_map.get(cur_scope_label, 72)
     end_ts = hourly_df["timestamp"].max()
     start_ts = end_ts - pd.Timedelta(hours=scope_hours - 1)
     scope_df = hourly_df[hourly_df["timestamp"] >= start_ts].copy()
-    if daily_df.empty:
-        st.warning("Không đủ dữ liệu theo ngày.")
-        return
 
-    day_series = pd.to_datetime(daily_df["timestamp"]).dt.normalize()
-    min_day = day_series.min().date()
-    max_day = day_series.max().date()
-    default_anchor = day_series.iloc[max(0, len(day_series) - 10)].date()
-    if "weather_anchor_picker" not in st.session_state:
-        st.session_state["weather_anchor_picker"] = default_anchor
-    if (
-        st.session_state["weather_anchor_picker"] < min_day
-        or st.session_state["weather_anchor_picker"] > max_day
-    ):
-        st.session_state["weather_anchor_picker"] = default_anchor
-
-    anchor_pick = st.date_input(
-        "Ngày mốc dự báo 10 ngày",
-        min_value=min_day,
-        max_value=max_day,
-        key="weather_anchor_picker",
-        help="Chọn 1 ngày trong quá khứ, hệ thống sẽ lấy tối đa 10 ngày tiếp theo từ mốc này.",
-    )
     anchor_day = pd.Timestamp(anchor_pick).normalize()
+    day_series = pd.to_datetime(daily_df["timestamp"]).dt.normalize()
     forecast_df = daily_df[day_series >= anchor_day].head(10).copy()
     if forecast_df.empty:
         forecast_df = daily_df.tail(10).copy()
-        anchor_day = pd.to_datetime(forecast_df.iloc[0]["timestamp"]).normalize()
+        if not forecast_df.empty:
+            anchor_day = pd.to_datetime(forecast_df.iloc[0]["timestamp"]).normalize()
 
     end_day = pd.to_datetime(forecast_df.iloc[-1]["timestamp"]).normalize()
     day_keys = [pd.to_datetime(ts).strftime("%Y-%m-%d") for ts in forecast_df["timestamp"]]
@@ -2702,12 +2661,67 @@ def render(df: pd.DataFrame):
                 f"Đang hiển thị 10/{len(detail_summary)} địa điểm đầu tiên (sắp theo AQI giảm dần)."
             )
 
-    # ── WEATHER HISTORICAL ANALYTICS (AQI-style layout) ──────────────────────
-    metric_key = st.session_state.get("weather_metric_key", "temp")
+    # ── CHART CONTROLS (Moved here) ──
+    st.markdown('<hr style="margin: 2rem 0 1rem 0; border-color: rgba(148,163,184,0.2);">', unsafe_allow_html=True)
+    
+    # Place secondary controls right above charts
+    cc1, cc2, cc3, cc4 = st.columns([1.5, 1.2, 1.0, 1.0], gap="small")
+    
+    with cc1:
+        # Re-verify curate scope options
+        cur_scope_opt = st.session_state.get("weather_location_scope", location_options[0])
+        if cur_scope_opt not in location_options:
+            cur_scope_opt = location_options[0]
+        selected_location = st.selectbox(
+            "Đơn vị (Huyện/Xã/Phường)",
+            options=location_options,
+            index=location_options.index(cur_scope_opt),
+            key="weather_location_scope",
+        )
+    
+    with cc2:
+        try:
+            chart_opts = [":material/show_chart:", ":material/bar_chart:"]
+            default_icon = ":material/show_chart:" if st.session_state["weather_chart_type"] == "Đường (Spline)" else ":material/bar_chart:"
+            raw_sel = st.segmented_control("Loại biểu đồ", options=chart_opts, default=default_icon, key="weather_chart_seg")
+            chart_type = st.session_state["weather_chart_type"] if raw_sel is None else ("Đường (Spline)" if raw_sel == ":material/show_chart:" else "Cột (Bar)")
+        except AttributeError:
+            chart_type = st.radio(
+                "Loại biểu đồ", ["Đường (Spline)", "Cột (Bar)"],
+                index=0 if st.session_state["weather_chart_type"] == "Đường (Spline)" else 1,
+                horizontal=True, key="weather_chart_radio",
+            )
+        st.session_state["weather_chart_type"] = chart_type
+
+    with cc3:
+        scope_label = st.selectbox("Khung thời gian",
+                                   options=["24h", "72h", "7 ngày", "30 ngày"],
+                                   key="weather_scope")
+    with cc4:
+        metric_opts = ["temp", "humidity", "rain", "wind_speed", "pressure", "cloud"]
+        metric_fmt = {
+            "temp": "Nhiệt độ", "humidity": "Độ ẩm", "rain": "Mưa",
+            "wind_speed": "Gió", "pressure": "Áp suất", "cloud": "Mây",
+        }
+        metric_cur = st.session_state.get("weather_metric_key", "temp")
+        metric_key = st.selectbox(
+            "Thông số", options=metric_opts,
+            index=metric_opts.index(metric_cur) if metric_cur in metric_opts else 0,
+            format_func=lambda x: metric_fmt.get(x, x),
+            key="weather_metric_select",
+        )
+        st.session_state["weather_metric_key"] = metric_key
+
+    # Re-calculate scope_df based on new scope_label
+    hours_map = {"24h": 24, "72h": 72, "7 ngày": 24 * 7, "30 ngày": 24 * 30}
+    scope_hours = hours_map.get(scope_label, 72)
+    end_ts = hourly_df["timestamp"].max()
+    start_ts = end_ts - pd.Timedelta(hours=scope_hours - 1)
+    scope_df = hourly_df[hourly_df["timestamp"] >= start_ts].copy()
+
     metric_meta = _weather_metric_meta(metric_key)
     metric_label = metric_meta["label"]
     metric_unit = metric_meta["unit"]
-    chart_type = st.session_state.get("weather_chart_type", "Đường (Spline)")
 
     def _weather_level(value: float) -> tuple[str, str, str, str]:
         if metric_key == "temp":
