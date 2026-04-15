@@ -1,10 +1,10 @@
 ﻿Tỉnh/Thành,Tên đơn vị,Vĩ độ,Kinh độ
 Hồ Chí Minh,Phường An Hội Tây,10.8421489,106.6386769
-Hồ Chí Minh,Phường An Hội Đông,10.8419233,106.665063
+Hồ Chí Minh,Phường An Hội Đông,10.8498483,106.6650353
 Hồ Chí Minh,Phường An Khánh,10.7850885,106.7293654
 Hồ Chí Minh,Phường An Lạc,10.7381994,106.6148874
 Hồ Chí Minh,Phường An Nhơn,10.8370784,106.6829257
-Hồ Chí Minh,Phường An Phú,10.9578225,106.7374547
+Hồ Chí Minh,Phường An Phú,10.9586655,106.737088
 Hồ Chí Minh,Phường An Phú Đông,10.8609713,106.6917863
 Hồ Chí Minh,Phường An Đông,10.7548937,106.6716249
 Hồ Chí Minh,Phường Bà Rịa,10.4948224,107.1849886
@@ -21,7 +21,7 @@ Hồ Chí Minh,Phường Bình Thới,10.7629692,106.6423264
 Hồ Chí Minh,Phường Bình Tiên,10.7429821,106.6433709
 Hồ Chí Minh,Phường Bình Trưng,10.7887654,106.7551053
 Hồ Chí Minh,Phường Bình Trị Đông,10.7679017,106.6095921
-Hồ Chí Minh,Phường Bình Tân,10.8122118,106.5927225
+Hồ Chí Minh,Phường Bình Tân,10.7936653,106.5897712
 Hồ Chí Minh,Phường Bình Tây,10.7494898,106.6475693
 Hồ Chí Minh,Phường Bình Đông,10.7283105,106.6379651
 Hồ Chí Minh,Phường Bảy Hiền,10.7895387,106.6472288
@@ -30,7 +30,7 @@ Hồ Chí Minh,Phường Bến Thành,10.7703806,106.6951066
 Hồ Chí Minh,Phường Chánh Hiệp,11.0186207,106.64171
 Hồ Chí Minh,Phường Chánh Hưng,10.7450005,106.6758155
 Hồ Chí Minh,Phường Chánh Phú Hòa,11.1882823,106.6687875
-Hồ Chí Minh,Phường Chợ Lớn,10.7527718,106.666276
+Hồ Chí Minh,Phường Chợ Lớn,10.7518172,106.658971
 Hồ Chí Minh,Phường Chợ Quán,10.7581094,106.6807105
 Hồ Chí Minh,Phường Cát Lái,10.7698786,106.7746914
 Hồ Chí Minh,Phường Cầu Kiệu,10.7995793,106.6854007
@@ -38,12 +38,12 @@ Hồ Chí Minh,Phường Cầu Ông Lãnh,10.7629746,106.6910898
 Hồ Chí Minh,Phường Diên Hồng,10.766125,106.6640402
 Hồ Chí Minh,Phường Dĩ An,10.8975202,106.7542156
 Hồ Chí Minh,Phường Gia Định,10.8008668,106.6971226
-Hồ Chí Minh,Phường Gò Vấp,10.8291275,106.6782265
-Hồ Chí Minh,Phường Hiệp Bình,10.8643779,106.7239518
+Hồ Chí Minh,Phường Gò Vấp,10.8384167,106.6753431
+Hồ Chí Minh,Phường Hiệp Bình,10.8496138,106.7191368
 Hồ Chí Minh,Phường Hòa Bình,10.769777,106.6443804
 Hồ Chí Minh,Phường Hòa Hưng,10.7805019,106.6690519
-Hồ Chí Minh,Phường Hòa Lợi,11.064112,106.6282316
-Hồ Chí Minh,Phường Hạnh Thông,10.8265664,106.6834534
+Hồ Chí Minh,Phường Hòa Lợi,11.0829247,106.6559116
+Hồ Chí Minh,Phường Hạnh Thông,10.8202873,106.6832189
 Hồ Chí Minh,Phường Khánh Hội,10.7598576,106.7023355
 Hồ Chí Minh,Phường Linh Xuân,10.8727102,106.7649932
 Hồ Chí Minh,Phường Long Bình,10.8480998,106.8314228
@@ -51,7 +51,7 @@ Hồ Chí Minh,Phường Long Hương,10.5070464,107.1476608
 Hồ Chí Minh,Phường Long Nguyên,11.1680146,106.5619764
 Hồ Chí Minh,Phường Long Phước,10.811931,106.859645
 Hồ Chí Minh,Phường Long Trường,10.7980997,106.8083853
-Hồ Chí Minh,Phường Lái Thiêu,10.9052054,106.6996159
+Hồ Chí Minh,Phường Lái Thiêu,10.9045161,106.6999877
 Hồ Chí Minh,Phường Minh Phụng,10.7566993,106.6465801
 Hồ Chí Minh,Phường Nhiêu Lộc,10.7857564,106.6751204
 Hồ Chí Minh,Phường Phú An,11.0486457,106.6020209
@@ -72,7 +72,7 @@ Hồ Chí Minh,Phường Tam Bình,10.8686181,106.7350611
 Hồ Chí Minh,Phường Tam Long,10.5289996,107.2147604
 Hồ Chí Minh,Phường Tam Thắng,10.3688799,107.1009246
 Hồ Chí Minh,Phường Thuận An,10.943213,106.6909441
-Hồ Chí Minh,Phường Thuận Giao,10.9593629,106.7072327
+Hồ Chí Minh,Phường Thuận Giao,10.9622528,106.7090419
 Hồ Chí Minh,Phường Thông Tây Hội,10.8424288,106.6569642
 Hồ Chí Minh,Phường Thạnh Mỹ Tây,10.7992914,106.7178441
 Hồ Chí Minh,Phường Thới An,10.8794994,106.6581461
@@ -85,7 +85,7 @@ Hồ Chí Minh,Phường Tân Hiệp,11.061716,106.7431668
 Hồ Chí Minh,Phường Tân Hòa,10.7805819,106.6552221
 Hồ Chí Minh,Phường Tân Hưng,10.739937,106.7034261
 Hồ Chí Minh,Phường Tân Hải,10.5158702,107.1079712
-Hồ Chí Minh,Phường Tân Khánh,10.82327,106.62978
+Hồ Chí Minh,Phường Tân Khánh,11.0054635,106.7204551
 Hồ Chí Minh,Phường Tân Mỹ,10.7258082,106.7238126
 Hồ Chí Minh,Phường Tân Phú,10.7761892,106.6384144
 Hồ Chí Minh,Phường Tân Phước,10.5280288,107.0532037
@@ -114,7 +114,7 @@ Hồ Chí Minh,Phường Đông Hưng Thuận,10.835914,106.6221978
 Hồ Chí Minh,Phường Đức Nhuận,10.8059609,106.6784893
 Hồ Chí Minh,Xã An Long,11.3260136,106.6896139
 Hồ Chí Minh,Xã An Nhơn Tây,11.088628,106.5140228
-Hồ Chí Minh,Xã An Thới Đông,10.5032379,106.8093103
+Hồ Chí Minh,Xã An Thới Đông,10.503238,106.8093103
 Hồ Chí Minh,Xã Bà Điểm,10.8402684,106.5990908
 Hồ Chí Minh,Xã Bàu Bàng,11.2734666,106.6057271
 Hồ Chí Minh,Xã Bàu Lâm,10.737198,107.4182504
@@ -131,7 +131,7 @@ Hồ Chí Minh,Xã Châu Đức,10.7278326,107.2134175
 Hồ Chí Minh,Xã Cần Giờ,10.4147541,106.9714754
 Hồ Chí Minh,Xã Củ Chi,10.9618162,106.5335368
 Hồ Chí Minh,Xã Dầu Tiếng,11.3307682,106.4030265
-Hồ Chí Minh,Xã Hiệp Phước,10.6353539,106.7510157
+Hồ Chí Minh,Xã Hiệp Phước,10.635354,106.7510157
 Hồ Chí Minh,Xã Hòa Hiệp,10.7080104,107.4954911
 Hồ Chí Minh,Xã Hòa Hội,10.6267656,107.4259831
 Hồ Chí Minh,Xã Hóc Môn,10.8860463,106.5927134
@@ -152,7 +152,7 @@ Hồ Chí Minh,Xã Phú Hòa Đông,10.9888412,106.5561493
 Hồ Chí Minh,Xã Phước Hòa,11.2535365,106.7735395
 Hồ Chí Minh,Xã Phước Hải,10.4257988,107.2921241
 Hồ Chí Minh,Xã Phước Thành,11.3851629,106.7515368
-Hồ Chí Minh,Xã Thanh An,11.2479372,106.4314551
+Hồ Chí Minh,Xã Thanh An,10.5388079,106.9768271
 Hồ Chí Minh,Xã Thái Mỹ,11.0365575,106.4347063
 Hồ Chí Minh,Xã Thường Tân,11.1048495,106.9194354
 Hồ Chí Minh,Xã Thạnh An,10.5388079,106.9768271
