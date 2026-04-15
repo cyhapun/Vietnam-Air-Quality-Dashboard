@@ -380,7 +380,7 @@ footer {
 }
 
 .kpi-lbl {
-    font-size: .63rem;
+    font-size: .72rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .7px;
@@ -389,7 +389,7 @@ footer {
 }
 
 .kpi-val {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: #1e293b;
     line-height: 1;
@@ -402,7 +402,7 @@ footer {
 }
 
 .kpi-sub {
-    font-size: .62rem;
+    font-size: .74rem;
     color: #94a3b8;
     margin-top: 4px;
 }
@@ -1424,7 +1424,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 }
 
 .iq-title {
-    font-size: .72rem;
+    font-size: .84rem;
     font-weight: 800;
     letter-spacing: .8px;
     text-transform: uppercase;
@@ -1432,7 +1432,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 }
 
 .iq-meta {
-    font-size: .62rem;
+    font-size: .72rem;
     color: #475569;
 }
 
@@ -1454,31 +1454,32 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
     border-color: rgba(255, 255, 255, 0.2);
     position: relative;
     overflow: hidden;
+    min-height: 290px;
 }
 
 .iq-hero-content {
     position: relative;
     z-index: 2;
-    max-width: 62%;
+    max-width: 56%;
 }
 
 .iq-hero-vn-bg {
     position: absolute;
-    right: -8px;
-    bottom: -8px;
-    width: min(68%, 520px);
-    height: min(100%, 340px);
+    right: -20px;
+    bottom: -16px;
+    width: min(84%, 760px);
+    height: min(128%, 500px);
     background-repeat: no-repeat;
     background-size: contain;
     background-position: right bottom;
-    opacity: .22;
+    opacity: .36;
     filter: saturate(0.2) brightness(1.65);
     z-index: 1;
     pointer-events: none;
 }
 
 .iq-hero-kicker {
-    font-size: .58rem;
+    font-size: .68rem;
     letter-spacing: .7px;
     text-transform: uppercase;
     color: #93c5fd;
@@ -1493,19 +1494,19 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 }
 
 .iq-hero-aqi {
-    font-size: 2.05rem;
+    font-size: 2.4rem;
     font-weight: 800;
     line-height: 1;
 }
 
 .iq-hero-status {
-    font-size: .72rem;
+    font-size: .84rem;
     font-weight: 700;
     color: #e2e8f0;
 }
 
 .iq-hero-sub {
-    font-size: .64rem;
+    font-size: .76rem;
     color: #cbd5e1;
     line-height: 1.5;
 }
@@ -1522,7 +1523,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
     background: rgba(255, 255, 255, 0.08);
     border-radius: 999px;
     padding: 2px 8px;
-    font-size: .58rem;
+    font-size: .68rem;
     color: #e2e8f0;
     font-weight: 700;
 }
@@ -1606,7 +1607,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 
 .aqi-insight-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
     margin-bottom: 10px;
 }
@@ -1620,7 +1621,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 }
 
 .aqi-insight-kicker {
-    font-size: .58rem;
+    font-size: .68rem;
     text-transform: uppercase;
     letter-spacing: .75px;
     color: #64748b;
@@ -1629,7 +1630,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 }
 
 .aqi-insight-main {
-    font-size: .86rem;
+    font-size: .98rem;
     color: #0f172a;
     font-weight: 800;
     line-height: 1.3;
@@ -1637,7 +1638,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 
 .aqi-insight-sub {
     margin-top: 4px;
-    font-size: .66rem;
+    font-size: .76rem;
     color: #475569;
     line-height: 1.5;
 }
@@ -1763,6 +1764,9 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
     grid-template-columns: 52px 1fr auto 16px;
     align-items: center;
     gap: 8px;
+    position: relative;
+    overflow: visible;
+    cursor: help;
 }
 
 .pollutant-mini-left {
@@ -1792,14 +1796,14 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 }
 
 .pollutant-mini-title {
-    font-size: .84rem;
+    font-size: .9rem;
     color: #334155;
     font-weight: 700;
     line-height: 1.2;
 }
 
 .pollutant-mini-sub {
-    font-size: .82rem;
+    font-size: .86rem;
     color: #334155;
     font-weight: 700;
     line-height: 1.2;
@@ -1810,14 +1814,14 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 }
 
 .pollutant-mini-value {
-    font-size: 2rem;
+    font-size: 2.1rem;
     color: #111827;
     font-weight: 800;
     line-height: 1;
 }
 
 .pollutant-mini-unit {
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: #111827;
     font-weight: 700;
     margin-top: 2px;
@@ -1828,6 +1832,58 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
     font-size: 1.6rem;
     line-height: 1;
     font-weight: 400;
+}
+
+.pollutant-tooltip {
+    display: none;
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: calc(100% + 8px);
+    z-index: 40;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
+    padding: 10px 12px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity .18s ease, transform .18s ease;
+}
+
+.pollutant-mini-card:hover .pollutant-tooltip {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.pollutant-tooltip-head {
+    font-size: .8rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 7px;
+}
+
+.pollutant-tooltip-row {
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pollutant-tooltip-row .k {
+    font-size: .65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #64748b;
+}
+
+.pollutant-tooltip-row .v {
+    font-size: .74rem;
+    line-height: 1.45;
+    color: #334155;
 }
 
 /* ── Donut card ── */
@@ -1981,7 +2037,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 }
 
 .trend-kicker {
-    font-size: .58rem;
+    font-size: .68rem;
     letter-spacing: .7px;
     text-transform: uppercase;
     color: #64748b;
@@ -1990,19 +2046,19 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 }
 
 .trend-main {
-    font-size: 1.15rem;
+    font-size: 1.3rem;
     font-weight: 800;
     line-height: 1.15;
 }
 
 .trend-sub {
     margin-top: 3px;
-    font-size: .63rem;
+    font-size: .74rem;
     color: #64748b;
 }
 
 .trend-rank-line {
-    font-size: .66rem;
+    font-size: .76rem;
     color: #334155;
     line-height: 1.45;
     margin-top: 3px;
@@ -2639,6 +2695,8 @@ section[data-testid="stSidebar"] {
     font-weight: 700;
     color: #64748b;
     margin: 0 0 6px;
+    font-family: 'Be Vietnam Pro', sans-serif !important;
+    letter-spacing: 0.01em;
 }
 
 .ov-filter-placeholder {
@@ -2815,6 +2873,26 @@ div[data-testid="stSelectbox"] [data-baseweb="select"]>div {
     border: none !important;
 }
 
+/* Overview filters: unify typography between buttons/selects */
+section.main div[data-testid="stButton"] button,
+section.main div[data-testid="stSelectbox"] label,
+section.main div[data-testid="stSelectbox"] [data-baseweb="select"] *,
+section.main div[data-testid="stSelectbox"] [data-baseweb="select"] input {
+    font-family: 'Be Vietnam Pro', sans-serif !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+}
+
+section.main div[data-testid="stSelectbox"] [data-baseweb="select"] span,
+section.main div[data-testid="stSelectbox"] [data-baseweb="select"] div,
+section.main div[data-testid="stSelectbox"] [data-baseweb="popover"] *,
+section.main [role="listbox"] *,
+section.main [role="option"] * {
+    font-family: 'Be Vietnam Pro', sans-serif !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+}
+
 @media (max-width: 1200px) {
     .hdr {
         position: static;
@@ -2875,6 +2953,8 @@ div[data-testid="stSelectbox"] [data-baseweb="select"]>div {
 .app-loader-wrap {
     width: 100%;
     position: relative;
+    display: flex;
+    justify-content: center;
 }
 
 .app-loader-wrap-overlay {
@@ -2902,7 +2982,7 @@ div[data-testid="stSelectbox"] [data-baseweb="select"]>div {
     display: flex;
     align-items: center;
     gap: 14px;
-    margin: 6px 0 14px;
+    margin: 6px auto 14px;
     width: min(760px, 96vw);
     min-width: min(620px, 94vw);
     max-width: min(760px, 96vw);
@@ -3487,4 +3567,17 @@ section[data-testid="stSidebar"]:hover .sb-nav-label {
 /* no toggle button, purely hover-expand */
 [data-testid="stSidebarCollapsedControl"] {
     display: none !important;
+}
+
+/* Hide Streamlit sidebar chevron/toggle across versions */
+button[aria-label="Collapse sidebar"],
+button[aria-label="Expand sidebar"],
+button[aria-label="Close sidebar"],
+button[aria-label="Open sidebar"],
+button[title="Collapse sidebar"],
+button[title="Expand sidebar"],
+[data-testid="collapsedControl"],
+[data-testid="stBaseButton-headerNoPadding"] {
+    display: none !important;
+    visibility: hidden !important;
 }

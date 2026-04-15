@@ -246,11 +246,12 @@ def load_data() -> pd.DataFrame:
     return _apply_aqi_labels(df)
 
 
-@st.cache_data(ttl=1800)
+@st.cache_data(ttl=1800, show_spinner=False)
 def load_province_detail(
     province_name: str,
     start_date: str | None = None,
     end_date: str | None = None,
+    prefer_all_csv: bool = False,
 ) -> pd.DataFrame:
     base = os.path.dirname(__file__)
     aqi_dir = _resolve_aqi_dir(base)
@@ -284,6 +285,21 @@ def load_province_detail(
     has_time_filter = pd.notna(start_ts) and pd.notna(end_ts)
     if has_time_filter and end_ts < start_ts:
         start_ts, end_ts = end_ts, start_ts
+
+    # Fast path for overview-like screens: use pre-aggregated all.csv when available.
+    if prefer_all_csv:
+        all_csv_path = os.path.join(province_dir, "all.csv")
+        if os.path.exists(all_csv_path):
+            try:
+                all_df = _safe_read_csv(all_csv_path)
+                if has_time_filter and "timestamp" in all_df.columns:
+                    ts = pd.to_datetime(all_df["timestamp"], errors="coerce")
+                    end_exclusive = end_ts + pd.Timedelta(days=1)
+                    all_df = all_df[(ts >= start_ts) & (ts < end_exclusive)]
+                if not all_df.empty:
+                    return _postprocess_df(all_df)
+            except Exception as e:
+                print(f"Lỗi đọc file {all_csv_path}: {e}")
 
     df_list = []
     for p in files:
