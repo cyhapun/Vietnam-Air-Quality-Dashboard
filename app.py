@@ -251,15 +251,20 @@ def render_dashboard():
                 and hcm_default
             ):
                 st.session_state["overview_scope_province"] = hcm_default
+            
+            cur_prov = st.session_state.get("overview_scope_province")
+            if scope_mode == "Theo tỉnh/thành":
+                if cur_prov in province_options:
+                    sb_index = province_options.index(cur_prov)
+                else:
+                    sb_index = province_options.index(hcm_default) if hcm_default in province_options else 0
+            else:
+                sb_index = None
+
             selected_province = st.selectbox(
                 "Chọn tỉnh/thành",
                 options=province_options,
-                index=(
-                    province_options.index(st.session_state["overview_scope_province"])
-                    if st.session_state.get("overview_scope_province") in province_options
-                    else (province_options.index(hcm_default) if hcm_default in province_options else None)
-                ),
-                key="overview_scope_province",
+                index=sb_index,
                 placeholder=(
                     "Vui lòng chọn tỉnh thành"
                     if scope_mode == "Theo tỉnh/thành"
@@ -268,6 +273,10 @@ def render_dashboard():
                 disabled=scope_mode != "Theo tỉnh/thành",
                 label_visibility="collapsed",
             )
+            
+            if scope_mode == "Theo tỉnh/thành" and selected_province != cur_prov:
+                st.session_state["overview_scope_province"] = selected_province
+                st.rerun()
             if scope_mode == "Theo tỉnh/thành":
                 if selected_province:
                     try:
@@ -284,7 +293,7 @@ def render_dashboard():
                                 selected_province,
                                 s_arg,
                                 e_arg,
-                                prefer_all_csv=True,
+                                prefer_all_csv=False,
                             )
                         overview_df = _apply_aqi_labels(detail_raw.copy())
                     except Exception:

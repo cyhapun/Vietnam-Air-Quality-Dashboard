@@ -645,7 +645,7 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     pm25_warning_map = {
         "Tốt": "Không có cảnh báo đáng kể.",
         "Vừa phải": "Nhóm nhạy cảm nên giảm vận động ngoài trời.",
-        "Không lành mạnh cho các nhóm nhạy cảm": "Nhóm nhạy cảm tránh hoạt động ngoài trời kéo dài.",
+        "Không lành mạnh cho nhóm nhạy cảm": "Nhóm nhạy cảm tránh hoạt động ngoài trời kéo dài.",
         "Không khỏe mạnh": "Hạn chế ra ngoài, ưu tiên khẩu trang lọc bụi mịn.",
         "Rất không tốt cho sức khỏe": "Tránh hoạt động gắng sức ngoài trời.",
         "Nguy hiểm": "Mọi người nên hạn chế tối đa hoạt động ngoài trời.",
