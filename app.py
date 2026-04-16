@@ -74,13 +74,11 @@ parser.add_argument(
 # Sử dụng parse_known_args để bỏ qua các tham số mặc định của lệnh `streamlit run`
 args, unknown = parser.parse_known_args()
 
-# if args.real_time:
-#     initialize_background_tasks()
-#     print("Đang bật chế độ Real-time.")
-# else:
-#     print("Không sử dụng chế độ Real-time. Thêm cờ '--real-time' khi chạy để bật.")
-
-print("⚠️ CHẾ ĐỘ CRAWL NGẦM ĐÃ ĐƯỢC TẠM TẮT ĐỂ TIỆN TEST. (Mở app.py để bỏ comment nếu cần)")
+if args.real_time:
+    initialize_background_tasks()
+    print("Đang bật chế độ Real-time.")
+else:
+    print("Không sử dụng chế độ Real-time. Thêm cờ '--real-time' khi chạy để bật.")
 
 st.set_page_config(
     layout="wide",
@@ -223,19 +221,11 @@ def render_dashboard():
                 st.session_state.overview_scope_mode = "Cả nước"
 
             b1, b2 = st.columns(2, gap="small")
-            if b1.button(
-                "Cả nước",
-                type="primary" if st.session_state.overview_scope_mode == "Cả nước" else "secondary",
-                use_container_width=True,
-            ):
+            if b1.button("Cả nước", type="primary" if st.session_state.overview_scope_mode == "Cả nước" else "secondary", width='stretch'):
                 st.session_state.overview_scope_mode = "Cả nước"
                 st.session_state["overview_scope_province"] = None
                 st.rerun()
-            if b2.button(
-                "Theo tỉnh/thành",
-                type="primary" if st.session_state.overview_scope_mode == "Theo tỉnh/thành" else "secondary",
-                use_container_width=True,
-            ):
+            if b2.button("Theo tỉnh/thành", type="primary" if st.session_state.overview_scope_mode == "Theo tỉnh/thành" else "secondary", width='stretch'):
                 st.session_state.overview_scope_mode = "Theo tỉnh/thành"
                 if not st.session_state.get("overview_scope_province") and hcm_default:
                     st.session_state["overview_scope_province"] = hcm_default

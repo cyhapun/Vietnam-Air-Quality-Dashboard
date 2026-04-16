@@ -1472,7 +1472,7 @@ def _build_location_day_summary(detail_rows: pd.DataFrame) -> pd.DataFrame:
         if col not in frame.columns:
             frame[col] = np.nan
 
-    grouped = frame.groupby("location", dropna=True)
+    grouped = frame.groupby("location", dropna=True, observed=False)
     summary = grouped.agg(
         temp_avg=("temp", "mean"),
         temp_max=("temp", "max"),
@@ -2540,7 +2540,7 @@ def render(df: pd.DataFrame):
         if not hourly_df.empty:
             grouped_src = hourly_df.copy()
             grouped_src["day_key"] = grouped_src["timestamp"].dt.strftime("%Y-%m-%d")
-            for day_key, group in grouped_src.groupby("day_key", sort=True):
+            for day_key, group in grouped_src.groupby("day_key", sort=True, observed=False):
                 day_groups[day_key] = group.drop(columns=["day_key"]).reset_index(drop=True)
         st.session_state["weather_city_cache_sig"] = cache_sig
         st.session_state["weather_city_cache"] = {
@@ -2894,11 +2894,11 @@ def render(df: pd.DataFrame):
             if chart_type == "Mạng nhện (Radar)":
                 radar_fig = _plot_weather_radar(hist_source, escape(str(selected_location)))
                 if radar_fig:
-                    st.plotly_chart(radar_fig, use_container_width=True, config={"displayModeBar": False})
+                    st.plotly_chart(radar_fig, width='stretch', config={"displayModeBar": False})
             else:
                 metric_chart = _plot_weather_metric(hist_source[["timestamp", metric_key]].copy(), metric_key, chart_type, ml_fn, ax_fn)
                 if metric_chart is not None:
-                    st.plotly_chart(metric_chart, use_container_width=True, config={"displayModeBar": False})
+                    st.plotly_chart(metric_chart, width='stretch', config={"displayModeBar": False})
 
         with cRank:
             st.markdown(
@@ -2936,7 +2936,7 @@ def render(df: pd.DataFrame):
                 top_df = top_df.rename(columns={detail_metric_col: "metric_value"})
             elif not rank_df.empty:
                 top_df = (
-                    rank_df.groupby("location", as_index=False)[metric_key]
+                    rank_df.groupby("location", as_index=False, observed=False)[metric_key]
                     .mean()
                     .sort_values(metric_key, ascending=False)
                     .head(8)

@@ -61,12 +61,11 @@ def _resolve_first_existing_path(candidates: list[str]) -> str | None:
     return None
 
 
-def _resolve_all_csv(base_dir: str) -> str | None:
     return _resolve_first_existing_path(
         [
-            os.path.join(base_dir, "..", "data", "vietnam_air_quality.csv"),
-            os.path.join(base_dir, "data", "vietnam_air_quality.csv"),
-            os.path.join(base_dir, "vietnam_air_quality.csv"),
+            os.path.join(base_dir, "..", "data", "vietnam_air_quality.parquet"),
+            os.path.join(base_dir, "data", "vietnam_air_quality.parquet"),
+            os.path.join(base_dir, "vietnam_air_quality.parquet"),
         ]
     )
 
@@ -92,7 +91,11 @@ def _resolve_location_dir(base_dir: str) -> str | None:
 
 
 def _safe_read_csv(path: str) -> pd.DataFrame:
-    return pd.read_csv(path, usecols=lambda c: c in PREFERRED_COLUMNS, low_memory=False)
+    try:
+        df = pd.read_parquet(path)
+        return df[[c for c in df.columns if c in PREFERRED_COLUMNS]]
+    except Exception:
+        return pd.DataFrame()
 
 
 def _normalize_name(text: str) -> str:
@@ -119,7 +122,7 @@ def _postprocess_df(df: pd.DataFrame) -> pd.DataFrame:
 
     for col in NUMERIC_COLUMNS:
         if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype("float32")
         else:
             df[col] = np.nan
 
@@ -151,6 +154,12 @@ def _postprocess_df(df: pd.DataFrame) -> pd.DataFrame:
         labels=["0–5", "5–10", "10–20", ">20"],
         include_lowest=True,
     )
+    
+    cat_cols = ["city", "province", "location", "pollution_level", "pollution_class"]
+    for c in cat_cols:
+        if c in df.columns:
+            df[c] = df[c].astype("category")
+
     return df
 
 
@@ -175,10 +184,10 @@ def _province_name_slug_map() -> dict[str, str]:
         return {}
 
     mapping: dict[str, str] = {}
-    for csv_path in glob.glob(os.path.join(location_dir, "*.csv")):
+    for csv_path in glob.glob(os.path.join(location_dir, "*.parquet")):
         slug = os.path.splitext(os.path.basename(csv_path))[0]
         try:
-            sample = pd.read_csv(csv_path, nrows=1)
+            sample = pd.read_parquet(csv_path).head(1)
             if not sample.empty and "Tỉnh/Thành" in sample.columns:
                 province_name = str(sample.iloc[0]["Tỉnh/Thành"]).strip()
                 mapping[province_name] = slug
@@ -194,9 +203,9 @@ def list_detail_provinces() -> list[str]:
     location_dir = _resolve_location_dir(base)
     if location_dir:
         names: list[str] = []
-        for csv_path in glob.glob(os.path.join(location_dir, "*.csv")):
+        for csv_path in glob.glob(os.path.join(location_dir, "*.parquet")):
             try:
-                sample = pd.read_csv(csv_path, nrows=1)
+                sample = pd.read_parquet(csv_path).head(1)
                 if not sample.empty and "Tỉnh/Thành" in sample.columns:
                     names.append(str(sample.iloc[0]["Tỉnh/Thành"]).strip())
             except Exception:
@@ -221,28 +230,43 @@ def _load_raw() -> pd.DataFrame:
     """Load + postprocess (cached). AQI labels added separately to avoid stale cache."""
     base = os.path.dirname(__file__)
 
-    # Priority 1: per-province all.csv (has full pollutant columns)
+    # Priority 1: per-province all.parquet (has full pollutant columns)
     data_dir = _resolve_aqi_dir(base)
     if data_dir:
-        all_files = glob.glob(os.path.join(data_dir, "**", "all.csv"), recursive=True)
+        all_files = glob.glob(os.path.join(data_dir, "**", "all.parquet"), recursive=True)
         if all_files:
-            df_list = []
-            for p in all_files:
-                try:
-                    temp_df = _safe_read_csv(p)
-                    if not temp_df.empty:
-                        df_list.append(temp_df)
-                except Exception as e:
-                    print(f"Lỗi đọc file {p}: {e}")
-            if df_list:
-                return _postprocess_df(pd.concat(df_list, ignore_index=True))
+            try:
+                import pyarrow.dataset as ds
+                dataset = ds.dataset(all_files, format="parquet")
+                cols = [c for c in PREFERRED_COLUMNS if c in dataset.schema.names]
+                raw_df = dataset.to_table(columns=cols if cols else None).to_pandas()
+                # Dataset might still contain some weird columns, filter again
+                raw_df = raw_df[[c for c in raw_df.columns if c in PREFERRED_COLUMNS]]
+                return _postprocess_df(raw_df)
+            except Exception as pyarrow_e:
+                print(f"Lỗi đọc PyArrow: {pyarrow_e}. Đang dùng Thường (Fallback)...")
+                from concurrent.futures import ThreadPoolExecutor
+                
+                def _read_wrap(p):
+                    try:
+                        tdf = _safe_read_csv(p)
+                        return tdf if not tdf.empty else None
+                    except Exception:
+                        return None
+                        
+                with ThreadPoolExecutor(max_workers=10) as executor:
+                    results = list(executor.map(_read_wrap, all_files))
+                
+                df_list = [r for r in results if r is not None]
+                if df_list:
+                    return _postprocess_df(pd.concat(df_list, ignore_index=True))
 
-    # Priority 2: single aggregated CSV
+    # Priority 2: single aggregated file
     all_csv = _resolve_all_csv(base)
     if all_csv:
         return _postprocess_df(_safe_read_csv(all_csv))
 
-    st.error("Không tìm thấy nguồn dữ liệu (data/aqi/*/all.csv hoặc vietnam_air_quality.csv)")
+    st.error("Không tìm thấy nguồn dữ liệu (data/aqi/*/all.parquet hoặc vietnam_air_quality.parquet)")
     st.stop()
 
 @st.cache_data(ttl=3700)
@@ -281,7 +305,7 @@ def load_province_detail(
         st.error(f"Không tìm thấy thư mục dữ liệu chi tiết cho {province_name} ({slug}).")
         st.stop()
 
-    files = glob.glob(os.path.join(province_dir, "*.csv"))
+    files = glob.glob(os.path.join(province_dir, "*.parquet"))
     if not files:
         st.error(f"Không có dữ liệu chi tiết cho {province_name}.")
         st.stop()
@@ -292,9 +316,9 @@ def load_province_detail(
     if has_time_filter and end_ts < start_ts:
         start_ts, end_ts = end_ts, start_ts
 
-    # Fast path for overview-like screens: use pre-aggregated all.csv when available.
+    # Fast path for overview-like screens: use pre-aggregated all.parquet when available.
     if prefer_all_csv:
-        all_csv_path = os.path.join(province_dir, "all.csv")
+        all_csv_path = os.path.join(province_dir, "all.parquet")
         if os.path.exists(all_csv_path):
             try:
                 all_df = _safe_read_csv(all_csv_path)
@@ -307,20 +331,26 @@ def load_province_detail(
             except Exception as e:
                 print(f"Lỗi đọc file {all_csv_path}: {e}")
 
-    df_list = []
-    for p in files:
-        if os.path.basename(p).lower() == "all.csv":
-            continue
+    from concurrent.futures import ThreadPoolExecutor
+    
+    def _read_and_filter(p):
+        if os.path.basename(p).lower() == "all.parquet":
+            return None
         try:
             temp_df = _safe_read_csv(p)
             if has_time_filter and "timestamp" in temp_df.columns:
                 ts = pd.to_datetime(temp_df["timestamp"], errors="coerce")
                 end_exclusive = end_ts + pd.Timedelta(days=1)
                 temp_df = temp_df[(ts >= start_ts) & (ts < end_exclusive)]
-            if not temp_df.empty:
-                df_list.append(temp_df)
+            return temp_df if not temp_df.empty else None
         except Exception as e:
-            print(f"Lỗi đọc file {p}: {e}")
+            print(f"Lỗi tham chiếu chi tiết {p}: {e}")
+            return None
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = list(executor.map(_read_and_filter, files))
+
+    df_list = [r for r in results if r is not None]
 
     if not df_list:
         st.error(f"Dữ liệu chi tiết của {province_name} không hợp lệ.")

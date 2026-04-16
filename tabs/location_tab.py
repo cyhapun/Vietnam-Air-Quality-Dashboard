@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -193,7 +193,7 @@ def _attach_region(frame: pd.DataFrame) -> pd.DataFrame:
 
 def _summary_by_region(frame: pd.DataFrame) -> pd.DataFrame:
     s = (
-        frame.groupby("region_7")
+        frame.groupby("region_7", observed=False)
         .agg(aqi=("aqi", "mean"), pm2_5=("pm2_5", "mean"), n=("aqi", "size"))
         .reset_index()
     )
@@ -208,7 +208,7 @@ def _summary_by_region(frame: pd.DataFrame) -> pd.DataFrame:
 
 def _summary_by_province(frame: pd.DataFrame) -> pd.DataFrame:
     s = (
-        frame.groupby(["region_7", "province"])
+        frame.groupby(["region_7", "province"], observed=False)
         .agg(aqi=("aqi", "mean"), pm2_5=("pm2_5", "mean"), n=("aqi", "size"))
         .reset_index()
     )
@@ -304,7 +304,7 @@ def compute_who_stats(df_raw: pd.DataFrame) -> pd.DataFrame:
         who_df[f"{col}_exceed"] = (who_df[col] > threshold).astype(int)
 
     return (
-        who_df.groupby("climate_zone")
+        who_df.groupby("climate_zone", observed=False)
         .agg(
             pm25_who=("pm2_5_exceed", lambda x: round(x.mean() * 100, 1)),
             o3_who=("o3_exceed", lambda x: round(x.mean() * 100, 1)),
@@ -330,7 +330,7 @@ def compute_who_stats_by_province(df_raw: pd.DataFrame) -> pd.DataFrame:
         who_df[f"{col}_exceed"] = (who_df[col] > threshold).astype(int)
 
     return (
-        who_df.groupby("province")
+        who_df.groupby("province", observed=False)
         .agg(
             pm25_who=("pm2_5_exceed", lambda x: round(x.mean() * 100, 1)),
             o3_who=("o3_exceed", lambda x: round(x.mean() * 100, 1)),

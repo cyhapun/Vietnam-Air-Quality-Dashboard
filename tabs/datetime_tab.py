@@ -26,7 +26,7 @@ def load_tier2_data(city_folder, filename):
     if not os.path.exists(file_path):
         return pd.DataFrame()
     try:
-        df = pd.read_csv(file_path)
+        df = pd.read_parquet(file_path)
         if df.empty: return df
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         df = df.dropna(subset=["timestamp", "aqi"])
@@ -82,13 +82,13 @@ def render(global_df):
     dir_path = os.path.join(base_dir, "..", "data", "aqi", folder_name)
     tong_quan_lbl = f"Tổng quan ({selected_city})"
     tier2_options = [tong_quan_lbl]
-    file_map = {tong_quan_lbl: "all.csv"}
+    file_map = {tong_quan_lbl: "all.parquet"}
     
     if os.path.exists(dir_path):
         files = os.listdir(dir_path)
         for f in files:
-            if f.endswith(".csv") and f != "all.csv":
-                clean_name = f.replace(".csv", "")
+            if f.endswith(".parquet") and f != "all.parquet":
+                clean_name = f.replace(".parquet", "")
                 tier2_options.append(clean_name)
                 file_map[clean_name] = f
                 
@@ -175,7 +175,7 @@ def render(global_df):
             st.rerun()
 
     # Load and process data
-    target_file = file_map.get(selected_tier2, "all.csv")
+    target_file = file_map.get(selected_tier2, "all.parquet")
     df = load_tier2_data(folder_name, target_file)
     
     if df.empty or selected_poll_key not in df.columns:
