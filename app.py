@@ -190,6 +190,7 @@ def render_dashboard():
 
     render_header(state, logo_html)
 
+    st.markdown('<div class="main-limit">', unsafe_allow_html=True)
     active_tab = state.get("active_tab", "overview")
 
     if active_tab == "overview":
@@ -214,7 +215,8 @@ def render_dashboard():
         if st.session_state["ov_time_range"] not in time_options:
             st.session_state["ov_time_range"] = "24h"
 
-        c_filter_mode, c_filter_target, c_filter_time = st.columns([1.15, 1.45, 0.85], gap="small")
+        st.markdown("<div class='ov-filter-bar'>", unsafe_allow_html=True)
+        c_filter_mode, c_filter_target, c_filter_time, c_filter_info = st.columns([1, 1.3, 0.8, 0.9], gap="small")
         with c_filter_mode:
             st.markdown("<div class='ov-filter-label'>Phạm vi</div>", unsafe_allow_html=True)
             if "overview_scope_mode" not in st.session_state:
@@ -302,6 +304,14 @@ def render_dashboard():
             if selected_time != st.session_state["ov_time_range"]:
                 st.session_state["ov_time_range"] = selected_time
                 st.rerun()
+
+        with c_filter_info:
+            st.markdown("<div class='ov-filter-label'>Trạng thái</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='ov-status-pill'>Dữ liệu: Chuẩn hóa • {len(overview_df):,} dòng</div>",
+                unsafe_allow_html=True
+            )
+        st.markdown("</div>", unsafe_allow_html=True) # Closing ov-filter-bar
         if overview_df.empty:
             st.info("Không có dữ liệu cho phạm vi đã chọn.")
         else:
@@ -324,6 +334,7 @@ def render_dashboard():
     else:
         render_tab_or_blank(overview_tab, state["df"])
 
+    st.markdown("</div>", unsafe_allow_html=True) # Closing main-limit
     render_footer()
 
 

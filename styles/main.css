@@ -38,6 +38,13 @@ footer {
     max-width: 100% !important;
 }
 
+/* Limit content width to prevent eye fatigue on Ultra-wide screens */
+.main-limit {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
 ::-webkit-scrollbar {
     width: 4px;
     height: 4px;
@@ -442,6 +449,17 @@ footer {
     transform: translateY(-2px);
     box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
     border-color: #bfdbfe;
+}
+
+/* Reduced spacing for Plotly charts inside cards */
+.js-plotly-plot .plotly .main-svg {
+    background: transparent !important;
+}
+.plotly .modebar-container {
+    opacity: 0.2;
+}
+.plotly .modebar-container:hover {
+    opacity: 1;
 }
 
 .q-tag {
@@ -3562,6 +3580,41 @@ section[data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
 section[data-testid="stSidebar"]:hover .sb-nav-label {
     opacity: 1 !important;
     transform: translateX(0) !important;
+}
+
+/* ── OVERVIEW FILTER BAR ── */
+.ov-filter-bar {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    padding: 12px 20px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.ov-filter-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.ov-status-pill {
+    background: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    display: inline-block;
+    margin-top: 2px;
 }
 
 /* no toggle button, purely hover-expand */
