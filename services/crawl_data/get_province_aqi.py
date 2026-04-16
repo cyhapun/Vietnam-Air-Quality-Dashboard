@@ -35,21 +35,18 @@ TARGET_SCHEMA = {
 }
 
 def clean_and_format_lf(file_path):
-    """Hàm này đảm bảo mọi file CSV trả về đúng 1 schema duy nhất"""
-    actual_columns = pl.read_csv(file_path, n_rows=0).columns
+    """Hàm này đảm bảo mọi file Parquet trả về đúng 1 schema duy nhất"""
+    lf = pl.scan_parquet(file_path)
+    actual_columns = lf.collect_schema().names()
     rename_dict = {c: c.strip() for c in actual_columns if c.strip() in TARGET_SCHEMA}
     
-    lf = pl.scan_csv(file_path, infer_schema_length=0)
     lf = lf.rename(rename_dict)
     
-    # --- Lấy schema một lần duy nhất ---
     current_columns = lf.collect_schema().names() 
     
-    # Chỉ chọn các cột có trong TARGET_SCHEMA
     existing_cols = [c for c in TARGET_SCHEMA.keys() if c in current_columns]
     lf = lf.select(existing_cols)
     
-    # Ép kiểu và thêm các cột còn thiếu
     expressions = []
     for col_name, dtype in TARGET_SCHEMA.items():
         if col_name in current_columns:
@@ -69,13 +66,13 @@ def run_province_aggregation():
 
     # Thanh tiến trình chính: Duyệt qua các tỉnh
     for province_path in tqdm(provinces, desc="Tổng hợp dữ liệu", unit="tỉnh"):
-        csv_files = [f for f in province_path.glob("*.csv") if f.name != 'all.csv']
-        if not csv_files: continue
+        parquet_files = [f for f in province_path.glob("*.parquet") if f.name != 'all.parquet']
+        if not parquet_files: continue
 
         lazy_frames = []
         
         # Thanh tiến trình phụ: Duyệt file trong tỉnh (leave=False giúp thanh này tự biến mất khi xong)
-        for file in tqdm(csv_files, desc=f"Đang đọc: {province_path.name}", unit="file", leave=False):
+        for file in tqdm(parquet_files, desc=f"Đang đọc: {province_path.name}", unit="file", leave=False):
             try:
                 clean_lf = clean_and_format_lf(file)
                 lazy_frames.append(clean_lf)
@@ -103,8 +100,8 @@ def run_province_aggregation():
         )
 
         # Lưu file
-        output_file = province_path / "all.csv"
-        result.collect().write_csv(output_file)
+        output_file = province_path / "all.parquet"
+        result.collect().write_parquet(output_file)
 
 if __name__ == "__main__":
     run_province_aggregation()

@@ -5,7 +5,39 @@ import streamlit as st
 import base64
 import os
 import textwrap
+import html
 from utils.helpers import AQI_DEF, POLLS
+
+OV_TIMEFRAME_DELTAS = {
+    "24h": pd.Timedelta(hours=24),
+    "7 ngày": pd.Timedelta(days=7),
+    "30 ngày": pd.Timedelta(days=30),
+    "3 tháng": pd.Timedelta(days=90),
+}
+OV_TIMEFRAME_LABELS = {
+    "24h": "24 giờ",
+    "7 ngày": "7 ngày",
+    "30 ngày": "30 ngày",
+    "3 tháng": "3 tháng",
+}
+
+POLLUTANT_LEVEL_BANDS = {
+    "pm2_5": [12, 35.4, 55.4, 150.4, 250.4],
+    "pm10": [54, 154, 254, 354, 424],
+    "co": [4400, 9400, 12400, 15400, 30400],
+    "so2": [35, 75, 185, 304, 604],
+    "no2": [53, 100, 360, 649, 1249],
+    "o3": [54, 70, 85, 105, 200],
+}
+
+STANDARD_LEVEL_LABELS = [
+    "Tốt",
+    "Vừa phải",
+    "Không lành mạnh cho nhóm nhạy cảm",
+    "Không khỏe mạnh",
+    "Rất không tốt cho sức khỏe",
+    "Nguy hiểm",
+]
 
 
 def _safe_pm25_mean(df):
@@ -15,13 +47,89 @@ def _safe_pm25_mean(df):
     return 0.0 if pd.isna(val) else float(val)
 
 
-def _build_scope_metrics(df, state):
+def _get_timeframe_selector():
+    if "ov_time_range" not in st.session_state:
+        st.session_state["ov_time_range"] = "24h"
+    if st.session_state["ov_time_range"] not in OV_TIMEFRAME_DELTAS:
+        st.session_state["ov_time_range"] = "24h"
+    return st.session_state["ov_time_range"]
+
+
+def _filter_df_by_time_range(df, selected_range):
+    if df.empty or "timestamp" not in df.columns:
+        return df.copy()
+    max_ts = df["timestamp"].max()
+    if pd.isna(max_ts):
+        return df.copy()
+    delta = OV_TIMEFRAME_DELTAS.get(selected_range, OV_TIMEFRAME_DELTAS["24h"])
+    min_ts = max_ts - delta
+    return df[df["timestamp"] >= min_ts].copy()
+
+
+def _compute_hero_insights(df: pd.DataFrame, avg_aqi: int, current_label: str) -> dict:
+    slot_focus = "Không đủ dữ liệu"
+    slot_focus_sub = "Chưa xác định được khung giờ có rủi ro nổi bật."
+    if "time_slot" in df.columns and "aqi" in df.columns:
+        slot_mean = df.groupby("time_slot", observed=False)["aqi"].mean().dropna().sort_values(ascending=False)
+        if not slot_mean.empty:
+            slot_focus = str(slot_mean.index[0])
+            slot_focus_sub = f"AQI trung bình cao nhất: {slot_mean.iloc[0]:.1f}."
+
+    health_advice_map = {
+        "Tốt": "Tiếp tục sinh hoạt bình thường; duy trì theo dõi chất lượng không khí định kỳ.",
+        "Vừa phải": "Giảm vận động ngoài trời kéo dài khi không cần thiết, nhất là vào giờ cao điểm.",
+        "Không lành mạnh cho nhóm nhạy cảm": "Nhóm nhạy cảm nên hạn chế ra ngoài, ưu tiên khẩu trang lọc bụi mịn khi di chuyển.",
+        "Không khỏe mạnh": "Hạn chế hoạt động ngoài trời; cân nhắc dùng khẩu trang N95 khi bắt buộc phải ra ngoài.",
+        "Rất không tốt cho sức khỏe": "Ưu tiên ở trong nhà, đóng cửa và dùng máy lọc không khí nếu có.",
+        "Nguy hiểm": "Tránh ra ngoài tối đa; theo dõi cảnh báo y tế địa phương và bảo vệ hô hấp nghiêm ngặt.",
+    }
+    health_advice = health_advice_map.get(current_label, health_advice_map["Nguy hiểm"])
+
+    if avg_aqi <= 50:
+        risk_children = "Rủi ro thấp; có thể hoạt động ngoài trời bình thường."
+        risk_elderly = "Rủi ro thấp; duy trì theo dõi định kỳ."
+    elif avg_aqi <= 100:
+        risk_children = "Nhạy cảm nhẹ; giảm thời lượng chơi ngoài trời kéo dài."
+        risk_elderly = "Có thể mệt nhẹ nếu phơi nhiễm lâu; nên nghỉ ngắt quãng."
+    elif avg_aqi <= 150:
+        risk_children = "Nguy cơ kích ứng hô hấp tăng; nên hạn chế ra ngoài lâu."
+        risk_elderly = "Tăng nguy cơ khó thở/ho; ưu tiên không gian trong nhà."
+    elif avg_aqi <= 200:
+        risk_children = "Nguy cơ viêm đường hô hấp rõ rệt; hạn chế tối đa hoạt động ngoài trời."
+        risk_elderly = "Nguy cơ đợt cấp bệnh nền cao; tránh phơi nhiễm trực tiếp."
+    elif avg_aqi <= 300:
+        risk_children = "Mức nguy cơ rất cao; nên ở trong nhà và theo dõi triệu chứng."
+        risk_elderly = "Rủi ro rất cao với tim phổi; hạn chế di chuyển ngoài trời."
+    else:
+        risk_children = "Nguy hiểm; tránh ra ngoài hoàn toàn nếu có thể."
+        risk_elderly = "Nguy hiểm; cần bảo vệ hô hấp nghiêm ngặt và theo dõi sát."
+
+    best_slot = "Không đủ dữ liệu"
+    best_slot_sub = "Chưa xác định được khung giờ an toàn hơn trong ngày."
+    if "time_slot" in df.columns and "aqi" in df.columns:
+        slot_min = df.groupby("time_slot", observed=False)["aqi"].mean().dropna().sort_values(ascending=True)
+        if not slot_min.empty:
+            best_slot = str(slot_min.index[0])
+            best_slot_sub = f"AQI trung bình thấp nhất: {slot_min.iloc[0]:.1f}."
+
+    return {
+        "slot_focus": slot_focus,
+        "slot_focus_sub": slot_focus_sub,
+        "health_advice": health_advice,
+        "risk_children": risk_children,
+        "risk_elderly": risk_elderly,
+        "best_slot": best_slot,
+        "best_slot_sub": best_slot_sub,
+    }
+
+
+def _build_scope_metrics(df, state, selected_range):
     _aqi_meta = state["aqi_meta"]
     _aqi_health_guidance = state["aqi_health_guidance"]
     _fmt_delta = state["fmt_delta"]
     city_col = "city" if "city" in df.columns else "province"
     city_aqi_mean = (
-        df.groupby(city_col)["aqi"].mean().sort_values(ascending=False)
+        df.groupby(city_col, observed=False)["aqi"].mean().sort_values(ascending=False)
         if city_col in df.columns
         else pd.Series(dtype=float)
     )
@@ -29,40 +137,82 @@ def _build_scope_metrics(df, state):
     avg_pm25 = round(_safe_pm25_mean(df), 1)
     dangerp = round((df["aqi"] > 150).mean() * 100, 1) if len(df) else 0.0
     worst = city_aqi_mean.index[0] if not city_aqi_mean.empty else "N/A"
-    days = max(1, (df["date_ts"].max() - df["date_ts"].min()).days + 1)
+    selected_delta = OV_TIMEFRAME_DELTAS.get(selected_range, OV_TIMEFRAME_DELTAS["24h"])
+    days = max(selected_delta.total_seconds() / 86400.0, 1 / 24)
     cig_n = round(avg_pm25 / 22.0 * days, 1)
     _lbl, _col = _aqi_meta(avg_aqi)
     health_hd, _, _ = _aqi_health_guidance(avg_aqi)
     who_pm25_multi = round(max(avg_pm25, 0.1) / 5.0, 1)
     latest_obs = df["timestamp"].max()
 
-    daily_trend = df.groupby("date")[["aqi", "pm2_5"]].mean().sort_index()
-    if len(daily_trend) >= 2:
-        aqi_1d_text, aqi_1d_color = _fmt_delta(
-            daily_trend["aqi"].iloc[-1], daily_trend["aqi"].iloc[-2]
-        )
+    selected_range_label = OV_TIMEFRAME_LABELS.get(selected_range, selected_range)
+    exposure_label = selected_range_label.lower()
+    trend_primary_kicker = f"Biến động {selected_range_label}"
+    trend_secondary_kicker = f"Xu hướng nội bộ ({selected_range_label})"
+
+    max_ts = df["timestamp"].max()
+    delta = OV_TIMEFRAME_DELTAS.get(selected_range, OV_TIMEFRAME_DELTAS["24h"])
+    curr_start = max_ts - delta if pd.notna(max_ts) else pd.NaT
+    prev_start = curr_start - delta if pd.notna(curr_start) else pd.NaT
+
+    curr_window = df[df["timestamp"] >= curr_start] if pd.notna(curr_start) else df.iloc[0:0]
+    prev_window = (
+        df[(df["timestamp"] >= prev_start) & (df["timestamp"] < curr_start)]
+        if pd.notna(prev_start)
+        else df.iloc[0:0]
+    )
+
+    if not curr_window.empty and not prev_window.empty:
+        aqi_1d_text, aqi_1d_color = _fmt_delta(curr_window["aqi"].mean(), prev_window["aqi"].mean())
         pm_1d_text, pm_1d_color = _fmt_delta(
-            daily_trend["pm2_5"].iloc[-1], daily_trend["pm2_5"].iloc[-2], " µg"
+            curr_window["pm2_5"].mean(), prev_window["pm2_5"].mean(), " µg"
         )
+    elif len(curr_window) >= 2:
+        # Fallback: compare two halves in current window when there is no previous window.
+        curr_sorted = curr_window.sort_values("timestamp")
+        half_idx = max(1, len(curr_sorted) // 2)
+        first_half_curr = curr_sorted.iloc[:half_idx]
+        second_half_curr = curr_sorted.iloc[half_idx:]
+        if not first_half_curr.empty and not second_half_curr.empty:
+            aqi_1d_text, aqi_1d_color = _fmt_delta(
+                second_half_curr["aqi"].mean(), first_half_curr["aqi"].mean()
+            )
+            pm_1d_text, pm_1d_color = _fmt_delta(
+                second_half_curr["pm2_5"].mean(), first_half_curr["pm2_5"].mean(), " µg"
+            )
+        else:
+            aqi_1d_text, aqi_1d_color = _fmt_delta(0, None)
+            pm_1d_text, pm_1d_color = _fmt_delta(0, None)
     else:
         aqi_1d_text, aqi_1d_color = _fmt_delta(0, None)
         pm_1d_text, pm_1d_color = _fmt_delta(0, None)
 
-    if len(daily_trend) >= 14:
-        curr_7d = daily_trend.tail(7).mean()
-        prev_7d = daily_trend.iloc[-14:-7].mean()
-        aqi_7d_text, aqi_7d_color = _fmt_delta(curr_7d["aqi"], prev_7d["aqi"])
-        pm_7d_text, pm_7d_color = _fmt_delta(curr_7d["pm2_5"], prev_7d["pm2_5"], " µg")
+    if not curr_window.empty and pd.notna(curr_start):
+        mid_ts = curr_start + (delta / 2)
+        first_half = curr_window[curr_window["timestamp"] < mid_ts]
+        second_half = curr_window[curr_window["timestamp"] >= mid_ts]
+        if not first_half.empty and not second_half.empty:
+            aqi_7d_text, aqi_7d_color = _fmt_delta(
+                second_half["aqi"].mean(), first_half["aqi"].mean()
+            )
+            pm_7d_text, pm_7d_color = _fmt_delta(
+                second_half["pm2_5"].mean(), first_half["pm2_5"].mean(), " µg"
+            )
+        else:
+            aqi_7d_text, aqi_7d_color = _fmt_delta(0, None)
+            pm_7d_text, pm_7d_color = _fmt_delta(0, None)
     else:
         aqi_7d_text, aqi_7d_color = _fmt_delta(0, None)
         pm_7d_text, pm_7d_color = _fmt_delta(0, None)
+
+    daily_trend = df.groupby("date", observed=False)[["aqi", "pm2_5"]].mean().sort_index()
 
     rank_up_line = "Chưa đủ dữ liệu để so sánh thứ hạng ngày gần nhất."
     rank_down_line = ""
     if len(daily_trend) >= 2 and city_col in df.columns:
         last_date = daily_trend.index[-1]
         prev_date = daily_trend.index[-2]
-        city_day = df.groupby(["date", city_col])["aqi"].mean().reset_index()
+        city_day = df.groupby(["date", city_col], observed=False)["aqi"].mean().reset_index()
         now_rank = (
             city_day[city_day["date"] == last_date]
             .sort_values("aqi", ascending=False)[city_col]
@@ -119,6 +269,9 @@ def _build_scope_metrics(df, state):
             "pm_7d_color": pm_7d_color,
             "rank_up_line": rank_up_line,
             "rank_down_line": rank_down_line,
+            "trend_primary_kicker": trend_primary_kicker,
+            "trend_secondary_kicker": trend_secondary_kicker,
+            "exposure_label": exposure_label,
             "sel": sorted(df[city_col].dropna().unique().tolist()) if city_col in df.columns else [],
             "df": df,
             "plot_city_limit": len(city_aqi_mean),
@@ -129,11 +282,320 @@ def _build_scope_metrics(df, state):
     return derived_state
 
 
+def _render_kpi_strip(_col, avg_aqi, _lbl, avg_pm25, cig_n, exposure_label, worst, dangerp):
+    st.markdown(
+        f"""
+    <div class="kpi-strip">
+      <div class="kpi-box accent-blue">
+        <div class="kpi-lbl">AQI phạm vi chọn</div>
+        <div class="kpi-val" style="color:{_col}">{avg_aqi} <span class="u">{_lbl}</span></div>
+        <div class="kpi-sub">WHO khuyến nghị AQI ≤ 50</div>
+      </div>
+      <div class="kpi-box accent-amber">
+        <div class="kpi-lbl">PM2.5 trung bình</div>
+        <div class="kpi-val">{avg_pm25} <span class="u">µg/m³</span></div>
+        <div class="kpi-sub">Vượt ngưỡng WHO ({round(avg_pm25/15*100-100,0):.0f}% so với 15 µg)</div>
+      </div>
+      <div class="kpi-box accent-red">
+        <div class="kpi-lbl">Tương đương thuốc lá</div>
+        <div class="kpi-val">{cig_n} <span class="u">điếu</span></div>
+        <div class="kpi-sub">trong {exposure_label} · 22 µg/m³ = 1 điếu</div>
+      </div>
+      <div class="kpi-box accent-slate">
+        <div class="kpi-lbl">Khu vực ô nhiễm nhất</div>
+        <div class="kpi-val" style="font-size:1.1rem;padding-top:4px">{worst}</div>
+        <div class="kpi-sub">AQI trung bình cao nhất</div>
+      </div>
+      <div class="kpi-box accent-red">
+        <div class="kpi-lbl">Giờ AQI nguy hiểm</div>
+        <div class="kpi-val">{dangerp} <span class="u">%</span></div>
+        <div class="kpi-sub">AQI > 150 (Kém → Nguy hại)</div>
+      </div>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_trend_grid(
+    trend_primary_kicker,
+    aqi_1d_color,
+    aqi_1d_text,
+    pm_1d_color,
+    pm_1d_text,
+    trend_secondary_kicker,
+    aqi_7d_color,
+    aqi_7d_text,
+    pm_7d_color,
+    pm_7d_text,
+    rank_up_line,
+    rank_down_line,
+):
+    st.markdown(
+        f"""
+    <div class="trend-grid">
+        <div class="trend-card">
+            <div class="trend-kicker">{trend_primary_kicker}</div>
+            <div class="trend-main" style="color:{aqi_1d_color}">AQI: {aqi_1d_text}</div>
+            <div class="trend-sub" style="color:{pm_1d_color}">PM2.5: {pm_1d_text}</div>
+        </div>
+        <div class="trend-card">
+            <div class="trend-kicker">{trend_secondary_kicker}</div>
+            <div class="trend-main" style="color:{aqi_7d_color}">AQI: {aqi_7d_text}</div>
+            <div class="trend-sub" style="color:{pm_7d_color}">PM2.5: {pm_7d_text}</div>
+        </div>
+        <div class="trend-card">
+            <div class="trend-kicker">Thay đổi thứ hạng ô nhiễm (so với ngày trước)</div>
+            <div class="trend-rank-line"><strong>Leo hạng:</strong> {rank_up_line}</div>
+            <div class="trend-rank-line"><strong>Hạ hạng:</strong> {rank_down_line if rank_down_line else "Không có biến động giảm rõ rệt."}</div>
+        </div>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_pollutant_cards(df):
+    pollutant_meta = {
+        "pm2_5": {
+            "title": "Vật chất hạt mịn",
+            "subtitle": "(PM2.5)",
+            "icon_file": "pm25.svg",
+            "about": "Bụi siêu mịn có thể đi sâu vào phổi và máu, liên quan mạnh đến bệnh tim mạch và hô hấp.",
+        },
+        "pm10": {
+            "title": "Vật chất hạt mịn",
+            "subtitle": "(PM10)",
+            "icon_file": "pm10.svg",
+            "about": "Hạt bụi kích thước lớn hơn PM2.5, gây kích ứng mắt, mũi và đường hô hấp trên.",
+        },
+        "co": {
+            "title": "Carbon monoxide",
+            "subtitle": "(CO)",
+            "icon_file": "co.svg",
+            "about": "Khí không màu, không mùi sinh ra do đốt cháy không hoàn toàn, ảnh hưởng khả năng vận chuyển oxy của máu.",
+        },
+        "so2": {
+            "title": "Lưu huỳnh dioxide",
+            "subtitle": "(SO2)",
+            "icon_file": "so2.svg",
+            "about": "Khí kích ứng mạnh đường thở, đặc biệt với người hen suyễn và người có bệnh nền hô hấp.",
+        },
+        "no2": {
+            "title": "Nitrogen dioxide",
+            "subtitle": "(NO2)",
+            "icon_file": "no2.svg",
+            "about": "Khí phát sinh từ phương tiện giao thông và đốt nhiên liệu, gây viêm và kích ứng đường hô hấp.",
+        },
+        "o3": {
+            "title": "Ozon",
+            "subtitle": "(O3)",
+            "icon_file": "o3.svg",
+            "about": "Ozon tầng mặt đất hình thành quang hóa, có thể gây ho, khó thở và giảm chức năng phổi.",
+        },
+    }
+
+    def _pollution_level_text(poll_key, current_val):
+        bands = POLLUTANT_LEVEL_BANDS.get(poll_key)
+        if not bands or pd.isna(current_val):
+            return ("Chưa có ngưỡng tham chiếu", "Không rõ", "#94a3b8", -1)
+
+        idx = 5
+        for i, hi in enumerate(bands):
+            if float(current_val) <= hi:
+                idx = i
+                break
+        level_label = STANDARD_LEVEL_LABELS[idx]
+        level_color = AQI_DEF[idx][3]
+        if idx == 0:
+            level_text = "Mức tốt - an toàn"
+        elif idx == 1:
+            level_text = "Mức vừa phải - cần theo dõi"
+        elif idx == 2:
+            level_text = "Bắt đầu ảnh hưởng nhóm nhạy cảm"
+        elif idx == 3:
+            level_text = "Ô nhiễm cao - ảnh hưởng sức khỏe"
+        elif idx == 4:
+            level_text = "Ô nhiễm rất cao"
+        else:
+            level_text = "Nguy hiểm"
+        return level_text, level_label, level_color, idx
+
+    def _pollutant_level_context(poll_key, level_idx):
+        if level_idx < 0:
+            return (
+                "Chưa đủ dữ liệu để kết luận theo mức độ.",
+                "Tiếp tục quan trắc thêm trước khi đưa ra khuyến nghị vận hành.",
+            )
+        poll_name = POLLS.get(poll_key, {}).get("label", poll_key.upper())
+        if poll_key in {"pm2_5", "pm10"}:
+            if level_idx == 0:
+                return (
+                    f"Nồng độ {poll_name} đang ở mức tốt, rủi ro phơi nhiễm ngắn hạn thấp.",
+                    "Duy trì thông gió tự nhiên và theo dõi định kỳ.",
+                )
+            if level_idx == 1:
+                return (
+                    f"Nồng độ {poll_name} ở mức vừa phải, điều kiện nhìn chung còn kiểm soát được.",
+                    "Theo dõi thêm vào giờ cao điểm giao thông, nhóm nhạy cảm nên giảm phơi nhiễm kéo dài.",
+                )
+            if level_idx == 2:
+                return (
+                    f"{poll_name} tăng rõ so với nền, nhóm nhạy cảm có thể bắt đầu khó chịu đường hô hấp.",
+                    "Nhóm nhạy cảm nên giảm thời gian ở ngoài trời kéo dài và đeo khẩu trang lọc bụi.",
+                )
+            if level_idx == 3:
+                return (
+                    f"{poll_name} ở mức cao, nguy cơ kích ứng và viêm đường hô hấp tăng ở dân số chung.",
+                    "Hạn chế vận động mạnh ngoài trời, ưu tiên không gian trong nhà và lọc không khí.",
+                )
+            return (
+                f"{poll_name} đang ở mức rất cao/nguy hiểm, nguy cơ ảnh hưởng sức khỏe cấp tính tăng mạnh.",
+                "Giảm tối đa phơi nhiễm ngoài trời, đóng cửa, lọc không khí và theo dõi cảnh báo liên tục.",
+            )
+        if poll_key in {"no2", "so2"}:
+            if level_idx == 0:
+                return (
+                    f"{poll_name} đang ở mức tốt, tác động cấp tính lên hô hấp thấp.",
+                    "Duy trì theo dõi định kỳ tại khu vực giao thông/công nghiệp.",
+                )
+            if level_idx == 1:
+                return (
+                    f"{poll_name} ở mức vừa phải, chưa nghiêm trọng nhưng cần theo dõi chặt hơn.",
+                    "Giảm phơi nhiễm gần nguồn thải trong thời gian dài, nhất là với nhóm nhạy cảm.",
+                )
+            if level_idx == 2:
+                return (
+                    f"{poll_name} bắt đầu ảnh hưởng nhóm nhạy cảm (hen suyễn, bệnh hô hấp nền).",
+                    "Giảm phơi nhiễm trực tiếp gần nguồn thải, hạn chế hoạt động gắng sức ngoài trời.",
+                )
+            if level_idx == 3:
+                return (
+                    f"{poll_name} ở mức không khỏe mạnh, nguy cơ kích ứng đường thở tăng rõ rệt.",
+                    "Ưu tiên ở trong nhà, cân nhắc khẩu trang phù hợp và tránh trục giao thông dày đặc.",
+                )
+            return (
+                f"{poll_name} đạt mức rất cao/nguy hiểm, có thể gây đợt cấp ở người bệnh hô hấp.",
+                "Nhóm nhạy cảm nên ở trong nhà, theo dõi triệu chứng và tuân thủ cảnh báo y tế địa phương.",
+            )
+        if poll_key == "o3":
+            if level_idx == 0:
+                return (
+                    "Ozon tầng mặt đất đang ở mức tốt, rủi ro ngắn hạn tương đối thấp.",
+                    "Có thể sinh hoạt bình thường, vẫn nên theo dõi vào buổi trưa/chiều nắng mạnh.",
+                )
+            if level_idx == 1:
+                return (
+                    "Ozon đang ở mức vừa phải, điều kiện còn kiểm soát được nhưng không nên chủ quan.",
+                    "Giảm vận động kéo dài ngoài trời vào khung giờ nắng gắt, nhất là nhóm nhạy cảm.",
+                )
+            if level_idx == 2:
+                return (
+                    "Ozon tăng, có thể gây khó chịu hô hấp nhẹ ở nhóm nhạy cảm khi hoạt động ngoài trời.",
+                    "Giảm vận động mạnh ngoài trời vào khung giờ nắng gắt.",
+                )
+            if level_idx == 3:
+                return (
+                    "Ozon ở mức cao, có thể làm giảm chức năng phổi tạm thời ở dân số chung.",
+                    "Hạn chế tập luyện ngoài trời, ưu tiên hoạt động trong nhà có thông khí phù hợp.",
+                )
+            return (
+                "Ozon rất cao/nguy hiểm, nguy cơ kích ứng hô hấp diện rộng gia tăng.",
+                "Tránh hoạt động ngoài trời không cần thiết, đặc biệt với trẻ em, người già và người có bệnh nền.",
+            )
+        if level_idx == 0:
+            return ("CO đang ở mức tốt, rủi ro cấp tính hiện thấp.", "Đảm bảo thông thoáng không gian kín và duy trì theo dõi định kỳ.")
+        if level_idx == 1:
+            return ("CO ở mức vừa phải, nhìn chung còn kiểm soát được.", "Tăng thông gió tại không gian kín và hạn chế đứng lâu gần nguồn đốt.")
+        if level_idx == 2:
+            return ("CO tăng, có thể gây mệt mỏi/đau đầu nhẹ ở môi trường kém thông gió.", "Tăng thông gió, hạn chế đứng lâu gần nguồn đốt và bãi xe kín.")
+        if level_idx == 3:
+            return ("CO ở mức cao, nguy cơ ảnh hưởng vận chuyển oxy trong máu tăng.", "Tránh vận động mạnh ở nơi bí khí, ưu tiên di chuyển sang khu vực thông thoáng.")
+        return ("CO ở mức rất cao/nguy hiểm, cần cảnh giác phơi nhiễm cấp tính.", "Giảm tối đa thời gian ở không gian kín có nguồn đốt, theo dõi cảnh báo và xử lý thông gió ngay.")
+
+    def _svg_data_uri(file_name):
+        svg_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "components", file_name))
+        try:
+            with open(svg_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+            return f"data:image/svg+xml;base64,{encoded}"
+        except Exception:
+            return ""
+
+    available_polls = [k for k in pollutant_meta if k in df.columns]
+    if not available_polls:
+        return
+
+    st.markdown(
+        "<div class='card pollutant-card-wrap' style='margin-top:10px'><div class='card-title'><span class='q-tag'>Insights</span>Chỉ số chất ô nhiễm theo thành phần</div>",
+        unsafe_allow_html=True,
+    )
+    ordered = ["pm2_5", "pm10", "co", "so2", "no2", "o3"]
+    card_html = []
+    for poll_key in ordered:
+        if poll_key not in available_polls:
+            continue
+        meta = pollutant_meta[poll_key]
+        series = df[poll_key].dropna()
+        if series.empty:
+            continue
+        current_val = round(series.mean(), 1)
+        unit = POLLS[poll_key]["unit"] if poll_key in POLLS else ""
+        level_text, current_level_label, current_level_color, level_idx = _pollution_level_text(poll_key, current_val)
+        _level_insight, level_recommend = _pollutant_level_context(poll_key, level_idx)
+        icon_uri = _svg_data_uri(meta["icon_file"])
+        icon_block = (
+            f"<img src='{icon_uri}' class='pollutant-icon' alt='{meta['title']}'/>"
+            if icon_uri
+            else "<div class='pollutant-icon pollutant-icon-fallback'></div>"
+        )
+        tooltip_html = (
+            "<div class='pollutant-tooltip'>"
+            f"<div class='pollutant-tooltip-head'>{html.escape(meta['title'])} {html.escape(meta['subtitle'])}</div>"
+            "<div class='pollutant-tooltip-row'>"
+            "<span class='k'>Chất này là gì?</span>"
+            f"<span class='v'>{html.escape(meta['about'])}</span>"
+            "</div>"
+            "<div class='pollutant-tooltip-row'>"
+            "<span class='k'>Mức hiện tại</span>"
+            f"<span class='v'><strong>{current_val:g} {html.escape(unit)}</strong> - {html.escape(level_text)} ({html.escape(current_level_label)})</span>"
+            "</div>"
+            "<div class='pollutant-tooltip-row'>"
+            "<span class='k'>Khuyến nghị</span>"
+            f"<span class='v'>{html.escape(level_recommend)}</span>"
+            "</div>"
+            "</div>"
+        )
+        card_html.append(
+            (
+                f"<div class='pollutant-mini-card' style='border-left-color:{current_level_color};'>"
+                f"<div class='pollutant-mini-left'>{icon_block}</div>"
+                "<div class='pollutant-mini-mid'>"
+                f"<div class='pollutant-mini-title'>{meta['title']}</div>"
+                f"<div class='pollutant-mini-sub'>{meta['subtitle']}</div>"
+                "</div>"
+                "<div class='pollutant-mini-right'>"
+                f"<div class='pollutant-mini-value'>{current_val:g}</div>"
+                f"<div class='pollutant-mini-unit'>{unit}</div>"
+                "</div>"
+                "<div class='pollutant-mini-arrow'>›</div>"
+                f"{tooltip_html}"
+                "</div>"
+            )
+        )
+    st.markdown(f"<div class='pollutant-mini-grid'>{''.join(card_html)}</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
 def render_overview(state, df_override=None, scope_label="Việt Nam"):
-    if df_override is not None and not df_override.empty:
-        local_state = _build_scope_metrics(df_override, state)
-    else:
-        local_state = state
+    source_df = df_override if df_override is not None else state.get("df", pd.DataFrame())
+    selected_range = _get_timeframe_selector()
+    filtered_df = _filter_df_by_time_range(source_df, selected_range)
+    if filtered_df.empty:
+        st.warning(f"Không có dữ liệu trong khung thời gian {selected_range}.")
+        return
+
+    local_state = _build_scope_metrics(filtered_df, state, selected_range)
     globals().update(local_state)
     AQI_DEF = local_state["AQI_DEF"]
     _col = local_state["_col"]
@@ -152,6 +614,9 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     aqi_7d_text = local_state["aqi_7d_text"]
     pm_7d_color = local_state["pm_7d_color"]
     pm_7d_text = local_state["pm_7d_text"]
+    trend_primary_kicker = local_state["trend_primary_kicker"]
+    trend_secondary_kicker = local_state["trend_secondary_kicker"]
+    exposure_label = local_state["exposure_label"]
     rank_up_line = local_state["rank_up_line"]
     rank_down_line = local_state["rank_down_line"]
     health_hd = local_state["health_hd"]
@@ -164,6 +629,9 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     city_priority = local_state["city_priority"]
     vietnam_svg_base64 = local_state.get("vietnam_svg_base64", "")
     st.markdown('<div class="main-wrap">', unsafe_allow_html=True)
+    st.caption(
+        f"Đang hiển thị thống kê theo khung thời gian: {OV_TIMEFRAME_LABELS.get(selected_range, selected_range)}"
+    )
     hero_bg_html = ""
     if vietnam_svg_base64:
         hero_bg_html = (
@@ -189,39 +657,40 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     current_pm_warning = pm25_warning_map.get(
         current_band[2], "Theo dõi AQI theo thời gian thực."
     )
-    action_line = (
-        "Ưu tiên hoạt động trong nhà giờ cao điểm ô nhiễm."
-        if dangerp >= 20
-        else "Có thể sinh hoạt bình thường, vẫn nên theo dõi AQI theo giờ."
+    latest_obs_text = (
+        latest_obs.strftime("%H:%M · %d/%m/%Y") if pd.notna(latest_obs) else "N/A"
     )
+    hero_insights = _compute_hero_insights(df, avg_aqi, _lbl)
 
     insight_block_html = textwrap.dedent(
         f"""
     <div class="aqi-insight-wrap in-hero">
         <div class="aqi-insight-grid">
             <div class="aqi-insight-card">
-                <div class="aqi-insight-kicker">Mức hiện tại</div>
-                <div class="aqi-insight-main">AQI {avg_aqi} · {current_band[2]}</div>
-                <div class="aqi-insight-sub">{health_hd}</div>
+                <div class="aqi-insight-kicker">Khuyến nghị sức khỏe</div>
+                <div class="aqi-insight-main">{_lbl}</div>
+                <div class="aqi-insight-sub">{hero_insights['health_advice']}</div>
             </div>
             <div class="aqi-insight-card">
-                <div class="aqi-insight-kicker">Cảnh báo PM2.5</div>
-                <div class="aqi-insight-main">Khuyến nghị ưu tiên</div>
-                <div class="aqi-insight-sub">{current_pm_warning}</div>
+                <div class="aqi-insight-kicker">Khung giờ đáng chú ý</div>
+                <div class="aqi-insight-main">{hero_insights['slot_focus']}</div>
+                <div class="aqi-insight-sub">{hero_insights['slot_focus_sub']}</div>
             </div>
             <div class="aqi-insight-card">
-                <div class="aqi-insight-kicker">Insight vận hành</div>
-                <div class="aqi-insight-main">Theo dõi theo giờ</div>
-                <div class="aqi-insight-sub">{action_line}</div>
+                <div class="aqi-insight-kicker">Mức độ rủi ro theo nhóm</div>
+                <div class="aqi-insight-main">Trẻ em · Người già</div>
+                <div class="aqi-insight-sub">Trẻ em: {hero_insights['risk_children']} Người già: {hero_insights['risk_elderly']}</div>
+            </div>
+            <div class="aqi-insight-card">
+                <div class="aqi-insight-kicker">Thời điểm an toàn nhất</div>
+                <div class="aqi-insight-main">{hero_insights['best_slot']}</div>
+                <div class="aqi-insight-sub">{hero_insights['best_slot_sub']}</div>
             </div>
         </div>
     </div>
     """
     )
 
-    latest_obs_text = (
-        latest_obs.strftime("%H:%M · %d/%m/%Y") if pd.notna(latest_obs) else "N/A"
-    )
     iqair_hybrid_html = (
         f"<div class='iq-wrap'>"
         f"<div class='iq-live-head'>"
@@ -250,136 +719,22 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     )
     st.markdown(iqair_hybrid_html, unsafe_allow_html=True)
 
-    st.markdown(f"""
-    <div class="kpi-strip">
-      <div class="kpi-box accent-blue">
-        <div class="kpi-lbl">AQI phạm vi chọn</div>
-        <div class="kpi-val" style="color:{_col}">{avg_aqi} <span class="u">{_lbl}</span></div>
-        <div class="kpi-sub">WHO khuyến nghị AQI ≤ 50</div>
-      </div>
-      <div class="kpi-box accent-amber">
-        <div class="kpi-lbl">PM2.5 trung bình</div>
-        <div class="kpi-val">{avg_pm25} <span class="u">µg/m³</span></div>
-        <div class="kpi-sub">Vượt ngưỡng WHO ({round(avg_pm25/15*100-100,0):.0f}% so với 15 µg)</div>
-      </div>
-      <div class="kpi-box accent-red">
-        <div class="kpi-lbl">Tương đương thuốc lá</div>
-        <div class="kpi-val">{cig_n} <span class="u">điếu</span></div>
-        <div class="kpi-sub">trong {days} ngày · 22 µg/m³ = 1 điếu</div>
-      </div>
-      <div class="kpi-box accent-slate">
-        <div class="kpi-lbl">Khu vực ô nhiễm nhất</div>
-        <div class="kpi-val" style="font-size:1.1rem;padding-top:4px">{worst}</div>
-        <div class="kpi-sub">AQI trung bình cao nhất</div>
-      </div>
-      <div class="kpi-box accent-red">
-        <div class="kpi-lbl">Giờ AQI nguy hiểm</div>
-        <div class="kpi-val">{dangerp} <span class="u">%</span></div>
-        <div class="kpi-sub">AQI > 150 (Kém → Nguy hại)</div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown(f"""
-    <div class="trend-grid">
-        <div class="trend-card">
-            <div class="trend-kicker">Biến động 24 giờ</div>
-            <div class="trend-main" style="color:{aqi_1d_color}">AQI: {aqi_1d_text}</div>
-            <div class="trend-sub" style="color:{pm_1d_color}">PM2.5: {pm_1d_text}</div>
-        </div>
-        <div class="trend-card">
-            <div class="trend-kicker">Biến động 7 ngày</div>
-            <div class="trend-main" style="color:{aqi_7d_color}">AQI: {aqi_7d_text}</div>
-            <div class="trend-sub" style="color:{pm_7d_color}">PM2.5: {pm_7d_text}</div>
-        </div>
-        <div class="trend-card">
-            <div class="trend-kicker">Thay đổi thứ hạng ô nhiễm (so với ngày trước)</div>
-            <div class="trend-rank-line"><strong>Leo hạng:</strong> {rank_up_line}</div>
-            <div class="trend-rank-line"><strong>Hạ hạng:</strong> {rank_down_line if rank_down_line else "Không có biến động giảm rõ rệt."}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    pollutant_meta = {
-        "pm2_5": {
-            "title": "Vật chất hạt mịn",
-            "subtitle": "(PM2.5)",
-            "icon_file": "pm25.svg",
-        },
-        "pm10": {
-            "title": "Vật chất hạt mịn",
-            "subtitle": "(PM10)",
-            "icon_file": "pm10.svg",
-        },
-        "co": {"title": "Carbon monoxide", "subtitle": "(CO)", "icon_file": "co.svg"},
-        "so2": {
-            "title": "Lưu huỳnh dioxide",
-            "subtitle": "(SO2)",
-            "icon_file": "so2.svg",
-        },
-        "no2": {
-            "title": "Nitrogen dioxide",
-            "subtitle": "(NO2)",
-            "icon_file": "no2.svg",
-        },
-        "o3": {"title": "Ozon", "subtitle": "(O3)", "icon_file": "o3.svg"},
-    }
-
-    def _svg_data_uri(file_name):
-        svg_path = os.path.normpath(
-            os.path.join(os.path.dirname(__file__), "..", "components", file_name)
-        )
-        try:
-            with open(svg_path, "rb") as f:
-                encoded = base64.b64encode(f.read()).decode("utf-8")
-            return f"data:image/svg+xml;base64,{encoded}"
-        except Exception:
-            return ""
-
-    available_polls = [k for k in pollutant_meta if k in df.columns]
-    if available_polls:
-        st.markdown(
-            "<div class='card pollutant-card-wrap' style='margin-top:10px'><div class='card-title'><span class='q-tag'>Insights</span>Chỉ số chất ô nhiễm theo thành phần</div>",
-            unsafe_allow_html=True,
-        )
-        ordered = ["pm2_5", "pm10", "co", "so2", "no2", "o3"]
-        card_html = []
-        for poll_key in ordered:
-            if poll_key not in available_polls:
-                continue
-            meta = pollutant_meta[poll_key]
-            series = df[poll_key].dropna()
-            if series.empty:
-                continue
-            current_val = round(series.mean(), 1)
-            unit = POLLS[poll_key]["unit"] if poll_key in POLLS else ""
-            icon_uri = _svg_data_uri(meta["icon_file"])
-            icon_block = (
-                f"<img src='{icon_uri}' class='pollutant-icon' alt='{meta['title']}'/>"
-                if icon_uri
-                else "<div class='pollutant-icon pollutant-icon-fallback'></div>"
-            )
-            card_html.append(
-                (
-                    "<div class='pollutant-mini-card'>"
-                    f"<div class='pollutant-mini-left'>{icon_block}</div>"
-                    "<div class='pollutant-mini-mid'>"
-                    f"<div class='pollutant-mini-title'>{meta['title']}</div>"
-                    f"<div class='pollutant-mini-sub'>{meta['subtitle']}</div>"
-                    "</div>"
-                    "<div class='pollutant-mini-right'>"
-                    f"<div class='pollutant-mini-value'>{current_val:g}</div>"
-                    f"<div class='pollutant-mini-unit'>{unit}</div>"
-                    "</div>"
-                    "<div class='pollutant-mini-arrow'>›</div>"
-                    "</div>"
-                )
-            )
-        st.markdown(
-            f"<div class='pollutant-mini-grid'>{''.join(card_html)}</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
+    _render_kpi_strip(_col, avg_aqi, _lbl, avg_pm25, cig_n, exposure_label, worst, dangerp)
+    _render_trend_grid(
+        trend_primary_kicker,
+        aqi_1d_color,
+        aqi_1d_text,
+        pm_1d_color,
+        pm_1d_text,
+        trend_secondary_kicker,
+        aqi_7d_color,
+        aqi_7d_text,
+        pm_7d_color,
+        pm_7d_text,
+        rank_up_line,
+        rank_down_line,
+    )
+    _render_pollutant_cards(df)
 
     if is_city_trimmed:
         st.caption(
@@ -393,12 +748,15 @@ def render(df):
         st.error("Thiếu ngữ cảnh dashboard.")
         st.stop()
     globals().update(ctx)
-    st.markdown(
-        '<div class="card"><div class="card-title"><span class="q-tag">Overview</span>Bản đồ AQI theo khu vực</div><div class="card-sub">Màu sắc biểu diễn AQI trung bình, kích thước điểm phản ánh PM2.5.</div>',
-        unsafe_allow_html=True,
-    )
+    selected_range = st.session_state.get("ov_time_range", "24h")
+    df = _filter_df_by_time_range(df, selected_range)
+    if df.empty:
+        st.info(f"Không có dữ liệu để hiển thị bản đồ/xếp hạng trong khung {selected_range}.")
+        return
+
+    map_col, donut_col = st.columns([2.2, 1.2], gap="small")
     city_geo = (
-        df.groupby("city")
+        df.groupby("city", observed=False)
         .agg(
             lat=("lat", "mean"),
             lon=("lon", "mean"),
@@ -494,202 +852,55 @@ def render(df):
             center=dict(
                 lat=float(city_geo["lat"].mean()), lon=float(city_geo["lon"].mean())
             ),
-            zoom=4.5,
+            zoom=4.2,
         ),
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="left",
+                x=0.01,
+                y=0.99,
+                xanchor="left",
+                yanchor="top",
+                showactive=False,
+                bgcolor="rgba(255,255,255,0.94)",
+                bordercolor="rgba(148,163,184,0.65)",
+                borderwidth=1,
+                pad=dict(r=6, t=2, b=2, l=2),
+                buttons=[
+                    dict(
+                        label="↺",
+                        method="relayout",
+                        args=[
+                            {
+                                "mapbox.center.lat": float(city_geo["lat"].mean()),
+                                "mapbox.center.lon": float(city_geo["lon"].mean()),
+                                "mapbox.zoom": 4.2,
+                            }
+                        ],
+                    )
+                ],
+            )
+        ],
         margin=dict(l=2, r=2, t=6, b=2),
         height=430,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family="Be Vietnam Pro", size=10, color="#334155"),
     )
-    st.plotly_chart(
-        fig_map,
-        width="stretch",
-        config={"displayModeBar": False, "scrollZoom": True},
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    rank_now = city_geo.sort_values("aqi", ascending=False).head(8).copy()
-    rank_clean = city_geo.sort_values("aqi", ascending=True).head(8).copy()
-
-    def _aqi_badge(val):
-        _, badge_col = aqi_meta(float(val))
-        badge_text = "#ffffff" if float(val) >= 151 else "#0f172a"
-        return badge_col, badge_text
-
-    def _rows_html(rank_df):
-        rows = []
-        for idx, row in enumerate(rank_df.itertuples(index=False), start=1):
-            badge_col, badge_text = _aqi_badge(row.aqi)
-            highlight_cls = " ov-live-row-top" if idx == 1 else ""
-            rows.append(
-                f"<div class='ov-live-row{highlight_cls}'>"
-                f"<div class='ov-live-col ov-live-no'>{idx}</div>"
-                f"<div class='ov-live-col ov-live-city'><span class='ov-flag-icon'>★</span> {row.city}</div>"
-                f"<div class='ov-live-col ov-live-aqi'><span class='ov-aqi-pill' style='background:{badge_col};color:{badge_text}'>{row.aqi:.0f}</span></div>"
-                "</div>"
-            )
-        return "".join(rows)
-
-
-    year_city = (
-        df.assign(year=df["timestamp"].dt.year)
-        .groupby(["year", "city"], as_index=False)["aqi"]
-        .mean()
-        .dropna()
-    )
-    target_year = 2025
-
-    def _year_stat(target_year, polluted=True):
-        if target_year is None:
-            return "N/A", "Chưa có dữ liệu", np.nan
-        ydf = year_city[year_city["year"] == target_year]
-        if ydf.empty:
-            return str(target_year), "Chưa có dữ liệu", np.nan
-        row = ydf.sort_values("aqi", ascending=not polluted).iloc[0]
-        return str(int(target_year)), str(row["city"]), float(row["aqi"])
-
-    now_hot_year, now_hot_city, now_hot_val = _year_stat(target_year, polluted=True)
-    now_clean_year, now_clean_city, now_clean_val = _year_stat(
-        target_year, polluted=False
-    )
-
-    def _badge_html(v):
-        if pd.isna(v):
-            return "<span class='ov-aqi-pill ov-aqi-pill-na'>N/A</span>"
-        bg, tx = _aqi_badge(v)
-        return f"<span class='ov-aqi-pill' style='background:{bg};color:{tx}'>{v:.0f}</span>"
-
-    rank_left, rank_right = st.columns(2, gap="small")
-    with rank_left:
+    with map_col:
         st.markdown(
-            f"""
-            <div class="ov-live-card">
-                <div class="ov-live-head">Xếp hạng trực tiếp thành phố ô nhiễm nhất</div>
-                <div class="ov-live-sub">Xếp hạng thành phố ô nhiễm nhất tại Việt Nam theo thời gian thực</div>
-                <div class="ov-live-table-head">
-                    <div>#</div><div>Thành phố</div><div>AQI Mỹ</div>
-                </div>
-                {_rows_html(rank_now)}
-                <div class="ov-year-cell ov-year-hot">
-                    <div class="ov-year-title">{now_hot_year} thành phố ô nhiễm nhất tại Việt Nam</div>
-                    <div class="ov-year-row">
-                        <div class="ov-year-city">{now_hot_city}</div>
-                        {_badge_html(now_hot_val)}
-                    </div>
-                </div>
-            </div>
-            """,
+            '<div class="card"><div class="card-title"><span class="q-tag">Overview</span>Bản đồ AQI theo khu vực</div><div class="card-sub">Màu sắc biểu diễn AQI trung bình, kích thước điểm phản ánh PM2.5.</div>',
             unsafe_allow_html=True,
-        )
-
-    with rank_right:
-        st.markdown(
-            f"""
-            <div class="ov-live-card">
-                <div class="ov-live-head">Xếp hạng trực tiếp thành phố sạch nhất</div>
-                <div class="ov-live-sub">Xếp hạng thành phố sạch nhất tại Việt Nam theo thời gian thực</div>
-                <div class="ov-live-table-head">
-                    <div>#</div><div>Thành phố</div><div>AQI Mỹ</div>
-                </div>
-                {_rows_html(rank_clean)}
-                <div class="ov-year-cell ov-year-clean">
-                    <div class="ov-year-title">{now_clean_year} thành phố sạch nhất tại Việt Nam</div>
-                    <div class="ov-year-row">
-                        <div class="ov-year-city">{now_clean_city}</div>
-                        {_badge_html(now_clean_val)}
-                    </div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    cO3, cO4 = st.columns([2.5, 1.5], gap="small")
-    with cO3:
-        period_labels = {"Ngày": "D", "Tuần": "W", "Tháng": "ME"}
-        if "ov_trend_period" not in st.session_state:
-            st.session_state["ov_trend_period"] = "Ngày"
-        st.markdown(
-            '<div class="card trend-card"><div class="card-title"><span class="q-tag">Overview</span>Xu hướng AQI và PM2.5</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown('<div class="pill-group-wrap">', unsafe_allow_html=True)
-        pill_cols = st.columns([1, 1, 1, 3])
-        for idx, label in enumerate(period_labels):
-            is_active = st.session_state["ov_trend_period"] == label
-            with pill_cols[idx]:
-                if st.button(
-                    label,
-                    key=f"ov_p_{label}",
-                    type="primary" if is_active else "secondary",
-                    width="stretch",
-                ):
-                    st.session_state["ov_trend_period"] = label
-                    st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-        freq = period_labels[st.session_state["ov_trend_period"]]
-        trend_data = (
-            df.set_index("timestamp")[["aqi", "pm2_5"]]
-            .resample(freq)
-            .mean()
-            .dropna()
-            .reset_index()
-        )
-        aqi_line_color = "#0ea5e9"
-        pm25_line_color = "#f97316"
-        fig_ov = go.Figure()
-        fig_ov.add_trace(
-            go.Scatter(
-                x=trend_data["timestamp"],
-                y=trend_data["aqi"].round(1),
-                mode="lines",
-                name="AQI",
-                line=dict(color=aqi_line_color, width=2.4),
-                fill="tozeroy",
-                fillcolor="rgba(14,165,233,0.08)",
-                hovertemplate="%{x}<br>AQI: %{y:.1f}<extra></extra>",
-            )
-        )
-        fig_ov.add_trace(
-            go.Scatter(
-                x=trend_data["timestamp"],
-                y=trend_data["pm2_5"].round(1),
-                mode="lines",
-                name="PM2.5",
-                line=dict(color=pm25_line_color, width=2),
-                yaxis="y2",
-                hovertemplate="%{x}<br>PM2.5: %{y:.1f} µg/m³<extra></extra>",
-            )
-        )
-        ml(
-            fig_ov,
-            h=310,
-            xaxis=dict(**ax()),
-            yaxis=dict(**ax("AQI")),
-            yaxis2=dict(
-                title=dict(text="PM2.5", font=dict(size=9, color=pm25_line_color)),
-                overlaying="y",
-                side="right",
-                tickfont=dict(size=9, color=pm25_line_color),
-                showgrid=False,
-            ),
-            legend=dict(
-                bgcolor="rgba(0,0,0,0)",
-                font_size=9,
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="left",
-                x=0,
-            ),
         )
         st.plotly_chart(
-            fig_ov, width="stretch", config={"displayModeBar": False}
+            fig_map,
+            width="stretch",
+            config={"displayModeBar": False, "scrollZoom": True},
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
-    with cO4:
+    with donut_col:
         st.markdown(
             '<div class="card donut-card"><div class="card-title"><span class="q-tag">Overview</span>Cơ cấu mức AQI</div><div class="card-sub">Phân bố tỷ trọng các mức chất lượng không khí.</div>',
             unsafe_allow_html=True,
@@ -753,6 +964,58 @@ def render(df):
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
+    rank_now = city_geo.sort_values("aqi", ascending=False).head(8).copy()
+    rank_clean = city_geo.sort_values("aqi", ascending=True).head(8).copy()
 
+    def _aqi_badge(val):
+        _, badge_col = aqi_meta(float(val))
+        badge_text = "#ffffff" if float(val) >= 151 else "#0f172a"
+        return badge_col, badge_text
+
+    def _rows_html(rank_df):
+        rows = []
+        for idx, row in enumerate(rank_df.itertuples(index=False), start=1):
+            badge_col, badge_text = _aqi_badge(row.aqi)
+            highlight_cls = " ov-live-row-top" if idx == 1 else ""
+            rows.append(
+                f"<div class='ov-live-row{highlight_cls}'>"
+                f"<div class='ov-live-col ov-live-no'>{idx}</div>"
+                f"<div class='ov-live-col ov-live-city'><span class='ov-flag-icon'>★</span> {row.city}</div>"
+                f"<div class='ov-live-col ov-live-aqi'><span class='ov-aqi-pill' style='background:{badge_col};color:{badge_text}'>{row.aqi:.0f}</span></div>"
+                "</div>"
+            )
+        return "".join(rows)
+
+
+    rank_left, rank_right = st.columns(2, gap="small")
+    with rank_left:
+        st.markdown(
+            f"""
+            <div class="ov-live-card">
+                <div class="ov-live-head">Xếp hạng trực tiếp thành phố ô nhiễm nhất</div>
+                <div class="ov-live-sub">Xếp hạng thành phố ô nhiễm nhất tại Việt Nam theo thời gian thực</div>
+                <div class="ov-live-table-head">
+                    <div>#</div><div>Thành phố</div><div>AQI Mỹ</div>
+                </div>
+                {_rows_html(rank_now)}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with rank_right:
+        st.markdown(
+            f"""
+            <div class="ov-live-card">
+                <div class="ov-live-head">Xếp hạng trực tiếp thành phố sạch nhất</div>
+                <div class="ov-live-sub">Xếp hạng thành phố sạch nhất tại Việt Nam theo thời gian thực</div>
+                <div class="ov-live-table-head">
+                    <div>#</div><div>Thành phố</div><div>AQI Mỹ</div>
+                </div>
+                {_rows_html(rank_clean)}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # ══════════════════════════════════════════════

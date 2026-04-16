@@ -26,7 +26,7 @@ session.mount("https://", HTTPAdapter(max_retries=retries, pool_connections=10, 
 def get_file_metadata(file_path):
     """Đọc nhanh thông tin file bằng cách chỉ lấy dòng cuối cùng"""
     try:
-        df_tail = pd.read_csv(file_path).tail(1) 
+        df_tail = pd.read_parquet(file_path).tail(1) 
         if df_tail.empty: return None
         
         last_ts = pd.to_datetime(df_tail["timestamp"]).iloc[0]
@@ -45,7 +45,7 @@ def get_file_metadata(file_path):
             "last_ts": last_ts,
             "province": df_tail["province"].iloc[-1],
             "location": df_tail["location"].iloc[-1],
-            "old_df": pd.read_csv(file_path) # Chỉ đọc full file khi chắc chắn cần update
+            "old_df": pd.read_parquet(file_path) # Chỉ đọc full file khi chắc chắn cần update
         }
     except Exception:
         return None
@@ -163,7 +163,7 @@ def process_batch(batch_meta):
                 df_final.sort_values("timestamp", inplace=True)
 
                 # Lưu file
-                df_final.to_csv(meta["path"], index=False, encoding="utf-8-sig")
+                df_final.to_parquet(meta["path"], index=False)
                 updated_count += 1
             except Exception as e:
                 print(f"❌ Lỗi khi xử lý file {meta['path']}: {e}")
@@ -176,7 +176,7 @@ def process_batch(batch_meta):
 
 def run_hourly_update():
     print(f"🔍 Đang quét thư mục: {OUTPUT_DIR}")
-    csv_files = glob.glob(os.path.join(OUTPUT_DIR, "**", "*.csv"), recursive=True)
+    csv_files = glob.glob(os.path.join(OUTPUT_DIR, "**", "*.parquet"), recursive=True)
     
     all_metadata = []
     skipped = 0

@@ -150,7 +150,7 @@ def _prepare_detail_frame(detail_df, loc_col):
 
 def _rain_effect_by_station(calc_df, loc_col):
     rr = (
-        calc_df.groupby([loc_col, "is_raining"])["pm2_5"]
+        calc_df.groupby([loc_col, "is_raining"], observed=False)["pm2_5"]
         .mean()
         .unstack()
         .rename(columns={False: "dry", True: "rain"})
@@ -180,7 +180,7 @@ def render(df):
 
     ml_fn, ax_fn, chart_h_fn = _get_plot_helpers(ctx)
 
-    province_options = ["Toàn quốc (all.csv)"] + list_detail_provinces()
+    province_options = ["Toàn quốc (all.parquet)"] + list_detail_provinces()
     if "tab4_province" not in st.session_state:
         st.session_state.tab4_province = province_options[0]
     if st.session_state.tab4_province not in province_options:
@@ -228,9 +228,9 @@ def render(df):
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
-    if selected_province == "Toàn quốc (all.csv)":
+    if selected_province == "Toàn quốc (all.parquet)":
         detail_df = df
-        scope_text = "Toàn quốc (all.csv)"
+        scope_text = "Toàn quốc (all.parquet)"
     else:
         start_arg = str(ctx["s_d"]) if "s_d" in ctx else None
         end_arg = str(ctx["e_d"]) if "e_d" in ctx else None
@@ -258,7 +258,7 @@ def render(df):
         return
 
     summary_df = (
-        calc_df.groupby(loc_col)
+        calc_df.groupby(loc_col, observed=False)
         .agg(
             aqi=("aqi", "mean"),
             pm2_5=("pm2_5", "mean"),

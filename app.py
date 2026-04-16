@@ -190,73 +190,118 @@ def render_dashboard():
 
     render_header(state, logo_html)
 
-    tabs = st.tabs(
-        [
-            "Tổng quan",
-            "AQI",
-            "Thời tiết",
-            "Tương tác",
-        ]
-    )
+    active_tab = state.get("active_tab", "overview")
 
-    with tabs[0]:
+    if active_tab == "overview":
         overview_df = state["df"]
         province_col = "province" if "province" in overview_df.columns else "city"
         province_options = sorted(overview_df[province_col].dropna().astype(str).unique().tolist())
+        hcm_default = next(
+            (
+                p
+                for p in province_options
+                if "ho chi minh" in p.lower()
+                or "hồ chí minh" in p.lower()
+                or "tp hcm" in p.lower()
+            ),
+            province_options[0] if province_options else None,
+        )
         if "overview_scope_mode" not in st.session_state:
             st.session_state["overview_scope_mode"] = "Cả nước"
-        c_filter_mode, c_filter_target, c_filter_meta = st.columns([1.2, 1.6, 1.2], gap="small")
+        if "ov_time_range" not in st.session_state:
+            st.session_state["ov_time_range"] = "24h"
+        time_options = list(overview_tab.OV_TIMEFRAME_DELTAS.keys())
+        if st.session_state["ov_time_range"] not in time_options:
+            st.session_state["ov_time_range"] = "24h"
+
+        c_filter_mode, c_filter_target, c_filter_time = st.columns([1.15, 1.45, 0.85], gap="small")
         with c_filter_mode:
             st.markdown("<div class='ov-filter-label'>Phạm vi</div>", unsafe_allow_html=True)
             if "overview_scope_mode" not in st.session_state:
                 st.session_state.overview_scope_mode = "Cả nước"
 
             b1, b2 = st.columns(2, gap="small")
-            if b1.button("Cả nước", type="primary" if st.session_state.overview_scope_mode == "Cả nước" else "secondary", use_container_width=True):
+            if b1.button(
+                "Cả nước",
+                type="primary" if st.session_state.overview_scope_mode == "Cả nước" else "secondary",
+                use_container_width=True,
+            ):
                 st.session_state.overview_scope_mode = "Cả nước"
+                st.session_state["overview_scope_province"] = None
                 st.rerun()
-            if b2.button("Theo tỉnh/thành", type="primary" if st.session_state.overview_scope_mode == "Theo tỉnh/thành" else "secondary", use_container_width=True):
+            if b2.button(
+                "Theo tỉnh/thành",
+                type="primary" if st.session_state.overview_scope_mode == "Theo tỉnh/thành" else "secondary",
+                use_container_width=True,
+            ):
                 st.session_state.overview_scope_mode = "Theo tỉnh/thành"
+                if not st.session_state.get("overview_scope_province") and hcm_default:
+                    st.session_state["overview_scope_province"] = hcm_default
                 st.rerun()
-                
+
             scope_mode = st.session_state.overview_scope_mode
         selected_scope_label = "Việt Nam"
         with c_filter_target:
+            st.markdown("<div class='ov-filter-label'>Khu vực cụ thể</div>", unsafe_allow_html=True)
+            if (
+                scope_mode == "Theo tỉnh/thành"
+                and not st.session_state.get("overview_scope_province")
+                and hcm_default
+            ):
+                st.session_state["overview_scope_province"] = hcm_default
+            selected_province = st.selectbox(
+                "Chọn tỉnh/thành",
+                options=province_options,
+                index=(
+                    province_options.index(st.session_state["overview_scope_province"])
+                    if st.session_state.get("overview_scope_province") in province_options
+                    else (province_options.index(hcm_default) if hcm_default in province_options else None)
+                ),
+                key="overview_scope_province",
+                placeholder=(
+                    "Vui lòng chọn tỉnh thành"
+                    if scope_mode == "Theo tỉnh/thành"
+                    else "Chỉ áp dụng khi chọn Theo tỉnh/thành"
+                ),
+                disabled=scope_mode != "Theo tỉnh/thành",
+                label_visibility="collapsed",
+            )
             if scope_mode == "Theo tỉnh/thành":
-                st.markdown("<div class='ov-filter-label'>Khu vực cụ thể</div>", unsafe_allow_html=True)
-                selected_province = st.selectbox(
-                    "Chọn tỉnh/thành",
-                    options=province_options,
-                    index=None,
-                    key="overview_scope_province",
-                    placeholder="Vui lòng chọn tỉnh thành",
-                    label_visibility="collapsed",
-                )
                 if selected_province:
                     try:
                         from services.data_loader import load_province_detail, _apply_aqi_labels
                         s_arg = str(state["s_d"]) if "s_d" in state else None
                         e_arg = str(state["e_d"]) if "e_d" in state else None
-                        detail_raw = load_province_detail(selected_province, s_arg, e_arg)
+                        with dashboard_loading(
+                            "Đang tải dữ liệu chi tiết tỉnh/thành...",
+                            hint=f"Chuẩn hóa chuỗi thời gian và phân lớp AQI cho {selected_province}.",
+                            overlay=False,
+                            min_duration=0.35,
+                        ):
+                            detail_raw = load_province_detail(
+                                selected_province,
+                                s_arg,
+                                e_arg,
+                                prefer_all_csv=True,
+                            )
                         overview_df = _apply_aqi_labels(detail_raw.copy())
                     except Exception:
                         overview_df = overview_df[overview_df[province_col] == selected_province].copy()
                     selected_scope_label = selected_province
                 else:
-                    overview_df = overview_df.iloc[0:0] 
-            else:
-                st.markdown("<div style='height:26px'></div>", unsafe_allow_html=True)
-        with c_filter_meta:
-            st.markdown(
-                f"""
-                <div class="ov-filter-meta-dark">
-                    <div class="ov-filter-meta-dark-k">PHẠM VI ĐANG XEM</div>
-                    <div class="ov-filter-meta-dark-v">{selected_scope_label}</div>
-                    <div class="ov-filter-meta-dark-sub">{len(overview_df):,} bản ghi</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
+                    overview_df = overview_df.iloc[0:0]
+        with c_filter_time:
+            st.markdown("<div class='ov-filter-label'>Thời gian</div>", unsafe_allow_html=True)
+            selected_time = st.selectbox(
+                "Thời gian",
+                options=time_options,
+                index=time_options.index(st.session_state["ov_time_range"]),
+                key="overview_time_range_select",
+                label_visibility="collapsed",
             )
+            if selected_time != st.session_state["ov_time_range"]:
+                st.session_state["ov_time_range"] = selected_time
+                st.rerun()
         if overview_df.empty:
             st.info("Không có dữ liệu cho phạm vi đã chọn.")
         else:
@@ -264,12 +309,20 @@ def render_dashboard():
                 state, df_override=overview_df, scope_label=selected_scope_label
             )
             render_tab_or_blank(overview_tab, overview_df)
-    with tabs[1]:
+    elif active_tab == "location":
+        render_tab_or_blank(location_tab, state["df"])
+    elif active_tab == "datetime":
+        render_tab_or_blank(datetime_tab, state["df"])
+    elif active_tab == "atmos":
+        render_tab_or_blank(atmos_tab, state["df"])
+    elif active_tab == "aqi":
         render_tab_or_blank(aqi_tab, state["df"])
-    with tabs[2]:
+    elif active_tab == "weather":
         render_tab_or_blank(weather_tab, state["df"])
-    with tabs[3]:
+    elif active_tab == "interaction":
         render_tab_or_blank(interaction_tab, state["df"])
+    else:
+        render_tab_or_blank(overview_tab, state["df"])
 
     render_footer()
 
