@@ -1,23 +1,25 @@
-import numpy as np
+﻿import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import streamlit.components.v1 as st_components
 import re
 import unicodedata
 import html
+import json
 from utils.helpers import val_meta
 
 
 GEO_FEATURES = ["lat", "lon"]
 WEATHER_FEATURES = ["temp", "humidity", "wind_speed", "rain"]
 
-REGION7_PROVINCES = {
+REGION6_PROVINCES = {
     "Trung du và Miền núi phía Bắc": [
+        "Cao Bằng",
         "Tuyên Quang",
         "Lào Cai",
         "Thái Nguyên",
         "Phú Thọ",
-        "Bắc Ninh",
         "Lạng Sơn",
         "Điện Biên",
         "Sơn La",
@@ -29,6 +31,7 @@ REGION7_PROVINCES = {
         "Hưng Yên",
         "Ninh Bình",
         "Quảng Ninh",
+        "Bắc Ninh",
     ],
     "Bắc Trung Bộ": [
         "Thanh Hóa",
@@ -37,14 +40,19 @@ REGION7_PROVINCES = {
         "Quảng Trị",
         "TP. Huế",
     ],
-    "Duyên hải Nam Trung Bộ": [
+    "Duyên hải Nam Trung Bộ và Tây Nguyên": [
         "TP. Đà Nẵng",
         "Quảng Ngãi",
         "Khánh Hòa",
-        "Bình Thuận",
+        "Gia Lai",
+        "Đắk Lắk",
+        "Lâm Đồng",
     ],
-    "Tây Nguyên": ["Gia Lai", "Đắk Lắk", "Lâm Đồng"],
-    "Đông Nam Bộ": ["TP. Hồ Chí Minh", "Đồng Nai", "Tây Ninh"],
+    "Đông Nam Bộ": [
+        "TP. Hồ Chí Minh",
+        "Đồng Nai",
+        "Tây Ninh",
+    ],
     "Đồng bằng sông Cửu Long": [
         "Đồng Tháp",
         "Vĩnh Long",
@@ -54,12 +62,11 @@ REGION7_PROVINCES = {
     ],
 }
 
-REGION7_ORDER = [
+REGION6_ORDER = [
     "Trung du và Miền núi phía Bắc",
     "Đồng bằng sông Hồng",
     "Bắc Trung Bộ",
-    "Duyên hải Nam Trung Bộ",
-    "Tây Nguyên",
+    "Duyên hải Nam Trung Bộ và Tây Nguyên",
     "Đông Nam Bộ",
     "Đồng bằng sông Cửu Long",
 ]
@@ -88,14 +95,13 @@ def _normalize_token_interaction(value: str) -> str:
 
 def _build_region_token_map_interaction() -> dict[str, str]:
     out = {}
-    for region_name, provinces in REGION7_PROVINCES.items():
+    for region_name, provinces in REGION6_PROVINCES.items():
         for province in provinces:
             out[_normalize_token_interaction(province)] = region_name
 
     source_overrides = {
         "Cao Bằng": "Trung du và Miền núi phía Bắc",
         "Phú Thọ": "Trung du và Miền núi phía Bắc",
-        "Bắc Ninh": "Trung du và Miền núi phía Bắc",
         "Lạng Sơn": "Trung du và Miền núi phía Bắc",
         "Điện Biên": "Trung du và Miền núi phía Bắc",
         "Sơn La": "Trung du và Miền núi phía Bắc",
@@ -108,19 +114,19 @@ def _build_region_token_map_interaction() -> dict[str, str]:
         "Hưng Yên": "Đồng bằng sông Hồng",
         "Ninh Bình": "Đồng bằng sông Hồng",
         "Quảng Ninh": "Đồng bằng sông Hồng",
+        "Bắc Ninh": "Đồng bằng sông Hồng",
         "Thanh Hóa": "Bắc Trung Bộ",
         "Nghệ An": "Bắc Trung Bộ",
         "Hà Tĩnh": "Bắc Trung Bộ",
         "Quảng Trị": "Bắc Trung Bộ",
         "Huế": "Bắc Trung Bộ",
         "Thừa Thiên Huế": "Bắc Trung Bộ",
-        "Đà Nẵng": "Duyên hải Nam Trung Bộ",
-        "Quảng Ngãi": "Duyên hải Nam Trung Bộ",
-        "Khánh Hòa": "Duyên hải Nam Trung Bộ",
-        "Bình Thuận": "Duyên hải Nam Trung Bộ",
-        "Gia Lai": "Tây Nguyên",
-        "Đắk Lắk": "Tây Nguyên",
-        "Lâm Đồng": "Tây Nguyên",
+        "Đà Nẵng": "Duyên hải Nam Trung Bộ và Tây Nguyên",
+        "Quảng Ngãi": "Duyên hải Nam Trung Bộ và Tây Nguyên",
+        "Khánh Hòa": "Duyên hải Nam Trung Bộ và Tây Nguyên",
+        "Gia Lai": "Duyên hải Nam Trung Bộ và Tây Nguyên",
+        "Đắk Lắk": "Duyên hải Nam Trung Bộ và Tây Nguyên",
+        "Lâm Đồng": "Duyên hải Nam Trung Bộ và Tây Nguyên",
         "TP. Hồ Chí Minh": "Đông Nam Bộ",
         "Hồ Chí Minh": "Đông Nam Bộ",
         "Đồng Nai": "Đông Nam Bộ",
@@ -150,7 +156,7 @@ def _attach_region_interaction(frame: pd.DataFrame) -> pd.DataFrame:
 
     if source_col is None:
         out["province"] = "Không rõ"
-        out["region_7"] = "Chưa xếp vùng"
+        out["region_6"] = "Chưa xếp vùng"
         return out
 
     if "province" not in out.columns:
@@ -158,7 +164,7 @@ def _attach_region_interaction(frame: pd.DataFrame) -> pd.DataFrame:
 
     token = out[source_col].astype(str).map(_normalize_token_interaction)
     token = token.map(lambda t: PROVINCE_TOKEN_ALIAS.get(t, t))
-    out["region_7"] = token.map(p2r).fillna("Chưa xếp vùng")
+    out["region_6"] = token.map(p2r).fillna("Chưa xếp vùng")
     return out
 
 
@@ -601,7 +607,7 @@ def _render_rank_table_html(rank_top: pd.DataFrame, rank_col: str) -> str:
 
 def _render_region_aqi_rank_html(
     rank_region: pd.DataFrame,
-    name_col: str = "region_7",
+    name_col: str = "region_6",
     entity_label: str = "Vùng",
     title: str = "Xếp hạng AQI trung bình giữa các vùng",
 ):
@@ -874,12 +880,12 @@ def calc_province_cleaning_strength(df, min_samples):
 
 @st.cache_data
 def calc_region_factor_impact(df, min_samples):
-    req_cols = ["region_7", "aqi", *GEO_FEATURES, *WEATHER_FEATURES]
+    req_cols = ["region_6", "aqi", *GEO_FEATURES, *WEATHER_FEATURES]
     if any(c not in df.columns for c in req_cols):
         return pd.DataFrame()
 
     out = []
-    for region, g in df.groupby("region_7"):
+    for region, g in df.groupby("region_6"):
         if region == "Chưa xếp vùng":
             continue
 
@@ -890,7 +896,7 @@ def calc_region_factor_impact(df, min_samples):
             corr = g_sub["aqi"].corr(g_sub[feature], method="spearman")
             out.append(
                 {
-                    "region_7": region,
+                    "region_6": region,
                     "feature": feature,
                     "corr": corr,
                     "abs_corr": abs(corr),
@@ -924,7 +930,7 @@ def render(df: pd.DataFrame):
     _inject_interaction_filter_styles()
 
     available_regions = [
-        r for r in REGION7_ORDER if r in work["region_7"].dropna().unique().tolist()
+        r for r in REGION6_ORDER if r in work["region_6"].dropna().unique().tolist()
     ]
 
     if "interaction_region_select" not in st.session_state:
@@ -947,7 +953,7 @@ def render(df: pd.DataFrame):
     region_scope = (
         work
         if selected_region == "Tất cả"
-        else work[work["region_7"] == selected_region]
+        else work[work["region_6"] == selected_region]
     )
     province_options = [
         "Tất cả",
@@ -971,7 +977,7 @@ def render(df: pd.DataFrame):
     region_scope = (
         work
         if selected_region == "Tất cả"
-        else work[work["region_7"] == selected_region]
+        else work[work["region_6"] == selected_region]
     )
     province_options = [
         "Tất cả",
@@ -1017,7 +1023,7 @@ def render(df: pd.DataFrame):
     )
 
     mask = (
-        work["region_7"].isin(
+        work["region_6"].isin(
             selected_regions if selected_regions else available_regions
         )
         & work["province"].isin(
@@ -1231,154 +1237,309 @@ def render(df: pd.DataFrame):
                 unsafe_allow_html=True,
             )
 
-    feature_label_map = {
+    # === BOTTOM SECTION: Interactive heatmap (1 row: weather vs AQI) + ranking ===
+    st.markdown("<br>", unsafe_allow_html=True)
+    map_df = f_df[f_df["region_6"] != "Chưa xếp vùng"].copy()
+
+    if map_df.empty:
+        st.info("Không có dữ liệu để hiển thị.")
+        return
+
+    current_top_region = st.session_state.get("interaction_region_select", "Tất cả")
+    is_single_region = current_top_region != "Tất cả"
+
+    # Only weather/env features (not AQI itself) correlated against AQI
+    weather_features = [
+        "temp",
+        "humidity",
+        "rain",
+        "wind_speed",
+        "wind_dir",
+        "pressure",
+        "cloud",
+    ]
+    feature_labels_map = {
         "temp": "Nhiệt độ",
         "humidity": "Độ ẩm",
-        "wind_speed": "Tốc độ gió",
         "rain": "Lượng mưa",
+        "wind_speed": "Tốc độ gió",
+        "wind_dir": "Hướng gió",
+        "pressure": "Áp suất",
+        "cloud": "Mây",
     }
-    min_unit_samples = max(15, min_samples // 3)
+    avail_weather = [c for c in weather_features if c in map_df.columns]
+    label_list = [feature_labels_map.get(c, c) for c in avail_weather]
 
-    if selected_region == "Tất cả":
-        compare_col = "region_7"
-        compare_label = "Vùng"
-        compare_title = "Xếp hạng AQI trung bình giữa các vùng"
-        compare_scope = f_df[f_df["region_7"] != "Chưa xếp vùng"].copy()
-    else:
-        compare_col = "province"
-        compare_label = "Tỉnh"
-        compare_title = f"Xếp hạng AQI trung bình các tỉnh trong {selected_region}"
-        compare_scope = f_df.copy()
+    # --- Helper: compute 1-row correlation vector (each weather feature vs AQI) ---
+    def compute_aqi_corr_row(df):
+        if len(df) < 5 or "aqi" not in df.columns or not avail_weather:
+            return None
+        row = []
+        for col in avail_weather:
+            sub = df[["aqi", col]].dropna()
+            if len(sub) < 5:
+                row.append(None)
+            else:
+                v = sub["aqi"].corr(sub[col], method="spearman")
+                row.append(None if pd.isna(v) else round(float(v), 4))
+        return row  # list of len(avail_weather) values
 
-    rank_region = (
-        compare_scope.groupby(compare_col, as_index=False)
-        .agg(aqi_mean=("aqi", "mean"), n_obs=("aqi", "size"))
-        .sort_values("aqi_mean", ascending=False)
-    )
-    if rank_region.empty or rank_region[compare_col].nunique() < 2:
-        st.info("Không đủ dữ liệu để so sánh AQI theo phạm vi hiện tại.")
-        return
+    # --- Pre-compute: national + per-region + per-province ---
+    corr_data = {"__all__": compute_aqi_corr_row(map_df)}
+    for region_name, grp in map_df.groupby("region_6", observed=True):
+        corr_data[region_name] = compute_aqi_corr_row(grp)
+    for province_name, grp in map_df.groupby("province", observed=True):
+        key = f"__prov__{province_name}"
+        corr_data[key] = compute_aqi_corr_row(grp)
 
-    impact_rows = []
-    for unit_name, g in compare_scope.groupby(compare_col):
-        for feature_key in feature_label_map.keys():
-            sub = g[["aqi", feature_key]].dropna()
-            if len(sub) < min_unit_samples:
-                continue
-            corr = sub["aqi"].corr(sub[feature_key], method="spearman")
-            if pd.isna(corr):
-                continue
-            impact_rows.append(
-                {
-                    "unit_name": unit_name,
-                    "feature": feature_key,
-                    "feature_label": feature_label_map[feature_key],
-                    "corr": float(corr),
-                }
+    short_status_map = {
+        "Không lành mạnh cho nhóm nhạy cảm": "Nhạy cảm",
+        "Không khỏe mạnh": "Không khỏe mạnh",
+        "Rất không tốt cho sức khỏe": "Rất không tốt",
+        "Nguy hiểm": "Nguy hiểm",
+        "Vừa phải": "Vừa phải",
+        "Tốt": "Tốt",
+    }
+
+    def _build_rank_rows(rank_df, name_col, key_prefix=""):
+        rows_html = ""
+        for idx, row in enumerate(rank_df.itertuples(index=False), start=1):
+            entity_name = str(getattr(row, name_col))
+            aqi_val = float(getattr(row, "aqi_mean"))
+            status_lbl, status_clr = val_meta(aqi_val, "aqi")
+            short_lbl = short_status_map.get(str(status_lbl), str(status_lbl))
+            safe_name = html.escape(entity_name)
+            safe_key = html.escape(f"{key_prefix}{entity_name}")
+            top_class = " rrr-top" if idx == 1 else ""
+            rows_html += (
+                f"<div class='rrr-item{top_class}' data-region='{safe_key}'>"
+                "<div class='rrr-row'>"
+                f"<span class='rrr-badge'>{idx}</span>"
+                f"<div class='rrr-name'>{safe_name}</div>"
+                f"<span class='rrr-status' style='background:{status_clr};'>{html.escape(short_lbl)}</span>"
+                f"<div class='rrr-val'>{aqi_val:.1f}</div>"
+                "</div>"
+                "</div>"
             )
+        return rows_html
 
-    impact_df = pd.DataFrame(impact_rows)
-    if impact_df.empty:
-        st.info("Không đủ dữ liệu yếu tố thời tiết để phân tích theo phạm vi hiện tại.")
-        return
+    # Build region ranking - use FULL work df (unfiltered by region) so all regions appear
+    all_regions_df = work[work["region_6"] != "Chưa xếp vùng"].copy()
+    all_regions_df = all_regions_df[
+        (all_regions_df["timestamp"] >= f_df["timestamp"].min())
+        & (all_regions_df["timestamp"] <= f_df["timestamp"].max())
+    ]
+    # Recompute national corr from all_regions_df
+    corr_data["__all__"] = compute_aqi_corr_row(all_regions_df)
+    for region_name, grp in all_regions_df.groupby("region_6", observed=True):
+        corr_data[region_name] = compute_aqi_corr_row(grp)
 
-    ranked_units = rank_region[compare_col].astype(str).tolist()
-    rank_idx_map = {name: idx + 1 for idx, name in enumerate(ranked_units)}
-    region_display_map = {name: str(rank_idx_map[name]) for name in ranked_units}
+    rank_regions = (
+        all_regions_df.groupby("region_6", as_index=False, observed=True)
+        .agg(aqi_mean=("aqi", "mean"), lat=("lat", "mean"))
+        .dropna(subset=["aqi_mean"])
+        .sort_values("lat", ascending=False)
+        .reset_index(drop=True)
+    )
+    region_rows_html = _build_rank_rows(rank_regions, "region_6", key_prefix="")
 
-    impact_left, impact_right = st.columns([1, 1], gap="medium")
+    # Build province ranking (provinces within selected region, if filtered)
+    if is_single_region:
+        rank_provinces = (
+            map_df.groupby("province", as_index=False, observed=True)
+            .agg(aqi_mean=("aqi", "mean"), lat=("lat", "mean"))
+            .dropna(subset=["aqi_mean"])
+            .sort_values("lat", ascending=False)
+            .reset_index(drop=True)
+        )
+        province_rows_html = _build_rank_rows(
+            rank_provinces, "province", key_prefix="__prov__"
+        )
+        rank_title = html.escape(f"Các tỉnh trong vùng {current_top_region}")
+        rank_col_label = "Tỉnh / Thành phố"
+        initial_rows = province_rows_html
+        initial_key = (
+            f"__prov__{rank_provinces['province'].iloc[0]}"
+            if not rank_provinces.empty
+            else "__all__"
+        )
+        initial_subtitle = f"Phạm vi: <b>Vùng {html.escape(current_top_region)}</b>."
+    else:
+        rank_title = "Xếp hạng AQI theo vị trí địa lý"
+        rank_col_label = "Vùng"
+        initial_rows = region_rows_html
+        initial_key = "__all__"
+        initial_subtitle = "Phạm vi: <b>Toàn quốc</b>. Màu xanh giúp giảm ô nhiễm, màu đỏ làm tăng ô nhiễm."
 
-    with impact_left:
-        st.markdown(
-            """
-            <div class='interaction-impact-titlebox'>
-                <div class='t'>Tương quan AQI với yếu tố thời tiết theo phạm vi đã chọn</div>
-                <div class='s'>Mức độ tương quan: Màu xanh giúp giảm ô nhiễm, màu đỏ làm tăng ô nhiễm.</div>
+    rank_item_count = int(
+        len(rank_provinces) if is_single_region else len(rank_regions)
+    )
+    # Keep enough room for title/subheader and all rows without scroll or overflow.
+    card_height_px = max(320, 116 + rank_item_count * 44)
+    component_height_px = card_height_px + 24
+
+    corr_json = json.dumps(corr_data, ensure_ascii=False)
+    labels_json = json.dumps(label_list, ensure_ascii=False)
+    initial_key_json = json.dumps(initial_key)
+    initial_subtitle_json = json.dumps(initial_subtitle)
+
+    component_html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0;font-family:'Inter','Segoe UI',sans-serif;}}
+body{{background:transparent;overflow-x:hidden;}}
+.wrapper{{display:flex;gap:18px;width:100%;padding:4px 0;align-items:stretch;}}
+.heat-panel{{flex:1 1 0;max-width:50%;width:50%;min-width:0;display:flex;flex-direction:column;}}
+.titlebox{{background:#f4f8fc;border-left:4px solid #3a7bd5;border-radius:8px;padding:10px 14px;margin-bottom:10px;flex-shrink:0;}}
+.titlebox .t{{font-weight:700;font-size:13px;color:#1f2f46;margin-bottom:3px;}}
+.titlebox .s{{font-size:11.5px;color:#607a95;line-height:1.4;}}
+.titlebox .s b{{color:#145fae;}}
+#heatmap-div{{width:100%;}}
+.heat-card{{background:#fff;border:1px solid #dde8f2;border-radius:12px;padding:12px 14px;box-shadow:0 2px 8px rgba(60,100,160,.07);height:{card_height_px}px;display:flex;flex-direction:column;}}
+.heatmap-wrap{{flex:1;display:flex;align-items:center;justify-content:center;border:1px solid #e7eff7;border-radius:10px;background:linear-gradient(96deg,#f8fbff 0%,#ffffff 46%,#f1f7fd 100%);padding:6px 8px;}}
+.rank-panel{{flex:1 1 0;max-width:50%;width:50%;min-width:0;display:flex;flex-direction:column;}}
+.rank-shell{{position:relative;display:flex;height:{card_height_px}px;align-items:stretch;padding-left:34px;}}
+.nsb{{position:absolute;left:0;top:8px;bottom:8px;width:28px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:0;pointer-events:none;}}
+.nsb-label{{font-size:14px;font-weight:800;color:#5c7895;line-height:1;white-space:nowrap;}}
+.nsb-track{{position:relative;width:7px;flex:1;border-radius:999px;background:linear-gradient(180deg,#d3dbe5 0%,#9fc5ea 55%,#2f7fc1 100%);margin:8px 0;}}
+.nsb-track::after{{content:'';position:absolute;left:50%;bottom:-1px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid #2f7fc1;}}
+.rcard{{background:#fff;border:1px solid #dde8f2;border-radius:12px;padding:12px 14px;box-shadow:0 2px 8px rgba(60,100,160,.07);height:100%;display:flex;flex-direction:column;flex:1;min-width:0;}}
+.rtitle{{font-weight:700;font-size:15px;color:#1f2f46;margin-bottom:2px;}}
+.rsub{{font-size:11.5px;color:#607a95;margin-bottom:8px;}}
+.rhead{{display:grid;grid-template-columns:minmax(0,1fr) 86px 48px;column-gap:6px;align-items:center;font-size:11.5px;font-weight:700;color:#145fae;padding:3px 4px;border-bottom:1px solid #dde8f2;margin-bottom:2px;}}
+.rhead .h1{{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}}.rhead .h2{{text-align:center;}}.rhead .h3{{text-align:right;}}
+.rlist{{display:flex;flex-direction:column;gap:1px;overflow:hidden;justify-content:flex-start;align-items:stretch;}}
+.rrr-item{{border-radius:7px;padding:3px 2px;border:2px solid transparent;cursor:pointer;transition:all .18s ease;margin:0;}}
+.rrr-item:hover,.rrr-item.active{{background:#eef5fc!important;border-color:#3a7bd5!important;box-shadow:0 2px 8px rgba(58,123,213,.15);}}
+.rrr-top{{background:#f6f9fe;}}
+.rrr-row{{display:grid;grid-template-columns:20px minmax(0,1fr) 86px 48px;column-gap:6px;align-items:center;}}
+.rrr-badge{{min-width:22px;height:22px;border-radius:50%;background:#3a7bd5;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}}
+.rrr-name{{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:#1f2f46;font-weight:600;}}
+.rrr-status{{display:inline-block;padding:2px 6px;border-radius:20px;font-size:10.5px;font-weight:700;color:#fff;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}}
+.rrr-val{{font-size:13px;font-weight:700;color:#145fae;text-align:right;white-space:nowrap;}}
+@media (max-width: 1280px){{
+    .wrapper{{flex-direction:column;gap:14px;}}
+    .heat-panel,.rank-panel{{flex:1 1 100%;max-width:100%;}}
+    .rank-shell{{height:auto;padding-left:0;}}
+    .nsb{{position:static;width:100%;height:28px;flex-direction:row;justify-content:center;gap:8px;padding:0;margin-bottom:6px;}}
+    .nsb-track{{width:100%;height:7px;flex:0 0 auto;margin:0;}}
+    .nsb-track::after{{left:auto;right:-1px;bottom:50%;transform:translateY(50%);border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:9px solid #2f7fc1;border-right:none;}}
+    .heat-card,.rcard{{height:auto;min-height:340px;}}
+}}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="heat-panel">
+        <div class="heat-card">
+            <div class="titlebox">
+                <div class="t">Tương quan các yếu tố thời tiết với AQI</div>
+                <div class="s" id="sub"></div>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        feature_order = ["Nhiệt độ", "Độ ẩm", "Tốc độ gió", "Lượng mưa"]
-        heat_df = impact_df.pivot_table(
-            index="feature_label", columns="unit_name", values="corr", aggfunc="mean"
-        )
-        heat_df = heat_df.reindex(index=feature_order)
-        heat_df = heat_df[[c for c in ranked_units if c in heat_df.columns]]
-        heat_df = heat_df.rename(columns=region_display_map)
+            <div class="heatmap-wrap">
+                <div id="heatmap-div"></div>
+            </div>
+    </div>
+  </div>
+  <div class="rank-panel">
+        <div class="rank-shell">
+            <div class="nsb" aria-label="Thang địa lý Bắc tới Nam">
+                <div class="nsb-label">Bắc</div>
+                <div class="nsb-track"></div>
+                <div class="nsb-label">Nam</div>
+            </div>
+            <div class="rcard">
+                <div class="rtitle" id="rank-title">{rank_title}</div>
+                <div class="rsub">AQI càng cao thể hiện mức ô nhiễm không khí cao hơn</div>
+                <div class="rhead"><span class="h1">{rank_col_label}</span><span class="h2">Trạng thái</span><span class="h3">AQI</span></div>
+                <div class="rlist" id="rlist">{initial_rows}</div>
+            </div>
+    </div>
+  </div>
+</div>
+<script>
+const CORR = {corr_json};
+const LABELS = {labels_json};
+const INITIAL_KEY = {initial_key_json};
+const INITIAL_SUB = {initial_subtitle_json};
 
-        fig_heat = px.imshow(
-            heat_df,
-            aspect="auto",
-            zmin=-1,
-            zmax=1,
-            color_continuous_scale=[
-                [0.0, "#2f7fc1"],
-                [0.5, "#f4f7fb"],
-                [1.0, "#e46a3a"],
-            ],
-            labels={"x": "", "y": "", "color": "Tương quan"},
-            height=380,
-        )
-        fig_heat.update_traces(
-            hovertemplate="Vùng: %{x}<br>Yếu tố: %{y}<br>Tương quan: %{z:.3f}<extra></extra>"
-        )
-        fig_heat.update_layout(
-            **get_base_layout(),
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            margin={"t": 8, "r": 10, "l": 10, "b": 32},
-            coloraxis_colorbar=dict(title="Spearman"),
-            hoverlabel=dict(
-                bgcolor="rgba(255,255,255,0.94)",
-                bordercolor="#c9d7e6",
-                font=dict(size=12, color="#1f3b57"),
-            ),
-        )
-        fig_heat.update_xaxes(showticklabels=False, side="bottom")
-        fig_heat.update_yaxes(showgrid=False)
-        st.plotly_chart(
-            fig_heat, use_container_width=True, config={"displayModeBar": False}
-        )
+// row: 1D array of correlation values (1 per weather feature vs AQI)
+function mkData(row){{
+  const vals = row.map(v => v === null ? null : v);
+  return [{{
+    type: 'heatmap',
+    z: [vals],
+    x: LABELS,
+    y: ['AQI'],
+        texttemplate: '',
+        colorscale: [
+            [0.0, '#2f7fc1'],
+            [0.5, '#d6dde8'],
+            [1.0, '#d73027']
+        ],
+        reversescale: false,
+    zmin: -1, zmax: 1,
+        xgap: 4, ygap: 4,
+    hovertemplate: '<b>%{{x}}</b><br>Tương quan với AQI: %{{z:.3f}}<extra></extra>',
+        colorbar: {{title: '', thickness: 11, len: 0.82, y: 0.5}}
+  }}];
+}}
+const layout = {{
+    height: 176,
+    margin: {{t: 6, r: 12, l: 12, b: 56}},
+  plot_bgcolor: 'rgba(0,0,0,0)',
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  xaxis: {{
+    showgrid: false, side: 'bottom', automargin: true,
+        tickangle: -30, tickfont: {{size: 11.5}}
+  }},
+  yaxis: {{
+        showgrid: false,
+        automargin: true,
+        showticklabels: false,
+        ticks: ''
+  }},
+    hoverlabel: {{
+        bgcolor: 'rgba(255,255,255,0.92)',
+        bordercolor: '#9fc4e6',
+        font: {{size: 12, color: '#1f3b57'}}
+    }},
+    font: {{family: 'Inter,Segoe UI,sans-serif', size: 11, color: '#1f2f46'}}
+}};
+const cfg = {{displayModeBar: false, responsive: true}};
 
-        ordered_rank_labels = []
-        for col in heat_df.columns.astype(str).tolist():
-            try:
-                ordered_rank_labels.append(int(col))
-            except ValueError:
-                continue
-        ordered_rank_labels = sorted(set(ordered_rank_labels))
-        if ordered_rank_labels:
-            min_rank = ordered_rank_labels[0]
-            max_rank = ordered_rank_labels[-1]
-            inner_nums = "".join([f"<span>{n}</span>" for n in ordered_rank_labels])
-        else:
-            min_rank = 1
-            max_rank = 1
-            inner_nums = "<span>1</span>"
+const sub = document.getElementById('sub');
+sub.innerHTML = INITIAL_SUB;
 
-        st.markdown(
-            (
-                "<div class='interaction-heat-rank-scale'>"
-                f"<span class='interaction-heat-rank-end'>{min_rank}</span>"
-                "<div class='interaction-heat-rank-mid'>"
-                "<div class='interaction-heat-rank-line'></div>"
-                f"<div class='interaction-heat-rank-nums'>{inner_nums}</div>"
-                "</div>"
-                f"<span class='interaction-heat-rank-end'>{max_rank}</span>"
-                "</div>"
-            ),
-            unsafe_allow_html=True,
-        )
+const initialRow = CORR[INITIAL_KEY] || CORR['__all__'];
+Plotly.newPlot('heatmap-div', mkData(initialRow), layout, cfg);
 
-    with impact_right:
-        st.markdown(
-            _render_region_aqi_rank_html(
-                rank_region,
-                name_col=compare_col,
-                entity_label=compare_label,
-                title=compare_title,
-            ),
-            unsafe_allow_html=True,
-        )
+document.getElementById('rlist').addEventListener('mouseenter', function(e){{
+  const item = e.target.closest('.rrr-item');
+  if(!item) return;
+  document.querySelectorAll('.rrr-item').forEach(el => el.classList.remove('active'));
+  item.classList.add('active');
+  const key = item.dataset.region;
+  const name = item.querySelector('.rrr-name').textContent;
+  const r = CORR[key];
+  if(r){{
+    Plotly.react('heatmap-div', mkData(r), layout, cfg);
+    sub.innerHTML = 'Phạm vi: <b>'+name+'</b>. Màu xanh giúp giảm ô nhiễm, màu đỏ làm tăng ô nhiễm.';
+  }}
+}}, true);
 
-    return
+document.getElementById('rlist').addEventListener('mouseleave', function(e){{
+  const item = e.target.closest('.rrr-item');
+  if(!item) return;
+  item.classList.remove('active');
+  const r = CORR[INITIAL_KEY] || CORR['__all__'];
+  Plotly.react('heatmap-div', mkData(r), layout, cfg);
+  sub.innerHTML = INITIAL_SUB;
+}}, true);
+</script>
+</body></html>"""
+
+    _component_slot = st.empty()
+    with _component_slot:
+        st_components.html(component_html, height=component_height_px, scrolling=False)
