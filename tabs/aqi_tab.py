@@ -90,7 +90,7 @@ def load_forecast_data(city_folder, filename):
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         df = df.dropna(subset=["timestamp", "aqi"])
         # Deduplicate by averaging values for the same timestamp
-        df = df.groupby("timestamp").mean(numeric_only=True).reset_index()
+        df = df.groupby("timestamp", observed=False).mean(numeric_only=True).reset_index()
         df = df.sort_values("timestamp")
         return df
     except Exception:
@@ -152,7 +152,7 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
         
     # Group by date
     df_forecast["date"] = df_forecast["timestamp"].dt.date
-    daily = df_forecast.groupby("date").agg({poll_key: "mean"}).reset_index()
+    daily = df_forecast.groupby("date", observed=False).agg({poll_key: "mean"}).reset_index()
     
     # Filter for today and future
     today = pd.Timestamp.now().date()

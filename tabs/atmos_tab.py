@@ -150,7 +150,7 @@ def _prepare_detail_frame(detail_df, loc_col):
 
 def _rain_effect_by_station(calc_df, loc_col):
     rr = (
-        calc_df.groupby([loc_col, "is_raining"])["pm2_5"]
+        calc_df.groupby([loc_col, "is_raining"], observed=False)["pm2_5"]
         .mean()
         .unstack()
         .rename(columns={False: "dry", True: "rain"})
@@ -258,7 +258,7 @@ def render(df):
         return
 
     summary_df = (
-        calc_df.groupby(loc_col)
+        calc_df.groupby(loc_col, observed=False)
         .agg(
             aqi=("aqi", "mean"),
             pm2_5=("pm2_5", "mean"),

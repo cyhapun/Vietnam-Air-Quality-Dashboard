@@ -70,7 +70,7 @@ def _compute_hero_insights(df: pd.DataFrame, avg_aqi: int, current_label: str) -
     slot_focus = "Không đủ dữ liệu"
     slot_focus_sub = "Chưa xác định được khung giờ có rủi ro nổi bật."
     if "time_slot" in df.columns and "aqi" in df.columns:
-        slot_mean = df.groupby("time_slot")["aqi"].mean().dropna().sort_values(ascending=False)
+        slot_mean = df.groupby("time_slot", observed=False)["aqi"].mean().dropna().sort_values(ascending=False)
         if not slot_mean.empty:
             slot_focus = str(slot_mean.index[0])
             slot_focus_sub = f"AQI trung bình cao nhất: {slot_mean.iloc[0]:.1f}."
@@ -107,7 +107,7 @@ def _compute_hero_insights(df: pd.DataFrame, avg_aqi: int, current_label: str) -
     best_slot = "Không đủ dữ liệu"
     best_slot_sub = "Chưa xác định được khung giờ an toàn hơn trong ngày."
     if "time_slot" in df.columns and "aqi" in df.columns:
-        slot_min = df.groupby("time_slot")["aqi"].mean().dropna().sort_values(ascending=True)
+        slot_min = df.groupby("time_slot", observed=False)["aqi"].mean().dropna().sort_values(ascending=True)
         if not slot_min.empty:
             best_slot = str(slot_min.index[0])
             best_slot_sub = f"AQI trung bình thấp nhất: {slot_min.iloc[0]:.1f}."
@@ -129,7 +129,7 @@ def _build_scope_metrics(df, state, selected_range):
     _fmt_delta = state["fmt_delta"]
     city_col = "city" if "city" in df.columns else "province"
     city_aqi_mean = (
-        df.groupby(city_col)["aqi"].mean().sort_values(ascending=False)
+        df.groupby(city_col, observed=False)["aqi"].mean().sort_values(ascending=False)
         if city_col in df.columns
         else pd.Series(dtype=float)
     )
@@ -205,14 +205,14 @@ def _build_scope_metrics(df, state, selected_range):
         aqi_7d_text, aqi_7d_color = _fmt_delta(0, None)
         pm_7d_text, pm_7d_color = _fmt_delta(0, None)
 
-    daily_trend = df.groupby("date")[["aqi", "pm2_5"]].mean().sort_index()
+    daily_trend = df.groupby("date", observed=False)[["aqi", "pm2_5"]].mean().sort_index()
 
     rank_up_line = "Chưa đủ dữ liệu để so sánh thứ hạng ngày gần nhất."
     rank_down_line = ""
     if len(daily_trend) >= 2 and city_col in df.columns:
         last_date = daily_trend.index[-1]
         prev_date = daily_trend.index[-2]
-        city_day = df.groupby(["date", city_col])["aqi"].mean().reset_index()
+        city_day = df.groupby(["date", city_col], observed=False)["aqi"].mean().reset_index()
         now_rank = (
             city_day[city_day["date"] == last_date]
             .sort_values("aqi", ascending=False)[city_col]
@@ -756,7 +756,7 @@ def render(df):
 
     map_col, donut_col = st.columns([2.2, 1.2], gap="small")
     city_geo = (
-        df.groupby("city")
+        df.groupby("city", observed=False)
         .agg(
             lat=("lat", "mean"),
             lon=("lon", "mean"),
