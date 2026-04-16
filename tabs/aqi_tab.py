@@ -24,11 +24,11 @@ def get_location_map(dir_path):
     if not os.path.exists(dir_path):
         return mapping
     for f in os.listdir(dir_path):
-        if f.endswith(".csv") and f != "all.csv":
-            clean_name = f.replace(".csv", "")
+        if f.endswith(".parquet") and f != "all.parquet":
+            clean_name = f.replace(".parquet", "")
             try:
                 # Read just the first row, only the 'location' column to be extra fast
-                df_loc = pd.read_csv(os.path.join(dir_path, f), usecols=["location"], nrows=1)
+                df_loc = pd.read_parquet(os.path.join(dir_path, f), columns=["location"]).head(1)
                 if not df_loc.empty and pd.notna(df_loc.iloc[0, 0]):
                     loc_val = str(df_loc.iloc[0, 0]).strip()
                     # Resolve duplicates if any
@@ -48,7 +48,7 @@ def load_tier2_data(city_folder, filename):
     if not os.path.exists(file_path):
         return pd.DataFrame()
     try:
-        df = pd.read_csv(file_path)
+        df = pd.read_parquet(file_path)
         if df.empty: return df
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         df = df.dropna(subset=["timestamp", "aqi"])
@@ -67,7 +67,7 @@ def load_forecast_data(city_folder, filename):
         # Mismatch logic: Forecast files are often normalized (lowercase, no accents, underscores)
         # We try to normalize the filename to match.
         import re
-        s = filename.replace(".csv", "")
+        s = filename.replace(".parquet", "")
         # Standard normalization used in get_forecast.py
         s = re.sub(r'[àáạảãâầấậẩẫăằắặẳẵÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]', 'a', s)
         s = re.sub(r'[èéẹẻẽêềếệểễÈÉẸẺẼÊỀẾỆỂỄ]', 'e', s)
@@ -77,7 +77,7 @@ def load_forecast_data(city_folder, filename):
         s = re.sub(r'[ỳýỵỷỹỲÝỴỶỸ]', 'y', s)
         s = re.sub(r'[đĐ]', 'd', s)
         s = re.sub(r'[^a-zA-Z0-9\s]', '', s).strip().lower()
-        normalized_filename = re.sub(r'\s+', '_', s) + ".csv"
+        normalized_filename = re.sub(r'\s+', '_', s) + ".parquet"
         
         file_path = os.path.join(base_dir, "..", "data", "forecast", city_folder, normalized_filename)
 
@@ -85,7 +85,7 @@ def load_forecast_data(city_folder, filename):
         return pd.DataFrame()
         
     try:
-        df = pd.read_csv(file_path)
+        df = pd.read_parquet(file_path)
         if df.empty: return df
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         df = df.dropna(subset=["timestamp", "aqi"])
@@ -536,13 +536,13 @@ def render(global_df):
     dir_path = os.path.join(base_dir, "..", "data", "aqi", folder_name)
     tong_quan_lbl = f"Tổng quan ({selected_city})"
     tier2_options = [tong_quan_lbl]
-    file_map = {tong_quan_lbl: "all.csv"}
+    file_map = {tong_quan_lbl: "all.parquet"}
     
     if os.path.exists(dir_path):
         loc_mapping = get_location_map(dir_path)
         for f in os.listdir(dir_path):
-            if f.endswith(".csv") and f != "all.csv":
-                clean_name = f.replace(".csv", "")
+            if f.endswith(".parquet") and f != "all.parquet":
+                clean_name = f.replace(".parquet", "")
                 loc_name = loc_mapping.get(f, clean_name)
                 tier2_options.append(loc_name)
                 file_map[loc_name] = f
@@ -636,7 +636,7 @@ def render(global_df):
             st.rerun()
 
     # Load and process data
-    target_file = file_map.get(selected_tier2, "all.csv")
+    target_file = file_map.get(selected_tier2, "all.parquet")
     df = load_tier2_data(folder_name, target_file)
     
     if df.empty or selected_poll_key not in df.columns:

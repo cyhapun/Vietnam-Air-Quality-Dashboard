@@ -25,7 +25,7 @@ def format_filename(province_name):
     name = remove_vietnamese_accents(province_name.lower())
     name = re.sub(r'[^a-z0-9\s]', '', name)
     name = re.sub(r'\s+', '_', name.strip())
-    return f"{name}.csv"
+    return f"{name}.parquet"
 
 # Kiểm tra và tạo thư mục lưu trữ dữ liệu nếu chưa có
 os.makedirs("./data/location", exist_ok=True)
@@ -151,7 +151,7 @@ for province, wards in extracted_data_by_province.items():
         file_name = format_filename(province)
         file_path = f"./data/location/{file_name}"
         
-        df_province.to_csv(file_path, index=False, encoding="utf-8-sig")
+        df_province.to_parquet(file_path, index=False)
         total_saved_files += 1
         print(f"Đã lưu thành công file {file_path} với {len(province_results)} dòng dữ liệu")
     

@@ -63,7 +63,7 @@ def get_last_historical_timestamp(province, location):
     """Lấy mốc timestamp mới nhất từ dữ liệu lịch sử của trạm này."""
     prov_slug = clean_filename(province)
     loc_slug = clean_filename(location)
-    file_path = os.path.join(HISTORICAL_DIR, prov_slug, f"{loc_slug}.csv")
+    file_path = os.path.join(HISTORICAL_DIR, prov_slug, f"{loc_slug}.parquet")
     
     if os.path.exists(file_path):
         try:
@@ -80,15 +80,15 @@ def get_last_historical_timestamp(province, location):
 
 def extract_locations_from_history():
     """Quét thư mục historical để lấy danh sách tọa độ và thông tin tỉnh/trạm"""
-    csv_files = glob.glob(os.path.join(HISTORICAL_DIR, "**", "*.csv"), recursive=True)
+    csv_files = glob.glob(os.path.join(HISTORICAL_DIR, "**", "*.parquet"), recursive=True)
     locations = []
     
     print("📋 Đang lấy danh sách tọa độ từ thư mục data/aqi...")
     # Thêm tqdm vào vòng lặp quét file
     for file in tqdm(csv_files, desc="Đang quét file", unit="file"):
-        if "all.csv" in os.path.basename(file): continue
+        if "all.parquet" in os.path.basename(file): continue
         try:
-            df = pd.read_csv(file, nrows=1)
+            df = pd.read_parquet(file).head(1)
             if not df.empty and 'lat' in df.columns:
                 locations.append({
                     "province": str(df["province"].iloc[0]),
@@ -207,11 +207,11 @@ def process_forecast_batch(batch_meta):
                 ]
                 df_merged = df_merged[[c for c in cols if c in df_merged.columns]]
                 
-                # 3. LƯU FILE THEO CẤU TRÚC: phuong_xa.csv
+                # 3. LƯU FILE THEO CẤU TRÚC: phuong_xa.parquet
                 safe_unit_name = clean_filename(meta["location"])
-                out_file = os.path.join(out_folder, f"{safe_unit_name}.csv")
+                out_file = os.path.join(out_folder, f"{safe_unit_name}.parquet")
 
-                df_merged.to_csv(out_file, index=False, encoding="utf-8-sig")
+                df_merged.to_parquet(out_file, index=False)
                 
                 updated_count += 1
             except Exception as e:
@@ -234,15 +234,15 @@ def calculate_province_all():
 
     provinces = [d for d in root_path.iterdir() if d.is_dir()]
     
-    for province_path in tqdm(provinces, desc="Tổng hợp All.csv", unit="tỉnh"):
-        csv_files = [f for f in province_path.glob("*.csv") if f.name != 'all.csv']
+    for province_path in tqdm(provinces, desc="Tổng hợp All.parquet", unit="tỉnh"):
+        csv_files = [f for f in province_path.glob("*.parquet") if f.name != 'all.parquet']
         if not csv_files: continue
 
         lazy_frames = []
         for file in csv_files:
             try:
                 # Ép kiểu an toàn trước khi concat để tránh lỗi schema mismatch
-                lf = pl.scan_csv(file, infer_schema_length=0)
+                lf = pl.scan_parquet(file)
                 lf = lf.with_columns([
                     pl.col("timestamp").cast(pl.String),
                     pl.col("year").cast(pl.Int64),
@@ -291,8 +291,8 @@ def calculate_province_all():
             .sort(['year', 'month', 'day', 'hour'])
         )
 
-        output_file = province_path / "all.csv"
-        result.collect().write_csv(output_file)
+        output_file = province_path / "all.parquet"
+        result.collect().write_parquet(output_file)
 
 def run_forecast_update():
     print(f"\n🌤️ BẮT ĐẦU CẬP NHẬT DỮ LIỆU DỰ BÁO TỔNG HỢP (FORECAST)...")

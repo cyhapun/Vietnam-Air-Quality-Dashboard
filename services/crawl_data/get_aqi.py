@@ -158,7 +158,7 @@ def process_and_save_batch(batch_targets):
                 df_final = df_final[[c for c in cols if c in df_final.columns]]
                 
                 # Ghi file
-                df_final.to_csv(target["out_file"], index=False, encoding="utf-8-sig")
+                df_final.to_parquet(target["out_file"], index=False)
 
             except Exception as e:
                 tqdm.write(f"❌ Lỗi ghi file cho trạm {target['location']}: {e}")
@@ -172,7 +172,7 @@ def main():
     parser.add_argument(
         '--provinces', 
         nargs='*', 
-        help="Danh sách tên các file tỉnh/thành cần chạy, không có đuôi .csv (vd: --provinces ha_noi ho_chi_minh)."
+        help="Danh sách tên các file tỉnh/thành cần chạy, không có đuôi .parquet (vd: --provinces ha_noi ho_chi_minh)."
     )
     args = parser.parse_args()
 
@@ -180,17 +180,17 @@ def main():
         print(f"Lỗi: Không tìm thấy thư mục '{LOCATION_DIR}'.")
         return
         
-    csv_files = glob.glob(os.path.join(LOCATION_DIR, "*.csv"))
+    csv_files = glob.glob(os.path.join(LOCATION_DIR, "*.parquet"))
     
     if args.provinces:
-        selected_files = [f"{p.lower().replace('.csv', '')}.csv" for p in args.provinces]
+        selected_files = [f"{p.lower().replace('.parquet', '')}.parquet" for p in args.provinces]
         csv_files = [f for f in csv_files if os.path.basename(f).lower() in selected_files]
         if not csv_files:
             print(f"Lỗi: Không tìm thấy file dữ liệu nào khớp với danh sách chỉ định: {args.provinces}")
             return
             
     if not csv_files:
-        print(f"Lỗi: Không tìm thấy file CSV nào trong '{LOCATION_DIR}'.")
+        print(f"Lỗi: Không tìm thấy file Parquet nào trong '{LOCATION_DIR}'.")
         return
 
     print(f"Phát hiện {len(csv_files)} file tỉnh/thành. Bắt đầu crawl dữ liệu ...")
@@ -200,7 +200,7 @@ def main():
         out_folder = os.path.join(OUTPUT_DIR, folder_name)
         
         try:
-            df_locations = pd.read_csv(file_path)
+            df_locations = pd.read_parquet(file_path)
             total_units = len(df_locations)
             os.makedirs(out_folder, exist_ok=True)
             
@@ -209,7 +209,7 @@ def main():
             for _, row in df_locations.iterrows():
                 unit_name = row["Tên đơn vị"]
                 safe_unit_name = clean_filename(unit_name)
-                out_file = os.path.join(out_folder, f"{safe_unit_name}.csv")
+                out_file = os.path.join(out_folder, f"{safe_unit_name}.parquet")
                 
                 if not os.path.exists(out_file):
                     targets_to_fetch.append({
