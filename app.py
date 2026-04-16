@@ -276,7 +276,7 @@ def render_dashboard():
                             "Đang tải dữ liệu chi tiết tỉnh/thành...",
                             hint=f"Chuẩn hóa chuỗi thời gian và phân lớp AQI cho {selected_province}.",
                             overlay=False,
-                            min_duration=0.35,
+                            min_duration=0.1,
                         ):
                             detail_raw = load_province_detail(
                                 selected_province,
@@ -335,7 +335,7 @@ if is_first_boot:
         "Đang tải dữ liệu dashboard...",
         hint="Chuẩn hóa dữ liệu AQI, PM2.5 và dựng bố cục ban đầu.",
         overlay=True,
-        min_duration=1.0,
+        min_duration=0.2,
     ):
         render_dashboard()
     st.session_state["_dashboard_boot_ready"] = True
@@ -344,7 +344,7 @@ elif show_toggle_loader:
         "Đang cập nhật chế độ mù màu...",
         hint="Đang áp dụng bảng màu mới và dựng lại dashboard.",
         overlay=True,
-        min_duration=0.75,
+        min_duration=0.15,
     ):
         render_dashboard()
 else:

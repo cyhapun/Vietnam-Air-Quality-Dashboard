@@ -59,8 +59,7 @@ def _resolve_first_existing_path(candidates: list[str]) -> str | None:
         if os.path.exists(norm):
             return norm
     return None
-
-
+def _resolve_all_csv(base_dir: str) -> str | None:
     return _resolve_first_existing_path(
         [
             os.path.join(base_dir, "..", "data", "vietnam_air_quality.parquet"),

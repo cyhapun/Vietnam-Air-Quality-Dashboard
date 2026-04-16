@@ -238,7 +238,7 @@ def render(df):
             f"Đang tải dữ liệu chi tiết của {selected_province}...",
             hint="Đang tổng hợp theo điểm quan trắc và khung thời gian đã chọn.",
             overlay=True,
-            min_duration=0.75,
+            min_duration=0.15,
         ):
             detail_df = load_province_detail(selected_province, start_arg, end_arg)
         scope_text = selected_province
