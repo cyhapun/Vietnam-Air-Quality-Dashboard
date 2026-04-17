@@ -286,11 +286,6 @@ def _render_kpi_strip(_col, avg_aqi, _lbl, avg_pm25, cig_n, exposure_label, wors
     st.markdown(
         f"""
     <div class="kpi-strip">
-      <div class="kpi-box accent-blue">
-        <div class="kpi-lbl">AQI phạm vi chọn</div>
-        <div class="kpi-val" style="color:{_col}">{avg_aqi} <span class="u">{_lbl}</span></div>
-        <div class="kpi-sub">WHO khuyến nghị AQI ≤ 50</div>
-      </div>
       <div class="kpi-box accent-amber">
         <div class="kpi-lbl">PM2.5 trung bình</div>
         <div class="kpi-val">{avg_pm25} <span class="u">µg/m³</span></div>
