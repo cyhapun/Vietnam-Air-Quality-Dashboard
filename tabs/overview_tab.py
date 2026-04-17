@@ -286,11 +286,6 @@ def _render_kpi_strip(_col, avg_aqi, _lbl, avg_pm25, cig_n, exposure_label, wors
     st.markdown(
         f"""
     <div class="kpi-strip">
-      <div class="kpi-box accent-blue">
-        <div class="kpi-lbl">AQI phạm vi chọn</div>
-        <div class="kpi-val" style="color:{_col}">{avg_aqi} <span class="u">{_lbl}</span></div>
-        <div class="kpi-sub">WHO khuyến nghị AQI ≤ 50</div>
-      </div>
       <div class="kpi-box accent-amber">
         <div class="kpi-lbl">PM2.5 trung bình</div>
         <div class="kpi-val">{avg_pm25} <span class="u">µg/m³</span></div>
@@ -645,7 +640,7 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     pm25_warning_map = {
         "Tốt": "Không có cảnh báo đáng kể.",
         "Vừa phải": "Nhóm nhạy cảm nên giảm vận động ngoài trời.",
-        "Không lành mạnh cho các nhóm nhạy cảm": "Nhóm nhạy cảm tránh hoạt động ngoài trời kéo dài.",
+        "Không lành mạnh cho nhóm nhạy cảm": "Nhóm nhạy cảm tránh hoạt động ngoài trời kéo dài.",
         "Không khỏe mạnh": "Hạn chế ra ngoài, ưu tiên khẩu trang lọc bụi mịn.",
         "Rất không tốt cho sức khỏe": "Tránh hoạt động gắng sức ngoài trời.",
         "Nguy hiểm": "Mọi người nên hạn chế tối đa hoạt động ngoài trời.",

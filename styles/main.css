@@ -28,13 +28,20 @@ body,
     font-family: 'Be Vietnam Pro', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif !important;
 }
 
+header[data-testid="stHeader"],
 #MainMenu,
 footer {
-    visibility: hidden;
+    display: none !important;
 }
 
-.block-container {
-    padding: 3.1rem 0 0 !important;
+.block-container,
+[data-testid="stAppViewContainer"] > .main,
+[data-testid="stAppViewBlockContainer"],
+[data-testid="stMainBlockContainer"],
+.main .block-container,
+.stMainBlockContainer {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
     max-width: 100% !important;
 }
 
@@ -43,6 +50,13 @@ footer {
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+}
+
+[data-testid="stVerticalBlock"] > div:has(.hdr) {
+    position: sticky;
+    top: 0rem;
+    z-index: 999;
+    margin: 0 -1rem 1rem -1rem !important;
 }
 
 ::-webkit-scrollbar {
@@ -255,6 +269,13 @@ footer {
 }
 
 /* ── HEADER ── */
+div[data-testid="stVerticalBlock"] > div:has(.hdr) {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    margin: 0 -1rem; /* remove streamlit gap at edges if any */
+}
+
 .hdr {
     background: var(--pri-800);
     padding: 12px 24px;
@@ -357,7 +378,7 @@ footer {
 /* ── KPI STRIP ── */
 .kpi-strip {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
     margin-bottom: 12px;
 }

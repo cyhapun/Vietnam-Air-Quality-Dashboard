@@ -472,6 +472,9 @@ def render(global_df):
         st.session_state["aqi_time_range"] = "24h"
     if "aqi_pollutant" not in st.session_state:
         st.session_state["aqi_pollutant"] = "aqi"
+    
+    if "aqi_selected_bar" not in st.session_state:
+        st.session_state["aqi_selected_bar"] = None
         
     # Inject local CSS for Blue Theme on Chart Type widget (Frames only)
     st.markdown(f"""
@@ -528,6 +531,7 @@ def render(global_df):
             st.session_state["aqi_city_version"] = st.session_state.get("aqi_city_version", 0) + 1
             st.session_state["aqi_selected_city"] = selected_city
             st.session_state["aqi_selected_tier2"] = f"Tổng quan ({selected_city})"
+            st.session_state["aqi_selected_bar"] = None
             st.rerun()
 
     # Locate Tier 2 units dynamically
@@ -571,6 +575,7 @@ def render(global_df):
         
         if selected_tier2 != st.session_state.get("aqi_selected_tier2"):
             st.session_state["aqi_selected_tier2"] = selected_tier2
+            st.session_state["aqi_selected_bar"] = None
             st.rerun()
 
     with c3:
@@ -607,6 +612,7 @@ def render(global_df):
         time_range = st.selectbox("Thời gian", tr_opts, index=idx_tr, key="aqi_time_select")
         if time_range != st.session_state["aqi_time_range"]:
             st.session_state["aqi_time_range"] = time_range
+            st.session_state["aqi_selected_bar"] = None
             st.rerun()
 
     with c5:
@@ -633,6 +639,7 @@ def render(global_df):
         
         if selected_poll != curr_pol:
             st.session_state["aqi_pollutant"] = selected_poll
+            st.session_state["aqi_selected_bar"] = None
             st.rerun()
 
     # Load and process data
@@ -756,6 +763,41 @@ def render(global_df):
                 # Bar Chart vần trục thời gian chia khoảng Đều (Uniform) để các cột được tính toán chiều ngang to rõ ràng
                 # Ta vẫn dùng .max() để nhặt ra mốc ô nhiễm nặng nhất, không lo bị chà phẳng
                 df_sub = df_sub.set_index("timestamp").resample(rule)[[y_col]].max().dropna().reset_index()
+
+    # --- Interaction Logic: Filter by selected bar ---
+    dt_start, dt_end = min_d, max_d + pd.Timedelta(seconds=1) # Default to full range
+    selected_bar_time = st.session_state.get("aqi_selected_bar")
+    
+    if selected_bar_time and "Tổng quan" in str(selected_tier2):
+        try:
+            # Convert back to datetime and ensure it's naive (matches parquet data)
+            sel_ts = pd.to_datetime(selected_bar_time).replace(tzinfo=None)
+            
+            # Find the actual bar in df_sub to ensure it exists
+            if chart_type == "Cột (Bar)":
+                df_match = df_sub[df_sub["timestamp"] == sel_ts]
+                if not df_match.empty:
+                    # Determine period for ranking
+                    dt_start = sel_ts
+                    
+                    # Calculate end of period based on resampling rule OR hourly
+                    rule_delta = {
+                        "7 ngày": pd.Timedelta(hours=6),
+                        "30 ngày": pd.Timedelta(days=1),
+                        "3 tháng": pd.Timedelta(days=3)
+                    }
+                    dt_end = dt_start + rule_delta.get(time_range, pd.Timedelta(hours=1))
+                    
+                    # We no longer filter df_sub here to keep all bars visible (highlight/fade logic below)
+                    pass
+        except Exception:
+            st.session_state["aqi_selected_bar"] = None
+    else:
+        # Clear selection if not in 'Tổng quan' view
+        if st.session_state.get("aqi_selected_bar"):
+            st.session_state["aqi_selected_bar"] = None
+        selected_bar_time = None
+    
 
     # Prepare array colors & labels for Plotly based on selected pollutant scale
     df_sub["clr"] = df_sub[y_col].apply(lambda x: val_meta(x, y_col)[1])
@@ -965,12 +1007,21 @@ def render(global_df):
                         showlegend=False
                     ))
     else:
+        # Handle highlight/fade effect for selections
+        bar_opacities = [0.9] * len(df_sub)
+        if selected_bar_time and "Tổng quan" in str(selected_tier2):
+             try:
+                 sel_ts_norm = pd.to_datetime(selected_bar_time).replace(tzinfo=None)
+                 bar_opacities = [0.9 if ts == sel_ts_norm else 0.25 for ts in df_sub["timestamp"]]
+             except Exception:
+                 pass
+
         fig.add_trace(go.Bar(
             x=df_sub["timestamp"],
             y=df_sub[y_col],
             marker_color=df_sub["clr"],
+            marker_opacity=bar_opacities, # Apply selective opacity
             marker_line=dict(width=1, color="#fff"),
-            opacity=0.9,
             hovertemplate=f"<span style='color:%{{customdata[1]}}'><b>Chỉ số</b></span>: %{{y:.1f}}{u_suffix}<extra></extra>",
             customdata=cd_vals
         ))
@@ -985,7 +1036,37 @@ def render(global_df):
     )
     
     with cChart:
-        st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key="aqi_plotly_chart")
+        # Configuration for selection
+        select_data = st.plotly_chart(
+            fig, 
+            width="stretch", 
+            config={"displayModeBar": False}, 
+            key="aqi_plotly_chart",
+            on_select="rerun" if "Tổng quan" in str(selected_tier2) else "ignore",
+            selection_mode="points" if "Tổng quan" in str(selected_tier2) else []
+        )
+        
+        # Process selection event from Plotly (ONLY if in 'Tổng quan' view)
+        if select_data and "Tổng quan" in str(selected_tier2):
+            try:
+                # Use attribute access for SelectionEvent object
+                sel_dict = getattr(select_data, "selection", {})
+                points = sel_dict.get("points", [])
+                
+                if points:
+                    clicked_x = points[0].get("x")
+                    if clicked_x:
+                        curr_sel = st.session_state.get("aqi_selected_bar")
+                        
+                        # Toggle logic: If click same bar twice, reset. Else select new bar.
+                        if curr_sel == clicked_x:
+                            st.session_state["aqi_selected_bar"] = None
+                            st.rerun()
+                        else:
+                            st.session_state["aqi_selected_bar"] = clicked_x
+                            st.rerun()
+            except Exception:
+                pass
         
         # Legend Explanation
         bands = POLL_BANDS.get(y_col, POLL_BANDS["aqi"])
@@ -1005,7 +1086,21 @@ def render(global_df):
         
     with cRank:
         # Title of Rank
-        st.markdown(f'''<div style="font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;">Top 8 Ô nhiễm ({time_range})</div>''', unsafe_allow_html=True)
+        rank_time_lbl = time_range
+        if st.session_state.get("aqi_selected_bar"):
+            # Format display time for the selected bar
+            sel_dt = pd.to_datetime(st.session_state["aqi_selected_bar"])
+            if time_range == "24h":
+                rank_time_lbl = sel_dt.strftime("%H:%M, %d/%m")
+            else:
+                # For ranges, show the period start and end
+                if (dt_end - dt_start).days >= 1:
+                    rank_time_lbl = sel_dt.strftime("%d/%m") + f" - {dt_end.strftime('%d/%m')}"
+                else:
+                    # For sub-day ranges (like 7 days / 6h), show time range
+                    rank_time_lbl = sel_dt.strftime("%d/%m %H:%M") + f" - {dt_end.strftime('%H:%M')}"
+
+        st.markdown(f'''<div style="font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;">Top 10 Ô nhiễm ({rank_time_lbl})</div>''', unsafe_allow_html=True)
         
         top_list_html = f'''<div style="display:flex; font-size:12px; font-weight:600; color:#64748b; padding-bottom: 10px; border-bottom: 2px solid rgba(148,163,184,0.1); margin-bottom: 12px; text-transform:uppercase;">
             <div style="flex:4;">Địa điểm</div>
@@ -1013,20 +1108,24 @@ def render(global_df):
             <div style="flex:2; text-align:right;">{poll_lbl}</div>
         </div>'''
         
-        # calculate Top 10 locations
+        # Calculate Top Locations by reading each individual unit file
         top_locations = []
         for loc_name, f_name in file_map.items():
+            # Skip overall summary file
             if "Tổng quan" in loc_name or loc_name == tong_quan_lbl: continue
             
             try:
+                # Load raw data for this specific location
                 loc_df = load_tier2_data(folder_name, f_name)
                 if loc_df.empty or selected_poll_key not in loc_df.columns:
                     continue
                 
-                loc_df_sub = loc_df[loc_df["timestamp"] >= min_d]
+                # Filter strictly within the time window [dt_start, dt_end)
+                # This works for both individual hours (24h view) and resampled blocks (7d, 30d, 3m)
+                loc_df_sub = loc_df[(loc_df["timestamp"] >= dt_start) & (loc_df["timestamp"] < dt_end)]
                 if loc_df_sub.empty: continue
                 
-                # Use mean value over the selected time range
+                # Calculate mean (for hourly, it's just the one value; for ranges, it's the average)
                 metric_val = loc_df_sub[selected_poll_key].mean()
                 top_locations.append({
                     "loc": loc_name,
@@ -1036,7 +1135,7 @@ def render(global_df):
                 continue
             
         if top_locations:
-            top_df = pd.DataFrame(top_locations).sort_values(by="val", ascending=False).head(8)
+            top_df = pd.DataFrame(top_locations).sort_values(by="val", ascending=False).head(10)
             for _, row in top_df.iterrows():
                 v = row["val"]
                 loc_name_full = row["loc"]
