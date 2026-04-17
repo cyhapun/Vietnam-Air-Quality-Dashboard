@@ -108,9 +108,13 @@ def _normalize_name(text: str) -> str:
 def _build_city_column(df: pd.DataFrame) -> pd.DataFrame:
     if "city" not in df.columns:
         if "province" in df.columns and "location" in df.columns:
-            df["city"] = df["province"] + " - " + df["location"]
+            # Only append location if it's not null/nan
+            df["city"] = df.apply(
+                lambda r: f"{r['province']} - {r['location']}" if pd.notna(r["location"]) and str(r["location"]).lower() != "nan" else str(r["province"]),
+                axis=1
+            )
         elif "province" in df.columns:
-            df["city"] = df["province"]
+            df["city"] = df["province"].astype(str)
     return df
 
 
@@ -362,3 +366,126 @@ def load_province_detail(
 @st.cache_data(show_spinner=False)
 def to_csv_bytes(frame: pd.DataFrame) -> bytes:
     return frame.to_csv(index=False).encode("utf-8-sig")
+
+
+CITY_FOLDERS = {
+    "An Giang": "an_giang", "Bắc Ninh": "bac_ninh", "Cà Mau": "ca_mau", "Cần Thơ": "can_tho",
+    "Cao Bằng": "cao_bang", "Đà Nẵng": "da_nang", "Đắk Lắk": "dak_lak", "Điện Biên": "dien_bien",
+    "Đồng Nai": "dong_nai", "Đồng Tháp": "dong_thap", "Gia Lai": "gia_lai", "Hà Nội": "ha_noi",
+    "Hà Tĩnh": "ha_tinh", "Hải Phòng": "hai_phong", "Thành phố Hồ Chí Minh": "ho_chi_minh",
+    "Huế": "hue", "Hưng Yên": "hung_yen", "Khánh Hòa": "khanh_hoa", "Lai Châu": "lai_chau",
+    "Lâm Đồng": "lam_dong", "Lạng Sơn": "lang_son", "Lào Cai": "lao_cai", "Nghệ An": "nghe_an",
+    "Ninh Bình": "ninh_binh", "Phú Thọ": "phu_tho", "Quảng Ngãi": "quang_ngai", "Quảng Ninh": "quang_ninh",
+    "Quảng Trị": "quang_tri", "Sơn La": "son_la", "Tây Ninh": "tay_ninh", "Thái Nguyên": "thai_nguyen",
+    "Thanh Hóa": "thanh_hoa", "Tuyên Quang": "tuyen_quang", "Vĩnh Long": "vinh_long"
+}
+
+@st.cache_data(ttl=3700)
+def load_weather_data() -> pd.DataFrame:
+    base_dir = os.path.dirname(__file__)
+    data_dir = _resolve_first_existing_path([
+        os.path.join(base_dir, "..", "data", "aqi_year_2025"),
+        os.path.join(base_dir, "data", "aqi_year_2025"),
+        os.path.join(base_dir, "aqi_year_2025"),
+    ])
+    df_list = []
+    
+    if data_dir and os.path.exists(data_dir):
+        from concurrent.futures import ThreadPoolExecutor
+        def _read_city_all(folder):
+            path = os.path.join(data_dir, folder, "all.parquet")
+            if os.path.exists(path):
+                try:
+                    df = pd.read_parquet(path)
+                    if "city" not in df.columns:
+                        if "province" in df.columns and "location" in df.columns:
+                             df["city"] = df.apply(
+                                lambda r: f"{r['province']} - {r['location']}" if pd.notna(r["location"]) and str(r["location"]).lower() != "nan" else str(r["province"]),
+                                axis=1
+                             )
+                        elif "province" in df.columns:
+                            df["city"] = df["province"].astype(str)
+                        else:
+                            df["city"] = "Unknown"
+                    
+                    # Cắt giảm số cột trả về để nhẹ bộ nhớ, giống như PREFERRED_COLUMNS nhưng chỉ cần biến thời tiết
+                    cols_to_keep = [c for c in PREFERRED_COLUMNS if c in df.columns]
+                    return _postprocess_df(df[cols_to_keep])
+                except Exception:
+                    pass
+            return None
+            
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            results = list(executor.map(_read_city_all, CITY_FOLDERS.values()))
+            
+        df_list = [r for r in results if r is not None and not r.empty]
+        
+    if df_list:
+        full_df = pd.concat(df_list, ignore_index=True)
+        return full_df
+    return pd.DataFrame()
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def load_weather_province_detail(province: str) -> pd.DataFrame:
+    resolved = None
+    if province in CITY_FOLDERS:
+        resolved = province
+    else:
+        target = _normalize_name(province)
+        for p in CITY_FOLDERS.keys():
+            if _normalize_name(p) == target:
+                resolved = p
+                break
+                
+    if not resolved:
+        return pd.DataFrame()
+        
+    folder = CITY_FOLDERS.get(resolved)
+    base_dir = os.path.dirname(__file__)
+    data_dir = _resolve_first_existing_path([
+        os.path.join(base_dir, "..", "data", "aqi_year_2025"),
+        os.path.join(base_dir, "data", "aqi_year_2025"),
+        os.path.join(base_dir, "aqi_year_2025"),
+    ])
+    
+    if not data_dir:
+        return pd.DataFrame()
+        
+    path_pattern = os.path.join(data_dir, folder, "*.parquet")
+    all_files = glob.glob(path_pattern)
+    
+    if not all_files:
+        return pd.DataFrame()
+        
+    try:
+        from concurrent.futures import ThreadPoolExecutor
+        def _read_one(p):
+            try:
+                # Exclude all.parquet if we want pure station data, 
+                # but keep it if we want the aggregated baseline too.
+                # Here we keep everything for maximum detail.
+                d = pd.read_parquet(p)
+                # Ensure city is set
+                if "city" not in d.columns:
+                    if "province" in d.columns and "location" in d.columns:
+                        d["city"] = d.apply(
+                            lambda r: f"{r['province']} - {r['location']}" if pd.notna(r["location"]) and str(r["location"]).lower() != "nan" else str(r["province"]),
+                            axis=1
+                        )
+                    elif "province" in d.columns:
+                        d["city"] = d["province"].astype(str)
+                cols = [c for c in PREFERRED_COLUMNS if c in d.columns]
+                return _postprocess_df(d[cols])
+            except Exception:
+                return None
+        
+        with ThreadPoolExecutor(max_workers=8) as exe:
+            dfs = list(exe.map(_read_one, all_files))
+        
+        dfs = [d for d in dfs if d is not None and not d.empty]
+        if not dfs:
+            return pd.DataFrame()
+            
+        return pd.concat(dfs, ignore_index=True)
+    except Exception:
+        return pd.DataFrame()
