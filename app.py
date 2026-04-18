@@ -11,7 +11,7 @@ from components.footer import render_footer
 from components.header import render_header
 from components.sidebar import render_sidebar
 from services.data_loader import load_data
-from tabs import overview_tab, location_tab, datetime_tab, atmos_tab, aqi_tab, weather_tab, interaction_tab
+from tabs import overview_tab, location_tab, datetime_tab, atmos_tab, aqi_tab, weather_dashboard, interaction_tab
 from utils.css import inject_css
 from utils.loading import dashboard_loading
 from utils.helpers import (
@@ -329,7 +329,7 @@ def render_dashboard():
     elif active_tab == "aqi":
         render_tab_or_blank(aqi_tab, state["df"])
     elif active_tab == "weather":
-        render_tab_or_blank(weather_tab, state["df"])
+        render_tab_or_blank(weather_dashboard, state["df"])
     elif active_tab == "interaction":
         render_tab_or_blank(interaction_tab, state["df"])
     else:
