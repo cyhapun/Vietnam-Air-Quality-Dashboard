@@ -11,7 +11,7 @@ from components.footer import render_footer
 from components.header import render_header
 from components.sidebar import render_sidebar
 from services.data_loader import load_data
-from tabs import overview_tab, location_tab, aqi_tab, weather_dashboard, interaction_tab
+from tabs import overview_tab, aqi_tab, weather_dashboard, interaction_tab
 from utils.css import inject_css
 from utils.loading import dashboard_loading
 from utils.helpers import (
@@ -320,8 +320,6 @@ def render_dashboard():
                 state, df_override=overview_df, scope_label=selected_scope_label
             )
             render_tab_or_blank(overview_tab, overview_df)
-    elif active_tab == "location":
-        render_tab_or_blank(location_tab, state["df"])
     elif active_tab == "aqi":
         render_tab_or_blank(aqi_tab, state["df"])
     elif active_tab == "weather":

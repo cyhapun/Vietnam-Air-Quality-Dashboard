@@ -9,11 +9,6 @@ TAB_ITEMS = [
         "Tổng quan",
     ),
     (
-        "location",
-        """<svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.9 7-11a7 7 0 1 0-14 0c0 5.1 7 11 7 11Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.8"/></svg>""",
-        "Vị trí",
-    ),
-    (
         "aqi",
         """<svg viewBox="0 0 24 24" fill="none"><path d="M4 16c2-1.5 4-1.5 6 0m2-3c2-1.5 4-1.5 6 0m-14 6c2-1.5 4-1.5 6 0m2 0c2-1.5 4-1.5 6 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="6" cy="7" r="2" fill="currentColor"/></svg>""",
         "AQI",
