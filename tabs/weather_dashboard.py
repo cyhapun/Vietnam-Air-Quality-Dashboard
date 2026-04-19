@@ -121,7 +121,7 @@ def _inject_weather_css():
     /* ── Page header ── */
     .wth-page-header {
         display: flex; align-items: center; gap: 14px;
-        padding: 18px 0 6px;
+        padding: 0 0 10px;
     }
     .wth-page-icon {
         width: 42px; height: 42px; border-radius: 12px;
@@ -147,7 +147,7 @@ def _inject_weather_css():
     .wth-section {
         font-size: .62rem; font-weight: 700; text-transform: uppercase;
         letter-spacing: .8px; color: #94a3b8;
-        margin: 26px 0 14px;
+        margin: -12px 0 10px;
         display: flex; align-items: center; gap: 10px;
     }
     .wth-section::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
@@ -299,7 +299,7 @@ def _go_layer2(province: str):
 def _season_selector(key_prefix: str) -> tuple[str, int | None]:
     all_opts = list(SEASON_PRESETS.keys()) + MONTH_NAMES
     preset = _get_state(f"{key_prefix}_season", "Cả năm")
-    sel = st.segmented_control("Giai đoạn", all_opts, default=preset, key=f"{key_prefix}_sg")
+    sel = st.segmented_control("Giai đoạn", all_opts, default=preset, key=f"{key_prefix}_sg", label_visibility="collapsed")
     if sel:
         preset = sel
     _set_state(**{f"{key_prefix}_season": preset})
@@ -468,15 +468,14 @@ def _render_layer1(df: pd.DataFrame):
         "<div class='wth-page-header'>"
         "<div class='wth-page-icon'>🌤</div>"
         "<div>"
-        "<div class='wth-page-title'>Thời tiết Toàn quốc</div>"
-        "<div class='wth-page-sub'>Dữ liệu quan trắc khí tượng Việt Nam · Phân tích theo giai đoạn và vùng miền</div>"
+        "<div class='wth-page-title' style='font-size: 1.4rem;'>Thời tiết Toàn quốc</div>"
+        "<div class='wth-page-sub' style='font-size: 1rem;'>Dữ liệu quan trắc khí tượng Việt Nam · Phân tích theo giai đoạn và vùng miền</div>"
         "</div></div>",
         unsafe_allow_html=True,
     )
 
     # ── Unified filter bar ───────────────────────────────────────────────────────
-    st.markdown("<div class='wth-filter-bar'>", unsafe_allow_html=True)
-    fc1, fc2, fc3 = st.columns([1.8, 1.2, 1.0], gap="small")
+    fc1, fc2 = st.columns([1.6, 1], gap="large")
 
     with fc1:
         st.markdown("<div class='wth-filter-label'>Giai đoạn phân tích</div>", unsafe_allow_html=True)
@@ -492,22 +491,10 @@ def _render_layer1(df: pd.DataFrame):
             "Chỉ số", var_opts,
             format_func=lambda x: f"{VAR_META[x]['icon']} {VAR_META[x]['label']}",
             selection_mode="single", default=cur_var, key="l1_var_sg",
+            label_visibility="collapsed",
         ) or cur_var
         _set_state(l1_var=cur_var)
 
-    with fc3:
-        st.markdown("<div class='wth-filter-label'>Trạng thái dữ liệu</div>", unsafe_allow_html=True)
-        n_cities  = df["city"].nunique() if "city" in df.columns else 0
-        n_records = len(df)
-        st.markdown(
-            f"<div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;padding:8px 12px;margin-top:2px'>"
-            f"<div style='font-size:.68rem;color:#16a34a;font-weight:700'>● LIVE DATA</div>"
-            f"<div style='font-size:.72rem;color:#166534;margin-top:2px'>"
-            f"{n_cities} tỉnh · {n_records:,} bản ghi</div></div>",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
     filtered = _filter_by_season(df, preset, month)
     annual   = _agg_annual(filtered)
@@ -588,12 +575,12 @@ def _render_layer1(df: pd.DataFrame):
             c_sel, c_btn = st.columns([3, 1], gap="small")
             with c_sel:
                 sel = st.selectbox(
-                    "Chọn tỉnh xem chi tiết:", ["—"] + sorted(annual["city"].tolist()),
+                    "Chọn tỉnh xem chi tiết:", ["Cả nước"] + sorted(annual["city"].tolist()),
                     key="l1_drill_sel", label_visibility="collapsed",
                 )
             with c_btn:
                 if st.button("Chi tiết →", type="primary", key="l1_drill_btn", width='stretch'):
-                    if sel != "—":
+                    if sel != "Cả nước":
                         _go_layer2(sel)
         else:
             st.info("Không đủ dữ liệu bản đồ.")
@@ -760,8 +747,7 @@ def _render_layer2(df: pd.DataFrame):
     )
 
     # ── Filter bar ───────────────────────────────────────────────────────────────
-    st.markdown("<div class='wth-filter-bar'>", unsafe_allow_html=True)
-    fc1, fc2 = st.columns([1.6, 1.4], gap="small")
+    fc1, fc2 = st.columns([1.6, 1], gap="large")
     with fc1:
         st.markdown("<div class='wth-filter-label'>Giai đoạn phân tích</div>", unsafe_allow_html=True)
         preset, month = _season_selector("l2")
@@ -772,8 +758,8 @@ def _render_layer2(df: pd.DataFrame):
             "Chỉ số", l2_vars,
             format_func=lambda x: f"{VAR_META[x]['icon']} {VAR_META[x]['label']}",
             selection_mode="single", default=l2_vars[0], key="l2_pv_sg",
+            label_visibility="collapsed",
         ) or l2_vars[0]
-    st.markdown("</div>", unsafe_allow_html=True)
 
     filtered = _filter_by_season(df, preset, month)
 

@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -921,9 +921,13 @@ def render(df: pd.DataFrame):
     work = work.dropna(subset=["timestamp"])
 
     st.markdown(
-        '<div class="card" style="padding: 0.85rem 1rem; margin-bottom: 0.35rem;">'
-        '<div class="card-title" style="margin-bottom: 4px;"><span class="q-tag">Tương tác</span>Phân tích tác động thời tiết - địa lý đến AQI/PM2.5</div>'
-        "</div>",
+        '<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
+        '<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
+        '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">TƯƠNG TÁC</span>'
+        'Phân tích tác động Thời tiết - Địa lý'
+        '</div>'
+        '<div style="font-size: 1rem; color: #64748b; line-height: 1.5;">Khám phá mối liên hệ giữa các yếu tố môi trường và vị trí địa lý đến chất lượng không khí.</div>'
+        '</div>',
         unsafe_allow_html=True,
     )
 

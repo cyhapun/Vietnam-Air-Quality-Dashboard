@@ -30,10 +30,6 @@ def render_header(state, logo_html):
           <div class="hdr-stat-lbl">Khu vực</div>
         </div>
         <div class="hdr-stat">
-          <div class="hdr-stat-val">{len(df):,}</div>
-          <div class="hdr-stat-lbl">Bản ghi</div>
-        </div>
-        <div class="hdr-stat">
           <div class="hdr-stat-val">Từ {s_d.strftime('%d/%m/%y')} đến {e_d.strftime('%d/%m/%y')}</div>
           <div class="hdr-stat-lbl">Thời gian</div>
         </div>

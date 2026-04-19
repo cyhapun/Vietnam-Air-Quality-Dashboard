@@ -505,13 +505,12 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
     else:
         options = sorted(df_sub["province"].unique().astype(str))
         default1 = "Hà Nội" if "Hà Nội" in options else options[0]
-        # Use exact match from screenshot: "Hồ Chí Minh"
         default2 = "Hồ Chí Minh" if "Hồ Chí Minh" in options else options[-1]
         df_sub["comp_label"] = df_sub["province"].astype(str)
 
     # 4. Section Header
     st.markdown(f'''<div style="margin-top: 2rem; margin-bottom: 20px;">
-        <div style="font-size: 20px; font-weight: 700; color: #0f172a;">Đối chiếu Chất lượng</div>
+        <div style="font-size: 20px; font-weight: 700; color: #0f172a;">Phân tích Đối chiếu</div>
         <div style="font-size: 13px; color: #64748b;">So sánh trực tiếp nồng độ {poll_label} giữa hai khu vực tự chọn</div>
     </div>''', unsafe_allow_html=True)
 
@@ -652,10 +651,16 @@ def render(global_df):
     ctx = st.session_state.get("dashboard_context", {})
     if ctx: globals().update(ctx)
     
-    st.markdown('<div class="card" style="padding: 1.5rem; margin-bottom: 1rem;">'
-                '<div class="card-title" style="margin-bottom: 4px;"><span class="q-tag">Lịch Sử</span>Phân tích Chuỗi thời gian & Xu hướng</div>'
-                '<div class="card-sub" style="margin-bottom: 16px;">Theo dõi dao động nồng độ chất ô nhiễm tại một khu vực cụ thể qua các mốc thời gian.</div>', 
-                unsafe_allow_html=True)    
+    st.markdown(
+        '<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
+        '<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
+        '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">LỊCH SỬ</span>'
+        'Phân tích Chuỗi thời gian & Xu hướng'
+        '</div>'
+        '<div style="font-size: 1rem; color: #64748b; line-height: 1.5;">Theo dõi dao động nồng độ chất ô nhiễm tại một khu vực cụ thể qua các mốc thời gian.</div>'
+        '</div>',
+        unsafe_allow_html=True
+    )
     cities = list(CITY_FOLDERS.keys())
     
     # Initialize State
