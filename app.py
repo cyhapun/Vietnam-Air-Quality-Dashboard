@@ -2,8 +2,8 @@ import streamlit as st
 import threading
 import time
 
-from services.crawl_data.update_aqi_hourly import run_hourly_update 
-from services.crawl_data.get_province_aqi import run_province_aggregation 
+from services.crawl_data.update_aqi_hourly import run_hourly_update
+from services.crawl_data.get_province_aqi import run_province_aggregation
 from services.crawl_data.get_forecast import run_forecast_update
 import argparse
 
@@ -34,6 +34,7 @@ from utils.helpers import (
     rank_rows_html,
 )
 
+
 # Hàm chạy ngầm để lập lịch
 def start_crawler_thread():
     time.sleep(20)
@@ -42,7 +43,7 @@ def start_crawler_thread():
             print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler đang chạy ngầm...")
             # Bước 1: Cào dữ liệu mới cho từng trạm (Batch API)
             run_hourly_update()
-            
+
             # Bước 2: Tính toán lại giá trị đại diện (Mean/Mode) cho từng tỉnh thành
             run_province_aggregation()
 
@@ -52,11 +53,12 @@ def start_crawler_thread():
             print("Đã hoàn tất cập nhật dữ liệu!")
         except Exception as e:
             print(f"❌ Lỗi crawler: {e}")
-        
-        # Ngủ 1 tiếng (3610 giây) rồi chạy tiếp (chừa 10s để API cập nhật dữ liệu tránh lỗi)
-        time.sleep(3610) 
 
-# Sử dụng decorator cache để đảm bảo thread này CHỈ KHỞI TẠO 1 LẦN 
+        # Ngủ 1 tiếng (3610 giây) rồi chạy tiếp (chừa 10s để API cập nhật dữ liệu tránh lỗi)
+        time.sleep(3610)
+
+
+# Sử dụng decorator cache để đảm bảo thread này CHỈ KHỞI TẠO 1 LẦN
 # ngay cả khi Streamlit rerun (do user thao tác trên web)
 @st.cache_resource
 def initialize_background_tasks():
@@ -64,11 +66,12 @@ def initialize_background_tasks():
     thread.start()
     return "Crawler started"
 
+
 parser = argparse.ArgumentParser(description="Tùy chọn cho Vietnam AQI Dashboard")
 parser.add_argument(
-    "--real-time", 
-    action="store_true", 
-    help="Bật tính năng chạy ngầm crawler để cập nhật dữ liệu real-time"
+    "--real-time",
+    action="store_true",
+    help="Bật tính năng chạy ngầm crawler để cập nhật dữ liệu real-time",
 )
 
 # Sử dụng parse_known_args để bỏ qua các tham số mặc định của lệnh `streamlit run`
@@ -154,6 +157,7 @@ def _consume_header_actions():
 
 _consume_header_actions()
 
+
 def render_tab_or_blank(tab_module, df):
     render_fn = getattr(tab_module, "render", None)
     if callable(render_fn):
@@ -192,11 +196,17 @@ def render_dashboard():
 
     st.markdown('<div class="main-limit">', unsafe_allow_html=True)
     active_tab = state.get("active_tab", "overview")
+    previous_active_tab = st.session_state.get("_last_active_tab")
+    if active_tab == "interaction" and previous_active_tab != "interaction":
+        st.session_state["interaction_time_range"] = "2025"
+    st.session_state["_last_active_tab"] = active_tab
 
     if active_tab == "overview":
         overview_df = state["df"]
         province_col = "province" if "province" in overview_df.columns else "city"
-        province_options = sorted(overview_df[province_col].dropna().astype(str).unique().tolist())
+        province_options = sorted(
+            overview_df[province_col].dropna().astype(str).unique().tolist()
+        )
         hcm_default = next(
             (
                 p
@@ -215,18 +225,38 @@ def render_dashboard():
         if st.session_state["ov_time_range"] not in time_options:
             st.session_state["ov_time_range"] = "24h"
 
-        c_filter_mode, c_filter_target, c_filter_time = st.columns([1, 1.3, 0.8], gap="small")
+        c_filter_mode, c_filter_target, c_filter_time = st.columns(
+            [1, 1.3, 0.8], gap="small"
+        )
         with c_filter_mode:
-            st.markdown("<div class='ov-filter-label'>Phạm vi</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='ov-filter-label'>Phạm vi</div>", unsafe_allow_html=True
+            )
             if "overview_scope_mode" not in st.session_state:
                 st.session_state.overview_scope_mode = "Cả nước"
 
             b1, b2 = st.columns(2, gap="small")
-            if b1.button("Cả nước", type="primary" if st.session_state.overview_scope_mode == "Cả nước" else "secondary", width='stretch'):
+            if b1.button(
+                "Cả nước",
+                type=(
+                    "primary"
+                    if st.session_state.overview_scope_mode == "Cả nước"
+                    else "secondary"
+                ),
+                width="stretch",
+            ):
                 st.session_state.overview_scope_mode = "Cả nước"
                 st.session_state["overview_scope_province"] = None
                 st.rerun()
-            if b2.button("Theo Tỉnh thành", type="primary" if st.session_state.overview_scope_mode == "Theo Tỉnh thành" else "secondary", width='stretch'):
+            if b2.button(
+                "Theo Tỉnh thành",
+                type=(
+                    "primary"
+                    if st.session_state.overview_scope_mode == "Theo Tỉnh thành"
+                    else "secondary"
+                ),
+                width="stretch",
+            ):
                 st.session_state.overview_scope_mode = "Theo Tỉnh thành"
                 if not st.session_state.get("overview_scope_province") and hcm_default:
                     st.session_state["overview_scope_province"] = hcm_default
@@ -235,20 +265,27 @@ def render_dashboard():
             scope_mode = st.session_state.overview_scope_mode
         selected_scope_label = "Việt Nam"
         with c_filter_target:
-            st.markdown("<div class='ov-filter-label'>Khu vực cụ thể</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='ov-filter-label'>Khu vực cụ thể</div>",
+                unsafe_allow_html=True,
+            )
             if (
                 scope_mode == "Theo Tỉnh thành"
                 and not st.session_state.get("overview_scope_province")
                 and hcm_default
             ):
                 st.session_state["overview_scope_province"] = hcm_default
-            
+
             cur_prov = st.session_state.get("overview_scope_province")
             if scope_mode == "Theo Tỉnh thành":
                 if cur_prov in province_options:
                     sb_index = province_options.index(cur_prov)
                 else:
-                    sb_index = province_options.index(hcm_default) if hcm_default in province_options else 0
+                    sb_index = (
+                        province_options.index(hcm_default)
+                        if hcm_default in province_options
+                        else 0
+                    )
             else:
                 sb_index = None
 
@@ -264,14 +301,18 @@ def render_dashboard():
                 disabled=scope_mode != "Theo Tỉnh thành",
                 label_visibility="collapsed",
             )
-            
+
             if scope_mode == "Theo Tỉnh thành" and selected_province != cur_prov:
                 st.session_state["overview_scope_province"] = selected_province
                 st.rerun()
             if scope_mode == "Theo Tỉnh thành":
                 if selected_province:
                     try:
-                        from services.data_loader import load_province_detail, _apply_aqi_labels
+                        from services.data_loader import (
+                            load_province_detail,
+                            _apply_aqi_labels,
+                        )
+
                         s_arg = str(state["s_d"]) if "s_d" in state else None
                         e_arg = str(state["e_d"]) if "e_d" in state else None
                         with dashboard_loading(
@@ -288,12 +329,16 @@ def render_dashboard():
                             )
                         overview_df = _apply_aqi_labels(detail_raw.copy())
                     except Exception:
-                        overview_df = overview_df[overview_df[province_col] == selected_province].copy()
+                        overview_df = overview_df[
+                            overview_df[province_col] == selected_province
+                        ].copy()
                     selected_scope_label = selected_province
                 else:
                     overview_df = overview_df.iloc[0:0]
         with c_filter_time:
-            st.markdown("<div class='ov-filter-label'>Thời gian</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='ov-filter-label'>Thời gian</div>", unsafe_allow_html=True
+            )
             selected_time = st.selectbox(
                 "Thời gian",
                 options=time_options,
@@ -321,7 +366,7 @@ def render_dashboard():
     else:
         render_tab_or_blank(overview_tab, state["df"])
 
-    st.markdown("</div>", unsafe_allow_html=True) # Closing main-limit
+    st.markdown("</div>", unsafe_allow_html=True)  # Closing main-limit
     render_footer()
 
 
