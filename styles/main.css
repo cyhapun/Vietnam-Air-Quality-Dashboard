@@ -56,7 +56,7 @@ footer {
     position: sticky;
     top: 0rem;
     z-index: 999;
-    margin: 0 -1rem 1rem -1rem !important;
+    margin-bottom: 1rem;
 }
 
 ::-webkit-scrollbar {
@@ -273,16 +273,18 @@ div[data-testid="stVerticalBlock"] > div:has(.hdr) {
     position: sticky;
     top: 0;
     z-index: 999;
-    margin: 0 -1rem; /* remove streamlit gap at edges if any */
 }
 
 .hdr {
     background: var(--pri-800);
     padding: 12px 24px;
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    justify-content: space-between;
     gap: 16px;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .hdr-left {
@@ -326,7 +328,7 @@ div[data-testid="stVerticalBlock"] > div:has(.hdr) {
     display: flex;
     align-items: center;
     gap: 20px;
-    flex-shrink: 0;
+    justify-content: flex-end;
 }
 
 .hdr-stat {
@@ -2504,6 +2506,7 @@ section[data-testid="stSidebar"][aria-expanded="false"]>div:first-child {
     padding-top: 2.2rem !important;
     padding-left: 1rem !important;
     padding-right: 1rem !important;
+    padding-bottom: 1rem !important;
 }
 
 .hdr {
@@ -2965,6 +2968,7 @@ section.main [role="option"] * {
     .hdr {
         padding: 10px 12px;
         border-radius: 10px;
+        grid-template-columns: 1fr;
     }
 
     .hdr-right {
