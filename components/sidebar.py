@@ -14,16 +14,6 @@ TAB_ITEMS = [
         "Vị trí",
     ),
     (
-        "datetime",
-        """<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 3h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>""",
-        "Thời gian",
-    ),
-    (
-        "atmos",
-        """<svg viewBox="0 0 24 24" fill="none"><path d="M6 18h11a4 4 0 1 0-.7-7.94A6 6 0 0 0 5.2 9.4 4.2 4.2 0 0 0 6 18Z" stroke="currentColor" stroke-width="1.8"/><path d="M18.5 6.5v-3M20 8l2-2M17 8l-2-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>""",
-        "Khí tượng",
-    ),
-    (
         "aqi",
         """<svg viewBox="0 0 24 24" fill="none"><path d="M4 16c2-1.5 4-1.5 6 0m2-3c2-1.5 4-1.5 6 0m-14 6c2-1.5 4-1.5 6 0m2 0c2-1.5 4-1.5 6 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="6" cy="7" r="2" fill="currentColor"/></svg>""",
         "AQI",
