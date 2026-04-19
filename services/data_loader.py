@@ -119,6 +119,7 @@ def _build_city_column(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _postprocess_df(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
     df = _build_city_column(df)
     if "city" not in df.columns:
         st.error("Thiếu cột 'city' trong dữ liệu đầu vào.")
