@@ -16,6 +16,13 @@ CITY_FOLDERS = {
     "Lâm Đồng": "lam_dong", "Lạng Sơn": "lang_son", "Lào Cai": "lao_cai", "Nghệ An": "nghe_an",
     "Ninh Bình": "ninh_binh", "Phú Thọ": "phu_tho", "Quảng Ngãi": "quang_ngai", "Quảng Ninh": "quang_ninh",
     "Quảng Trị": "quang_tri", "Sơn La": "son_la", "Tây Ninh": "tay_ninh", "Thái Nguyên": "thai_nguyen",
+    "Thanh Hóa": "thanh_hoa", "Tuyên Quang": "tuyen_quang", "Vĩnh Long": "vinh_long"
+}
+
+REGIONS = {
+    "Miền Bắc": ["Hà Nội", "Bắc Ninh", "Cao Bằng", "Điện Biên", "Hải Phòng", "Hưng Yên", "Lai Châu", "Lạng Sơn", "Lào Cai", "Ninh Bình", "Phú Thọ", "Quảng Ninh", "Sơn La", "Thái Nguyên", "Tuyên Quang"],
+    "Miền Trung": ["Đà Nẵng", "Huế", "Hà Tĩnh", "Khánh Hòa", "Lâm Đồng", "Nghệ An", "Quảng Ngãi", "Quảng Trị", "Gia Lai", "Đắk Lắk", "Thanh Hóa"],
+    "Miền Nam": ["Thành phố Hồ Chí Minh", "An Giang", "Cà Mau", "Cần Thơ", "Đồng Nai", "Đồng Tháp", "Tây Ninh", "Vĩnh Long"]
 }
 
 @st.cache_data(ttl=3600*24, show_spinner=False)
@@ -316,9 +323,11 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     fig.add_trace(go.Bar(
         x=[period_lbl],
         y=[prev_val],
+        text=[f"<b>{prev_val:.1f}</b>"],
+        textposition='auto',
         name=period_lbl,
         marker_color=hex_rgba(prev_c, 0.4), # More subtle past
-        marker_line=dict(width=2, color=prev_c),
+        marker_line=dict(width=2, color="#fff"),
         hovertemplate=f"{period_lbl}: <b>%{{y:.1f}}</b><extra></extra>"
     ))
     
@@ -326,16 +335,18 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     fig.add_trace(go.Bar(
         x=["Hiện tại"],
         y=[curr_val],
+        text=[f"<b>{curr_val:.1f}</b>"],
+        textposition='auto',
         name="Hiện tại",
         marker_color=curr_color, # Stronger current
-        marker_line=dict(width=2, color="white"),
+        marker_line=dict(width=2, color="#fff"),
         hovertemplate=f"Hiện tại: <b>%{{y:.1f}}</b><extra></extra>"
     ))
     
     fig.update_layout(
         showlegend=False,
         height=450,
-        margin=dict(l=10, r=10, t=40, b=10), # More top margin for text labels
+        margin=dict(l=10, r=10, t=50, b=10), # Increased top margin for labels
         yaxis={**ax(), "gridcolor": "rgba(148,163,184,0.08)", "zeroline": False},
         xaxis=dict(**ax()),
         paper_bgcolor="rgba(0,0,0,0)",
@@ -410,26 +421,33 @@ def render_correlation_heatmap(df_sub, time_range):
     # Create mask for triangular heatmap (keep only lower triangle, exclude diagonal)
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=0)
     df_masked = corr_matrix.where(~mask)
-    z = df_masked.values
-    
-    # Custom hover text matrix to avoid "NaN" on empty areas
-    custom_hover = []
+
+    # Create matrices for text and hover
+    text_matrix = []
+    hover_matrix = []
     for i in range(len(labels)):
-        row = []
+        t_row = []
+        h_row = []
         for j in range(len(labels)):
-            if i > j: # Only lower triangle
+            if i > j:
                 val = corr_matrix.values[i, j]
-                row.append(f"Tương quan giữa <b>{labels[j]}</b> và <b>{labels[i]}</b>: <b>{val:.2f}</b>")
+                t_row.append(f"<b>{val:.2f}</b>")
+                h_row.append(f"Tương quan giữa <b>{labels[j]}</b> và <b>{labels[i]}</b>: <b>{val:.2f}</b>")
             else:
-                row.append("") # Empty for hidden cells
-        custom_hover.append(row)
+                t_row.append("")
+                h_row.append("")
+        text_matrix.append(t_row)
+        hover_matrix.append(h_row)
 
     # Standard scientific colorscale: Red (Positive Correlation) to Blue (Negative Correlation)
     fig = go.Figure(data=go.Heatmap(
-        z=z,
+        z=df_masked.values,
         x=labels,
         y=labels,
-        customdata=custom_hover,
+        customdata=hover_matrix,
+        text=text_matrix,
+        texttemplate="%{text}",
+        textfont={"size": 11, "family": "Be Vietnam Pro"},
         colorscale='RdBu_r', 
         zmin=-1, zmax=1,
         xgap=2, ygap=2,
@@ -450,6 +468,185 @@ def render_correlation_heatmap(df_sub, time_range):
         <div style="font-size: 12px; color: #64748b;">Mối liên hệ giữa các chất trong {time_range}</div>
     </div>''', unsafe_allow_html=True)
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=f"corr_heatmap_{time_range}")
+
+
+def render_regional_comparison(global_df, poll_key, poll_label, time_range):
+    if global_df.empty or poll_key not in global_df.columns:
+        return
+
+    # 1. Initialize session state for mode
+    if "aqi_comp_mode" not in st.session_state:
+        st.session_state.aqi_comp_mode = "Theo Miền"
+    comp_mode = st.session_state.aqi_comp_mode
+
+    # 2. Filter by time range
+    max_d = global_df["timestamp"].max()
+    delta_map = {
+        "24h": pd.Timedelta(hours=24),
+        "7 ngày": pd.Timedelta(days=7),
+        "30 ngày": pd.Timedelta(days=30),
+        "3 tháng": pd.Timedelta(days=90)
+    }
+    min_d = max_d - delta_map.get(time_range, pd.Timedelta(hours=24))
+    df_sub = global_df[global_df["timestamp"] >= min_d].copy()
+
+    if df_sub.empty:
+        return
+
+    # 3. Define options and defaults based on mode
+    if comp_mode == "Theo Miền":
+        options = list(REGIONS.keys())
+        default1, default2 = "Miền Bắc", "Miền Nam"
+        
+        prov_to_reg = {}
+        for reg, provs in REGIONS.items():
+            for p in provs: prov_to_reg[p] = reg
+        df_sub["comp_label"] = df_sub["province"].map(prov_to_reg).astype(str)
+    else:
+        options = sorted(df_sub["province"].unique().astype(str))
+        default1 = "Hà Nội" if "Hà Nội" in options else options[0]
+        # Use exact match from screenshot: "Hồ Chí Minh"
+        default2 = "Hồ Chí Minh" if "Hồ Chí Minh" in options else options[-1]
+        df_sub["comp_label"] = df_sub["province"].astype(str)
+
+    # 4. Section Header
+    st.markdown(f'''<div style="margin-top: 2rem; margin-bottom: 20px;">
+        <div style="font-size: 20px; font-weight: 700; color: #0f172a;">Đối chiếu Chất lượng</div>
+        <div style="font-size: 13px; color: #64748b;">So sánh trực tiếp nồng độ {poll_label} giữa hai khu vực tự chọn</div>
+    </div>''', unsafe_allow_html=True)
+
+    # 5. Layout Setup
+    col_left, col_right = st.columns([1.6, 1], gap="large")
+    
+    with col_left:
+        # Selector Row - Increased width for c_mode to prevent wrapping
+        c_mode, c_sel1, c_sel2 = st.columns([1.5, 1, 1], gap="medium")
+        
+        with c_mode:
+            st.markdown("<div style='font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;'>PHẠM VI</div>", unsafe_allow_html=True)
+            b1, b2 = st.columns(2, gap="small")
+            if b1.button("Theo Miền", type="primary" if comp_mode == "Theo Miền" else "secondary", width="stretch", key=f"btn_mien_{poll_key}"):
+                st.session_state.aqi_comp_mode = "Theo Miền"
+                st.session_state[f"comp_sel1_{poll_key}"] = "Miền Bắc"
+                st.session_state[f"comp_sel2_{poll_key}"] = "Miền Nam"
+                st.rerun()
+            if b2.button("Theo Tỉnh thành", type="primary" if comp_mode == "Theo Tỉnh thành" else "secondary", width="stretch", key=f"btn_tinh_{poll_key}"):
+                st.session_state.aqi_comp_mode = "Theo Tỉnh thành"
+                st.session_state[f"comp_sel1_{poll_key}"] = "Hà Nội"
+                st.session_state[f"comp_sel2_{poll_key}"] = "Hồ Chí Minh"
+                st.rerun()
+
+        with c_sel1:
+            st.markdown("<div style='font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;'>KHU VỰC 1</div>", unsafe_allow_html=True)
+            if f"comp_sel1_{poll_key}" not in st.session_state or st.session_state[f"comp_sel1_{poll_key}"] not in options:
+                st.session_state[f"comp_sel1_{poll_key}"] = default1
+            sel1 = st.selectbox("Khu vực 1", options, key=f"comp_sel1_{poll_key}", label_visibility="collapsed")
+        
+        with c_sel2:
+            st.markdown("<div style='font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;'>KHU VỰC 2</div>", unsafe_allow_html=True)
+            options2 = [o for o in options if o != sel1]
+            if f"comp_sel2_{poll_key}" not in st.session_state or st.session_state[f"comp_sel2_{poll_key}"] not in options2:
+                st.session_state[f"comp_sel2_{poll_key}"] = default2 if default2 in options2 else options2[0]
+            sel2 = st.selectbox("Khu vực 2", options2, key=f"comp_sel2_{poll_key}", label_visibility="collapsed")
+
+        # 6. Process Plot Data
+        df_plot = df_sub[df_sub["comp_label"].isin([sel1, sel2])].groupby("comp_label", observed=False)[poll_key].mean().reset_index()
+        df_plot = df_plot.rename(columns={"comp_label": "label"})
+        df_plot["label"] = df_plot["label"].astype(str)
+        df_plot["sort_idx"] = df_plot["label"].apply(lambda x: 0 if x == sel1 else 1)
+        df_plot = df_plot.sort_values("sort_idx")
+
+        if len(df_plot) < 2:
+            st.info("Không có đủ dữ liệu cho cặp so sánh này.")
+        else:
+            # Colors and labels
+            df_plot["clr"] = df_plot[poll_key].apply(lambda x: val_meta(x, poll_key)[1])
+            df_plot["lbl_aqi"] = df_plot[poll_key].apply(lambda x: val_meta(x, poll_key)[0])
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=df_plot["label"],
+                y=df_plot[poll_key],
+                marker_color=df_plot["clr"],
+                marker_line=dict(width=2, color="#fff"),
+                text=df_plot[poll_key].apply(lambda x: f"<b>{x:.1f}</b>"),
+                textposition='auto',
+                hovertemplate="<b>%{x}</b><br>" + f"{poll_label}: <b>%{{y:.1f}}</b><br>" + "Trạng thái: <b>%{customdata}</b><extra></extra>",
+                customdata=df_plot["lbl_aqi"]
+            ))
+
+            fig.update_layout(
+                height=320, margin=dict(l=10, r=10, t=10, b=10),
+                xaxis={**ax(), "showline": False, "tickfont": dict(size=13, color="#0f172a")},
+                yaxis={**ax(f"Trung bình {poll_label}"), "showgrid": True},
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", bargap=0.4
+            )
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=f"regional_comp_chart_{poll_key}")
+
+    # 7. Insights (Right Column)
+    with col_right:
+        if len(df_plot) >= 2:
+            val1 = df_plot[df_plot["label"] == sel1][poll_key].values[0]
+            val2 = df_plot[df_plot["label"] == sel2][poll_key].values[0]
+            
+            diff = abs(val1 - val2)
+            ratio = (diff / val2 * 100) if val2 > 0 else 0
+            status1, color1 = val_meta(val1, poll_key)
+            status2, color2 = val_meta(val2, poll_key)
+            
+            if diff < 0.1:
+                eval_text = "Chất lượng không khí giữa hai khu vực đạt mức <b>tương đồng</b> tuyệt đối."
+                detail_text = "Cả hai đều đang ghi nhận các chỉ số ô nhiễm ở mức gần như bằng nhau, cho thấy điều kiện khí tượng và nguồn phát thải tương đương."
+                b_color = "#94a3b8"
+            elif ratio < 1:
+                eval_text = f"Chênh lệch giữa hai khu vực là <b>không đáng kể</b> (chỉ khoảng {ratio:.2f}%)."
+                detail_text = "Mặc dù có sự khác biệt nhẹ, nhưng về cơ bản trải nghiệm hít thở và rủi ro sức khỏe tại hai nơi này là như nhau."
+                b_color = "#94a3b8"
+            else:
+                cleaner = sel1 if val1 < val2 else sel2
+                polluted = sel2 if val1 < val2 else sel1
+                eval_text = f"<b>{cleaner}</b> sạch hơn <b>{polluted}</b> khoảng <b>{ratio:.1f}%</b>."
+                
+                if val2 > 150 or val1 > 150:
+                    detail_text = f"Đáng chú ý, nồng độ {poll_label} đang ở mức cảnh báo cao. Sự chênh lệch {diff:.1f} đơn vị cho thấy <b>{cleaner}</b> đang kiểm soát ô nhiễm tốt hơn."
+                else:
+                    detail_text = f"Dựa trên dữ liệu {time_range} qua, <b>{cleaner}</b> duy trì nồng độ {poll_label} ổn định và thấp hơn so với <b>{polluted}</b>."
+                b_color = color1 if val1 < val2 else color2
+
+            # Health Advice based on the worse area
+            max_val = max(val1, val2)
+            if max_val <= 50:
+                advice = "Điều kiện lý tưởng cho mọi hoạt động ngoài trời tại cả hai khu vực."
+            elif max_val <= 100:
+                advice = "Nhóm nhạy cảm nên hạn chế thời gian vận động mạnh ngoài trời tại khu vực có chỉ số cao hơn."
+            else:
+                advice = f"Cần chú ý bảo vệ hô hấp, đặc biệt tại <b>{sel1 if val1 > val2 else sel2}</b> nơi ô nhiễm đang ở mức báo động."
+
+            # Ensure no leading whitespace for the f-string to prevent markdown code block rendering
+            html_insight = f'''<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+<div>
+    <div style="font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 1.25rem; text-transform: uppercase; letter-spacing: 0.5px;">Phân tích Đối chiếu</div>
+    <div style="margin-bottom: 1.25rem;">
+        <div style="font-size: 13px; color: #64748b;">Chênh lệch trung bình</div>
+        <div style="font-size: 28px; font-weight: 800; color: #0f172a;">{diff:.1f} <span style="font-size: 14px; font-weight: 500; color: #64748b;">đơn vị</span></div>
+    </div>
+    <div style="padding: 14px; background: white; border-radius: 8px; border-left: 4px solid {b_color}; margin-bottom: 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="font-size: 14px; color: #1e293b; line-height: 1.6;">{eval_text}</div>
+        <div style="font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 8px;">{detail_text}</div>
+    </div>
+</div>
+<div>
+    <div style="font-size: 13px; color: #64748b; line-height: 1.8; margin-bottom: 1rem;">
+        • <b>{sel1}</b>: <span style="color: {color1}; font-weight: 700;">{status1}</span><br>
+        • <b>{sel2}</b>: <span style="color: {color2}; font-weight: 700;">{status2}</span>
+    </div>
+    <div style="padding-top: 12px; border-top: 1px dashed #e2e8f0;">
+        <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase;">Khuyến nghị</div>
+        <div style="font-size: 13px; color: #1e293b; line-height: 1.5;">{advice}</div>
+    </div>
+</div>
+</div>'''
+            st.markdown(html_insight, unsafe_allow_html=True)
 
 def render(global_df):
     ctx = st.session_state.get("dashboard_context", {})
@@ -1189,15 +1386,18 @@ def render(global_df):
         # ── ADVANCED ANALYSIS SECTION ──
         st.markdown('<hr style="margin: 1.5rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
         st.markdown(f'''<div style="margin-bottom: 1.5rem;">
-            <div style="font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Phân tích Nâng cao</div>
-            <div style="font-size: 14px; color: #64748b;">Phát hiện các đặc tính ô nhiễm tại <span style="font-weight: 600;">{location_str}</span> qua chuỗi thời gian</div>
+            <div style="font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Phân tích Tương quan & So sánh</div>
         </div>''', unsafe_allow_html=True)
-        
+
         col_comp, col_heat = st.columns([1.25, 1.25], gap="large")
         with col_comp:
             render_comparison_bar_chart(df, selected_poll_key, time_range, poll_lbl)
         with col_heat:
             render_correlation_heatmap(df_analysis, time_range)
+
+        # ── REGIONAL COMPARISON SECTION (Moved to bottom) ──
+        st.markdown('<hr style="margin: 1.5rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
+        render_regional_comparison(global_df, selected_poll_key, poll_lbl, time_range)
     else:
         st.info("Hiện chưa có dữ liệu dự báo cho khu vực này.")
         

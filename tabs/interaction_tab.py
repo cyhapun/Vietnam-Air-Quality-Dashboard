@@ -814,7 +814,7 @@ def calc_province_cleaning_strength(df, min_samples):
         return pd.DataFrame()
 
     out = []
-    for province, g in df.groupby("province"):
+    for province, g in df.groupby("province", observed=False):
         g = g.dropna(subset=["aqi", "pm2_5", "wind_speed", "rain"])
         if len(g) < min_samples:
             continue
@@ -885,7 +885,7 @@ def calc_region_factor_impact(df, min_samples):
         return pd.DataFrame()
 
     out = []
-    for region, g in df.groupby("region_6"):
+    for region, g in df.groupby("region_6", observed=False):
         if region == "Chưa xếp vùng":
             continue
 
@@ -1150,7 +1150,7 @@ def render(df: pd.DataFrame):
                 )
                 st.plotly_chart(
                     fig_wind,
-                    use_container_width=True,
+                    width='stretch',
                     config={"displayModeBar": False},
                 )
                 _render_flow_scale("Gió yếu", "Gió mạnh")
@@ -1212,7 +1212,7 @@ def render(df: pd.DataFrame):
                 )
                 st.plotly_chart(
                     fig_rain,
-                    use_container_width=True,
+                    width='stretch',
                     config={"displayModeBar": False},
                 )
                 _render_flow_scale("Mưa ít", "Mưa nhiều")

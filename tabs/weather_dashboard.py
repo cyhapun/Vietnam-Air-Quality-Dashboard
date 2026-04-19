@@ -530,7 +530,7 @@ def _render_layer1(df: pd.DataFrame):
             if wind_city:
                 badges.append(f"💨 Gió mạnh nhất: <b>{escape(str(wind_city))}</b>")
         if not monthly.empty and "temp" in monthly.columns:
-            nat_mon = monthly.groupby("month")["temp"].mean()
+            nat_mon = monthly.groupby("month", observed=False)["temp"].mean()
             if not nat_mon.empty:
                 m_hot = int(nat_mon.idxmax())
                 badges.append(f"📅 Tháng nóng nhất: <b>Tháng {m_hot}</b>")
@@ -582,7 +582,7 @@ def _render_layer1(df: pd.DataFrame):
                 **_base_layout(height=430, margin=dict(l=0,r=0,t=0,b=0)),
                 mapbox=dict(style="carto-positron", zoom=4.5, center=dict(lat=16.5, lon=106.5)),
             )
-            st.plotly_chart(fig_map, use_container_width=True, config={"displayModeBar": False, "scrollZoom": True})
+            st.plotly_chart(fig_map, width='stretch', config={"displayModeBar": False, "scrollZoom": True})
 
             # Drill-down selector
             c_sel, c_btn = st.columns([3, 1], gap="small")
@@ -592,7 +592,7 @@ def _render_layer1(df: pd.DataFrame):
                     key="l1_drill_sel", label_visibility="collapsed",
                 )
             with c_btn:
-                if st.button("Chi tiết →", type="primary", key="l1_drill_btn", use_container_width=True):
+                if st.button("Chi tiết →", type="primary", key="l1_drill_btn", width='stretch'):
                     if sel != "—":
                         _go_layer2(sel)
         else:
@@ -648,7 +648,7 @@ def _render_layer1(df: pd.DataFrame):
                     legend=dict(orientation="h", x=0, y=1.1, font=dict(size=9), bgcolor="rgba(0,0,0,0)"),
                     hovermode="x unified", bargap=0.3,
                 )
-                st.plotly_chart(fig_t, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig_t, width='stretch', config={"displayModeBar": False})
 
                 # Peak / trough mini cards
                 if cur_var in nat_mon.columns:
@@ -691,7 +691,7 @@ def _render_layer1(df: pd.DataFrame):
                 **_base_layout(height=160, margin=dict(l=8,r=8,t=8,b=8)),
                 yaxis=_ax(meta.get("unit","")), xaxis=_ax(), showlegend=False,
             )
-            st.plotly_chart(fig_box, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig_box, width='stretch', config={"displayModeBar": False})
         _card_close()
 
     # ── Xếp hạng tỉnh thành ─────────────────────────────────────────────────────
@@ -734,7 +734,7 @@ def _render_layer2(df: pd.DataFrame):
             unsafe_allow_html=True,
         )
     with c_back:
-        if st.button("← Quay lại", key="l2_back", use_container_width=True):
+        if st.button("← Quay lại", key="l2_back", width='stretch'):
             _go_layer1()
 
     # ── Page header ─────────────────────────────────────────────────────────────
@@ -880,7 +880,7 @@ def _render_layer2(df: pd.DataFrame):
                 legend=dict(orientation="h", x=0, y=1.09, font=dict(size=9), bgcolor="rgba(0,0,0,0)"),
                 hovermode="x unified", bargap=0.05,
             )
-            st.plotly_chart(fig_tl, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig_tl, width='stretch', config={"displayModeBar": False})
     _card_close()
 
     # ── Section 2: Heatmap Calendar ──────────────────────────────────────────────
@@ -896,7 +896,7 @@ def _render_layer2(df: pd.DataFrame):
         )
 
     if "month" in prov_df.columns and "day" in prov_df.columns and hm_var in prov_df.columns:
-        pivot = (prov_df.groupby(["month","day"])[hm_var]
+        pivot = (prov_df.groupby(["month","day"], observed=False)[hm_var]
                  .agg("sum" if hm_var == "rain" else "mean")
                  .reset_index()
                  .pivot(index="month", columns="day", values=hm_var))
@@ -917,7 +917,7 @@ def _render_layer2(df: pd.DataFrame):
             xaxis=_ax("Ngày", tickmode="linear", dtick=5),
             yaxis=dict(**_ax(), autorange="reversed"),
         )
-        st.plotly_chart(fig_hm, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig_hm, width='stretch', config={"displayModeBar": False})
     _card_close()
 
     # ── Section 3: Bản đồ trạm + Hoa gió ────────────────────────────────────────
@@ -963,7 +963,7 @@ def _render_layer2(df: pd.DataFrame):
                 mapbox=dict(style="carto-positron", zoom=7,
                             center=dict(lat=float(lp["lat"].mean()), lon=float(lp["lon"].mean()))),
             )
-            st.plotly_chart(fig_lm, use_container_width=True, config={"displayModeBar": False, "scrollZoom": True})
+            st.plotly_chart(fig_lm, width='stretch', config={"displayModeBar": False, "scrollZoom": True})
         elif map_v and not loc_sum.empty and map_v in loc_sum.columns:
             ls = loc_sum.dropna(subset=[map_v]).sort_values(map_v, ascending=True).tail(15)
             mv = VAR_META[map_v]
@@ -976,7 +976,7 @@ def _render_layer2(df: pd.DataFrame):
                 **_base_layout(height=max(290, len(ls)*22), margin=dict(l=150,r=10,t=8,b=10)),
                 xaxis=_ax(f"{mv['label']} ({mv['unit']})"), yaxis=_ax(),
             )
-            st.plotly_chart(fig_fb, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig_fb, width='stretch', config={"displayModeBar": False})
         else:
             st.info("Không có dữ liệu theo địa điểm.")
         _card_close()
@@ -1017,7 +1017,7 @@ def _render_layer2(df: pd.DataFrame):
                     legend=dict(orientation="h", x=0.05, y=-0.12,
                                 font=dict(size=8, color="#64748b"), bgcolor="rgba(0,0,0,0)"),
                 )
-                st.plotly_chart(fig_wr, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig_wr, width='stretch', config={"displayModeBar": False})
             else:
                 st.info("Không đủ dữ liệu hướng gió.")
         else:

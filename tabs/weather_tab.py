@@ -2712,7 +2712,7 @@ def render_rhythm_24h(hourly_df: pd.DataFrame, city_name: str = ""):
             ),
             legend=dict(orientation="h", x=0.1, y=-0.07, font=dict(size=11)),
         ))
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
     # ── Right: Dual-axis wind+cloud line + insight ──
     with col_r:
@@ -2747,7 +2747,7 @@ def render_rhythm_24h(hourly_df: pd.DataFrame, city_name: str = ""):
                 legend=dict(orientation="h", x=0, y=1.15, font=dict(size=10)),
                 hovermode="x unified",
             ))
-            st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig2, width='stretch', config={"displayModeBar": False})
 
         # Insight box
         pk_t_hr  = int(ha.loc[ha["temp"].idxmax(), "hour"]) if not ha["temp"].isna().all() else 0
@@ -2847,7 +2847,7 @@ def render_rain_season(df: pd.DataFrame, city_name: str = "", scope_label: str =
             xaxis=dict(title=x_title, gridcolor="rgba(0,0,0,0)"),
             yaxis=dict(gridcolor="rgba(0,0,0,0)", tickfont=dict(size=10)),
         ))
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
     # ── Right: Bar (rain) + Line (humidity) + insight ──
     with col_r:
@@ -2881,7 +2881,7 @@ def render_rain_season(df: pd.DataFrame, city_name: str = "", scope_label: str =
             barmode="overlay",
             hovermode="x unified",
         ))
-        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig2, width='stretch', config={"displayModeBar": False})
 
         if not mth.empty and not mth["rain"].isna().all():
             w_idx = mth["rain"].idxmax()
@@ -2981,7 +2981,7 @@ def render_rain_signals(hourly_df: pd.DataFrame):
             hovermode="x unified",
             margin=dict(t=50, b=10, l=10, r=10)
         ))
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
     # ── Right: Scatter pressure vs rain + insight ──
     with col_r:
@@ -3008,7 +3008,7 @@ def render_rain_signals(hourly_df: pd.DataFrame):
                     yaxis=dict(title="Mưa (mm)", gridcolor="rgba(0,0,0,0.04)"),
                     hovermode="closest",
                 ))
-                st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig2, width='stretch', config={"displayModeBar": False})
 
         # ── Item 8: Auto rain signal pattern detection callout ──
         rain_signals_df = src if "pressure" in src.columns and "cloud" in src.columns and "rain" in src.columns else pd.DataFrame()
@@ -3114,7 +3114,7 @@ def render_wind_portrait(hourly_df: pd.DataFrame, daily_df: pd.DataFrame, scope_
                     ),
                     margin=dict(t=20, b=50, l=10, r=10),
                 ))
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
     # ── Right: Min/mean/max wind trend ──
     with col_r:
@@ -3164,7 +3164,7 @@ def render_wind_portrait(hourly_df: pd.DataFrame, daily_df: pd.DataFrame, scope_
                     legend=dict(orientation="h", x=0, y=1.15, font=dict(size=10)),
                     hovermode="x unified",
                 ))
-                st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig2, width='stretch', config={"displayModeBar": False})
 
         if "wind_dir" in hourly_df.columns:
             valid_w = hourly_df.dropna(subset=["wind_dir", "wind_speed"]).copy()
@@ -3243,7 +3243,7 @@ def render_spatial_map(detail_summary: pd.DataFrame, anchor_day=None):
                     ),
                     margin=dict(l=0, r=0, t=10, b=0),
                 ))
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
             else:
                 st.info("Không đủ tọa độ hợp lệ để vẽ bản đồ.")
         else:
@@ -3268,7 +3268,7 @@ def render_spatial_map(detail_summary: pd.DataFrame, anchor_day=None):
                     xaxis=dict(title="Điểm số (0-100)", range=[0, 105], gridcolor="rgba(0,0,0,0.06)"),
                     yaxis=dict(title="", tickfont=dict(size=10)),
                 ))
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
     with col_r:
         # Humidity vs Temp Analysis
@@ -3365,7 +3365,7 @@ def render_spatial_map(detail_summary: pd.DataFrame, anchor_day=None):
                 borderpad=3,
             )
 
-            st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig2, width='stretch', config={"displayModeBar": False})
             st.caption("Mỗi điểm = 1 địa điểm. Màu xanh = thoải mái, đỏ = ôi bức. Đường nét đứt = xu hướng tuyến tính (hồi quy). Hình chữ nhật xanh = Vùng nhiệt độ/ẩm lý tưởng.")
 
         if "comfort" in df.columns and "location" in df.columns:
@@ -3477,7 +3477,7 @@ def render_comparison(df: pd.DataFrame, comparison_items: list, level: str = "ci
             ),
             legend=dict(orientation="h", x=0, y=-0.08, font=dict(size=11)),
         ))
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
     # ── Right: Animated progress bars + mini dataframe ──
     with col_r:
@@ -3521,7 +3521,7 @@ def render_comparison(df: pd.DataFrame, comparison_items: list, level: str = "ci
                 "Độ ẩm": hum_val,
             })
         if table_rows:
-            st.dataframe(pd.DataFrame(table_rows), hide_index=True, use_container_width=True)
+            st.dataframe(pd.DataFrame(table_rows), hide_index=True, width='stretch')
         st.caption("Radar càng lớn = chỉ số tại địa điểm đó càng cao so với range chuẩn. Comfort score tích hợp AQI penalty.")
 
 

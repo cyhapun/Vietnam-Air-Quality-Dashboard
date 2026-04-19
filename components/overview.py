@@ -16,7 +16,7 @@ def _build_scope_metrics(df, state):
     _fmt_delta = state["fmt_delta"]
     city_col = "province" if "province" in df.columns else "city"
     city_aqi_mean = (
-        df.groupby(city_col)["aqi"].mean().sort_values(ascending=False)
+        df.groupby(city_col, observed=False)["aqi"].mean().sort_values(ascending=False)
         if city_col in df.columns
         else pd.Series(dtype=float)
     )
@@ -31,7 +31,7 @@ def _build_scope_metrics(df, state):
     who_pm25_multi = round(max(avg_pm25, 0.1) / 5.0, 1)
     latest_obs = df["timestamp"].max()
 
-    daily_trend = df.groupby("date")[["aqi", "pm2_5"]].mean().sort_index()
+    daily_trend = df.groupby("date", observed=False)[["aqi", "pm2_5"]].mean().sort_index()
     if len(daily_trend) >= 2:
         aqi_1d_text, aqi_1d_color = _fmt_delta(
             daily_trend["aqi"].iloc[-1], daily_trend["aqi"].iloc[-2]
@@ -57,7 +57,7 @@ def _build_scope_metrics(df, state):
     if len(daily_trend) >= 2 and city_col in df.columns:
         last_date = daily_trend.index[-1]
         prev_date = daily_trend.index[-2]
-        city_day = df.groupby(["date", city_col])["aqi"].mean().reset_index()
+        city_day = df.groupby(["date", city_col], observed=False)["aqi"].mean().reset_index()
         now_rank = (
             city_day[city_day["date"] == last_date]
             .sort_values("aqi", ascending=False)[city_col]

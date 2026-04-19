@@ -227,8 +227,8 @@ def render_dashboard():
                 st.session_state.overview_scope_mode = "Cả nước"
                 st.session_state["overview_scope_province"] = None
                 st.rerun()
-            if b2.button("Theo tỉnh/thành", type="primary" if st.session_state.overview_scope_mode == "Theo tỉnh/thành" else "secondary", width='stretch'):
-                st.session_state.overview_scope_mode = "Theo tỉnh/thành"
+            if b2.button("Theo Tỉnh thành", type="primary" if st.session_state.overview_scope_mode == "Theo Tỉnh thành" else "secondary", width='stretch'):
+                st.session_state.overview_scope_mode = "Theo Tỉnh thành"
                 if not st.session_state.get("overview_scope_province") and hcm_default:
                     st.session_state["overview_scope_province"] = hcm_default
                 st.rerun()
@@ -238,14 +238,14 @@ def render_dashboard():
         with c_filter_target:
             st.markdown("<div class='ov-filter-label'>Khu vực cụ thể</div>", unsafe_allow_html=True)
             if (
-                scope_mode == "Theo tỉnh/thành"
+                scope_mode == "Theo Tỉnh thành"
                 and not st.session_state.get("overview_scope_province")
                 and hcm_default
             ):
                 st.session_state["overview_scope_province"] = hcm_default
             
             cur_prov = st.session_state.get("overview_scope_province")
-            if scope_mode == "Theo tỉnh/thành":
+            if scope_mode == "Theo Tỉnh thành":
                 if cur_prov in province_options:
                     sb_index = province_options.index(cur_prov)
                 else:
@@ -259,17 +259,17 @@ def render_dashboard():
                 index=sb_index,
                 placeholder=(
                     "Vui lòng chọn tỉnh thành"
-                    if scope_mode == "Theo tỉnh/thành"
-                    else "Chỉ áp dụng khi chọn Theo tỉnh/thành"
+                    if scope_mode == "Theo Tỉnh thành"
+                    else "Chỉ áp dụng khi chọn Theo Tỉnh thành"
                 ),
-                disabled=scope_mode != "Theo tỉnh/thành",
+                disabled=scope_mode != "Theo Tỉnh thành",
                 label_visibility="collapsed",
             )
             
-            if scope_mode == "Theo tỉnh/thành" and selected_province != cur_prov:
+            if scope_mode == "Theo Tỉnh thành" and selected_province != cur_prov:
                 st.session_state["overview_scope_province"] = selected_province
                 st.rerun()
-            if scope_mode == "Theo tỉnh/thành":
+            if scope_mode == "Theo Tỉnh thành":
                 if selected_province:
                     try:
                         from services.data_loader import load_province_detail, _apply_aqi_labels
