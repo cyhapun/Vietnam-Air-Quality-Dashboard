@@ -28,15 +28,15 @@ def render_navigation(active_tab: str):
             """
             <style>
             .az-nav-host {
-              position: absolute;
+              position: fixed;
               left: 0;
-              top: 0;
+              top: 160px;
               z-index: 4104;
               overflow: visible;
             }
             .az-nav {
-              position: absolute;
-              top: 0;
+              position: fixed;
+              top: 160px;
               left: 0;
               width: 68px;
               background: linear-gradient(180deg,#0f2743 0%,#102844 70%,#112d4e 100%);
@@ -79,7 +79,7 @@ def render_navigation(active_tab: str):
               transform: translateX(1px);
             }
             .az-nav-item.is-active {
-              background: linear-gradient(135deg,#ff8a00,#ff6a00);
+              background: linear-gradient(135deg,#0ea5e9,#2563eb);
               color: #fff;
               border-color: rgba(255,255,255,.18);
               box-shadow: 0 10px 24px rgba(15,23,42,.34);
@@ -110,9 +110,7 @@ def render_navigation(active_tab: str):
               transform: translateX(0);
             }
             .az-nav-refresh {
-              margin-top: 10px;
-              border-top: 1px solid rgba(148,184,214,.26);
-              padding-top: 14px !important;
+              /* Removed special spacing to make it uniform */
             }
             </style>
             """,

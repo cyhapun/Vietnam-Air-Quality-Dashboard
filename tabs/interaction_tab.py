@@ -1003,7 +1003,7 @@ def render(df: pd.DataFrame):
     st.markdown(
         '<div class="interaction-toolbar-anchor"></div>', unsafe_allow_html=True
     )
-    c1, c2, c3, c_spacer = st.columns([2.0, 0.8, 0.8, 4.0], gap="small")
+    c1, c2, c3, c_spacer = st.columns([2.0, 0.9, 0.9, 4.0], gap="small")
 
     with c1:
         selected_region = st.selectbox(

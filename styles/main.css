@@ -154,7 +154,7 @@ footer {
 }
 
 .sb-nav-item.is-active {
-  background: linear-gradient(135deg, #ff8a00 0%, #ff6a00 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.18);
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.25);
@@ -989,7 +989,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
 }
 
 .ftr-txt {
-  font-size: 0.63rem;
+  font-size: 0.84rem;
   color: #7da4c0;
 }
 
@@ -1004,7 +1004,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
   background: rgba(255, 255, 255, 0.08);
   border-radius: 4px;
   padding: 2px 8px;
-  font-size: 0.6rem;
+  font-size: 0.8rem;
   color: #93afc9;
 }
 

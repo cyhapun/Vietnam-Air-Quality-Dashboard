@@ -240,12 +240,12 @@ def render_dashboard():
     active_tab = state.get("active_tab", "overview")
 
     # ── Row 1: Header ───────────────────────────
-    hdr_left, hdr_right = st.columns([1, 14], gap="small")
+    hdr_left, hdr_right = st.columns([1, 15], gap="small")
     with hdr_right:
         render_header(state, logo_html)
 
     # ── Row 2: Navigation rail + tab content ────
-    nav_col, content_col = st.columns([1, 14], gap="small")
+    nav_col, content_col = st.columns([1, 15], gap="small")
     with nav_col:
         render_navigation(active_tab)
 
@@ -253,7 +253,7 @@ def render_dashboard():
         _render_tab_content(state, active_tab)
 
     # ── Row 3: Footer ───────────────────────────
-    ftr_left, ftr_right = st.columns([1, 14], gap="small")
+    ftr_left, ftr_right = st.columns([1, 15], gap="small")
     with ftr_right:
         render_footer()
 
