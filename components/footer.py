@@ -21,43 +21,43 @@ def render_footer():
 <div class="pro-ftr-container">
 <div class="pro-ftr-features-grid">
 <div class="pro-ftr-col">
-<div class="pro-ftr-col-title">Comprehensive Air Quality</div>
+<div class="pro-ftr-col-title">Giám sát Chất lượng Không khí</div>
 <ul class="pro-ftr-list">
-<li><span>Real-time AQI Data:</span> Display current AQI for major cities</li>
-<li><span>Pollutant Breakdown:</span> PM2.5, PM10, O3, NO2, SO2, CO</li>
-<li><span>Historical Analysis:</span> Interactive time-series charts</li>
-<li><span>AQI Calculation:</span> Based on EPA standards</li>
+<li><span>Dữ liệu AQI Thời gian thực:</span> Hiển thị chỉ số AQI hiện tại của các tỉnh thành lớn</li>
+<li><span>Chi tiết Chất ô nhiễm:</span> PM2.5, PM10, O3, NO2, SO2, CO</li>
+<li><span>Phân tích Lịch sử:</span> Biểu đồ chuỗi thời gian có khả năng tương tác</li>
+<li><span>Tính toán Chỉ số AQI:</span> Dựa trên hệ thống tiêu chuẩn của EPA</li>
 </ul>
 </div>
 <div class="pro-ftr-col">
-<div class="pro-ftr-col-title">Interactive Visualization</div>
+<div class="pro-ftr-col-title">Trực quan hóa Tương tác</div>
 <ul class="pro-ftr-list">
-<li><span>Vietnam Map:</span> Choropleth map by province</li>
-<li><span>Time-series Charts:</span> Hourly, daily, monthly analysis</li>
-<li><span>Comparison Tools:</span> Cross-city & time periods</li>
-<li><span>Heatmaps:</span> Pollution patterns visualizer</li>
+<li><span>Bản đồ Việt Nam:</span> Bản đồ phân mức (Choropleth) theo tỉnh thành</li>
+<li><span>Biểu đồ Chuỗi thời gian:</span> Phân tích xu hướng theo giờ, ngày và tháng</li>
+<li><span>Công cụ Đối chiếu:</span> So sánh giữa các thành phố & các mốc thời gian</li>
+<li><span>Bản đồ Nhiệt (Heatmaps):</span> Trực quan hóa mô hình phân bố ô nhiễm</li>
 </ul>
 </div>
 <div class="pro-ftr-col">
-<div class="pro-ftr-col-title">Machine Learning Insights</div>
+<div class="pro-ftr-col-title">Phân tích bằng Học máy (ML)</div>
 <ul class="pro-ftr-list">
-<li><span>AQI Prediction:</span> Real-time RandomForestRegressor</li>
-<li><span>Trend Forecasting:</span> 24-hour forecasts</li>
-<li><span>Causality Analysis:</span> Weather vs Pollution relations</li>
-<li><span>Model Explainability:</span> SHAP values prediction</li>
+<li><span>Dự đoán AQI:</span> Ứng dụng thuật toán RandomForestRegressor</li>
+<li><span>Dự báo Xu hướng:</span> Dự báo chất lượng không khí trong 24 giờ tới</li>
+<li><span>Phân tích Tương quan:</span> Đánh giá tác động của thời tiết đến mức độ ô nhiễm</li>
+<li><span>Diễn giải Mô hình:</span> Sử dụng giá trị SHAP để giải thích các dự đoán</li>
 </ul>
 </div>
 <div class="pro-ftr-col">
-<div class="pro-ftr-col-title">Weather Integration</div>
+<div class="pro-ftr-col-title">Tích hợp Dữ liệu Thời tiết</div>
 <ul class="pro-ftr-list">
-<li><span>Weather Data:</span> Temp, humidity, wind, precipitation</li>
-<li><span>Impact Analysis:</span> Weather effects on air quality</li>
+<li><span>Thông tin Thời tiết:</span> Nhiệt độ, độ ẩm, sức gió và lượng mưa</li>
+<li><span>Phân tích Tác động:</span> Mối liên hệ giữa thời tiết và chất lượng không khí</li>
 </ul>
-<div class="pro-ftr-col-title" style="margin-top: 16px;">Advanced Features</div>
+<div class="pro-ftr-col-title" style="margin-top: 16px;">Tính năng Nâng cao</div>
 <ul class="pro-ftr-list">
-<li><span>Accessibility:</span> Colorblind Mode</li>
-<li><span>Data Export:</span> CSV formats</li>
-<li><span>System:</span> Auto-refresh & Responsive Design</li>
+<li><span>Hỗ trợ Truy cập:</span> Chế độ hiển thị dành cho người mù màu</li>
+<li><span>Trích xuất Dữ liệu:</span> Hỗ trợ lưu trữ dưới định dạng CSV</li>
+<li><span>Hệ thống Tối ưu:</span> Tự động làm mới & Giao diện tương thích đa thiết bị</li>
 </ul>
 </div>
 </div>
@@ -75,7 +75,7 @@ def render_footer():
 <div class="pro-ftr-divider"></div>
 </div>
 <div class="pro-ftr-team-box">
-<div class="pro-ftr-team-label">Dev Team</div>
+<div class="pro-ftr-team-label">Đội ngũ Phát triển</div>
 <div class="pro-ftr-marquee">
 <div class="pro-ftr-track">
 {member_chips}{member_chips}
