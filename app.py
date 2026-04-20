@@ -35,33 +35,45 @@ from utils.helpers import (
 )
 
 
-# Hàm chạy ngầm để lập lịch
 def start_crawler_thread():
+    """
+    Background thread function to schedule data crawling.
+    Executes a continuous loop that updates historical AQI, calculates province aggregations,
+    and updates weather forecasts, sleeping for roughly one hour between iterations.
+    """
     time.sleep(20)
     while True:
         try:
             print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler đang chạy ngầm...")
-            # Bước 1: Cào dữ liệu mới cho từng trạm (Batch API)
+            # Step 1: Crawl new data for each station (Batch API)
             run_hourly_update()
 
-            # Bước 2: Tính toán lại giá trị đại diện (Mean/Mode) cho từng tỉnh thành
+            time.sleep(15)
+
+            # Step 2: Recalculate representative values (Mean/Mode) for each province/city
             run_province_aggregation()
 
-            # 3. Cập nhật dữ liệu Dự báo (Forecast tương lai)
+            time.sleep(15)
+
+            # Step 3: Update Forecast data for the future
             run_forecast_update()
 
             print("Đã hoàn tất cập nhật dữ liệu!")
         except Exception as e:
             print(f"❌ Lỗi crawler: {e}")
 
-        # Ngủ 1 tiếng (3610 giây) rồi chạy tiếp (chừa 10s để API cập nhật dữ liệu tránh lỗi)
+        # Sleep for 1 hour (3610 seconds) then run again (allow 10s for API data update to avoid errors)
         time.sleep(3610)
 
 
-# Sử dụng decorator cache để đảm bảo thread này CHỈ KHỞI TẠO 1 LẦN
-# ngay cả khi Streamlit rerun (do user thao tác trên web)
+# Use the cache decorator to ensure this thread is INITIALIZED ONLY ONCE
+# even when Streamlit reruns (due to user interactions on the web)
 @st.cache_resource
 def initialize_background_tasks():
+    """
+    Initializes and starts the background crawler thread.
+    Cached by Streamlit to prevent multiple thread spawns across app reruns.
+    """
     thread = threading.Thread(target=start_crawler_thread, daemon=True)
     thread.start()
     return "Crawler started"
@@ -69,19 +81,20 @@ def initialize_background_tasks():
 
 parser = argparse.ArgumentParser(description="Tùy chọn cho Vietnam AQI Dashboard")
 parser.add_argument(
-    "--real-time",
-    action="store_true",
+    "mode",
+    nargs="?",
+    choices=["realtime"],
     help="Bật tính năng chạy ngầm crawler để cập nhật dữ liệu real-time",
 )
 
-# Sử dụng parse_known_args để bỏ qua các tham số mặc định của lệnh `streamlit run`
+# Use parse_known_args to ignore default parameters of the 'streamlit run' command
 args, unknown = parser.parse_known_args()
 
-if args.real_time:
+if args.mode == "realtime":
     initialize_background_tasks()
     print("Đang bật chế độ Real-time.")
 else:
-    print("Không sử dụng chế độ Real-time. Thêm cờ '--real-time' khi chạy để bật.")
+    print("Không sử dụng chế độ Real-time. Thêm 'realtime' sau tên file khi chạy để bật.")
 
 st.set_page_config(
     layout="wide",
@@ -128,15 +141,31 @@ else:
 
 
 def _consume_header_actions():
-    """Consume one-shot header actions from query params."""
+    """
+    Consume one-shot header actions from query parameters.
+    Handles 'refresh' to clear cache and 'cb' to toggle colorblind mode.
+    """
     action = None
     use_modern_qp = hasattr(st, "query_params")
 
     if use_modern_qp:
         action = st.query_params.get("cb")
+        refresh_action = st.query_params.get("refresh")
     else:
         qp = st.experimental_get_query_params()
         action = qp.get("cb", [None])[0]
+        refresh_action = qp.get("refresh", [None])[0]
+
+    # Handle Refresh
+    if refresh_action == "1":
+        st.cache_data.clear()
+        if use_modern_qp:
+            del st.query_params["refresh"]
+        else:
+            qp = st.experimental_get_query_params()
+            if "refresh" in qp: del qp["refresh"]
+            st.experimental_set_query_params(**qp)
+        st.rerun()
 
     if action != "toggle":
         return
@@ -159,12 +188,23 @@ _consume_header_actions()
 
 
 def render_tab_or_blank(tab_module, df):
+    """
+    Safely render a tab module if it has a 'render' function.
+    
+    Args:
+        tab_module: The module representing the tab content.
+        df: The main dataframe to pass to the render function.
+    """
     render_fn = getattr(tab_module, "render", None)
     if callable(render_fn):
         render_fn(df)
 
 
 def render_dashboard():
+    """
+    Main function to render the entire dashboard layout, including the sidebar,
+    header, and the currently active tab content. Handles scope and timeframe filtering.
+    """
     DF = load_data()
 
     state = render_sidebar(DF)
@@ -192,26 +232,17 @@ def render_dashboard():
 
     st.session_state["dashboard_context"] = state
 
+    render_header(state, logo_html)
+
     st.markdown('<div class="main-limit">', unsafe_allow_html=True)
     active_tab = state.get("active_tab", "overview")
     previous_active_tab = st.session_state.get("_last_active_tab")
     if active_tab == "interaction" and previous_active_tab != "interaction":
-        st.session_state["interaction_time_range"] = "2025"
+        st.session_state["interaction_time_range"] = "Năm 2025"
     st.session_state["_last_active_tab"] = active_tab
 
     if active_tab == "overview":
-        ov_time = st.session_state.get("ov_time_range", "24h")
         overview_df = state["df"]
-        overview_df = overview_tab._filter_df_by_time_range(overview_df, ov_time)
-        
-        # Update s_d and e_d for the header to reflect the filtered range
-        if not overview_df.empty:
-            state["s_d"] = overview_df["timestamp"].min().date()
-            state["e_d"] = overview_df["timestamp"].max().date()
-
-    render_header(state, logo_html)
-
-    if active_tab == "overview":
         province_col = "province" if "province" in overview_df.columns else "city"
         province_options = sorted(
             overview_df[province_col].dropna().astype(str).unique().tolist()
@@ -375,29 +406,49 @@ def render_dashboard():
     else:
         render_tab_or_blank(overview_tab, state["df"])
 
-    st.markdown("</div>", unsafe_allow_html=True)  # Closing main-limit
+    st.markdown("</div>", unsafe_allow_html=True)  # Close main-limit
     render_footer()
 
 
-is_first_boot = not st.session_state.get("_dashboard_boot_ready", False)
-show_toggle_loader = bool(st.session_state.pop("_header_toggle_loading", False))
+def main():
+    """
+    Application entry point when run within Streamlit.
+    Handles the initial loading screen and mode toggles before rendering the dashboard.
+    """
+    is_first_boot = not st.session_state.get("_dashboard_boot_ready", False)
+    show_toggle_loader = bool(st.session_state.pop("_header_toggle_loading", False))
 
-if is_first_boot:
-    with dashboard_loading(
-        "Đang tải dữ liệu dashboard...",
-        hint="Chuẩn hóa dữ liệu AQI, PM2.5 và dựng bố cục ban đầu.",
-        overlay=True,
-        min_duration=1.0,
-    ):
+    if is_first_boot:
+        with dashboard_loading(
+            "Đang tải dữ liệu dashboard...",
+            hint="Chuẩn hóa dữ liệu AQI, PM2.5 và dựng bố cục ban đầu.",
+            overlay=True,
+            min_duration=1.0,
+        ):
+            render_dashboard()
+        st.session_state["_dashboard_boot_ready"] = True
+    elif show_toggle_loader:
+        with dashboard_loading(
+            "Đang cập nhật chế độ mù màu...",
+            hint="Đang áp dụng bảng màu mới và dựng lại dashboard.",
+            overlay=True,
+            min_duration=0.75,
+        ):
+            render_dashboard()
+    else:
         render_dashboard()
-    st.session_state["_dashboard_boot_ready"] = True
-elif show_toggle_loader:
-    with dashboard_loading(
-        "Đang cập nhật chế độ mù màu...",
-        hint="Đang áp dụng bảng màu mới và dựng lại dashboard.",
-        overlay=True,
-        min_duration=0.75,
-    ):
-        render_dashboard()
-else:
-    render_dashboard()
+
+
+if st.runtime.exists():
+    main()
+elif __name__ == "__main__":
+    import os
+    import sys
+    from streamlit.web import cli as stcli
+
+    if len(sys.argv) > 1:
+        # Automatically insert Streamlit's '--' to support the command: python app.py realtime
+        sys.argv = ["streamlit", "run", sys.argv[0], "--", *sys.argv[1:]]
+    else:
+        sys.argv = ["streamlit", "run", sys.argv[0]]
+    sys.exit(stcli.main())

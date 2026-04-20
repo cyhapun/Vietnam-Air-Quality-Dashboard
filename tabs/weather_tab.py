@@ -36,16 +36,19 @@ WEEKDAY_VI = {
 
 
 def _html(content: str) -> str:
+    """Removes common leading whitespace from a multiline string for clean HTML."""
     return dedent(content).strip()
 
 
 def _fmt_num(value, decimals=1, suffix=""):
+    """Formats a numeric value to a string with a specified number of decimals and a suffix."""
     if value is None or pd.isna(value):
         return "N/A"
     return f"{value:.{decimals}f}{suffix}"
 
 
 def _wind_dir_label(deg):
+    """Converts a wind direction in degrees to a 16-point compass label (e.g., 'B', 'DB')."""
     if deg is None or pd.isna(deg):
         return "N/A"
     idx = int(((float(deg) % 360) + 11.25) // 22.5) % 16
@@ -53,6 +56,7 @@ def _wind_dir_label(deg):
 
 
 def _condition_from_weather(rain, cloud):
+    """Determines a weather condition string (e.g., 'Mưa lớn', 'Có mây') based on rain and cloud cover."""
     rain = 0.0 if rain is None or pd.isna(rain) else float(rain)
     cloud = 0.0 if cloud is None or pd.isna(cloud) else float(cloud)
     if rain < 0.05:
@@ -73,6 +77,7 @@ def _condition_from_weather(rain, cloud):
 
 
 def _condition_token(condition: str) -> str:
+    """Maps a Vietnamese weather condition string to a generalized token (RAIN, CLOUD, SUN)."""
     if condition.startswith("Mưa"):
         return "RAIN"
     if condition in {"Nhiều mây", "Có mây", "Ít mây"}:
@@ -130,21 +135,25 @@ def _svg_icon_markup(token: str, size: int = 40, inline: bool = False) -> str:
 
 
 def _condition_img(condition: str, size: int = 40) -> str:
+    """Returns SVG markup for a weather icon rendered as a block element."""
     token = _condition_token(condition)
     return _svg_icon_markup(token, size=size, inline=False)
 
 
 def _condition_svg_inline(condition: str, size: int = 16) -> str:
+    """Returns SVG markup for a weather icon rendered as an inline element."""
     token = _condition_token(condition)
     return _svg_icon_markup(token, size=size, inline=True)
 
 
 def _weekday_vi(ts: pd.Timestamp) -> str:
+    """Converts a pandas Timestamp into a Vietnamese weekday string."""
     key = ts.strftime("%a")
     return WEEKDAY_VI.get(key, key)
 
 
 def _heat_index_c(temp_c, humidity):
+    """Calculates the heat index in Celsius given temperature in C and humidity percentage."""
     if temp_c is None or humidity is None or pd.isna(temp_c) or pd.isna(humidity):
         return np.nan
     temp_c = float(temp_c)
@@ -162,6 +171,7 @@ def _heat_index_c(temp_c, humidity):
 
 
 def _wind_chill_c(temp_c, wind_kmh):
+    """Calculates the wind chill index in Celsius given temperature in C and wind speed in km/h."""
     if temp_c is None or wind_kmh is None or pd.isna(temp_c) or pd.isna(wind_kmh):
         return np.nan
     temp_c = float(temp_c)
@@ -172,6 +182,7 @@ def _wind_chill_c(temp_c, wind_kmh):
 
 
 def _feels_like_c(temp_c, humidity, wind_speed):
+    """Calculates the apparent 'feels like' temperature based on heat index or wind chill."""
     if temp_c is None or pd.isna(temp_c):
         return np.nan
     temp_c = float(temp_c)
@@ -185,6 +196,7 @@ def _feels_like_c(temp_c, humidity, wind_speed):
 
 
 def _fallback_ml(fig, h=None, **kwargs):
+    """Applies a fallback layout to a Plotly figure to ensure consistent styling."""
     base = dict(
         margin=dict(l=8, r=8, t=24, b=8),
         paper_bgcolor="rgba(0,0,0,0)",
@@ -199,6 +211,7 @@ def _fallback_ml(fig, h=None, **kwargs):
 
 
 def _fallback_ax(title=""):
+    """Returns a fallback configuration dictionary for Plotly axes."""
     cfg = dict(
         tickfont=dict(color="#64748b", size=9),
         gridcolor="rgba(0,0,0,0.05)",
@@ -211,6 +224,7 @@ def _fallback_ax(title=""):
 
 
 def _get_plot_helpers(ctx):
+    """Retrieves custom plotting helper functions from the context, or falls back to defaults."""
     ml_fn = ctx.get("ml") if callable(ctx.get("ml")) else _fallback_ml
     ax_fn = ctx.get("ax") if callable(ctx.get("ax")) else _fallback_ax
     return ml_fn, ax_fn
@@ -219,6 +233,7 @@ def _get_plot_helpers(ctx):
 # ─── CSS ─────────────────────────────────────────────────────────────────────
 
 def _inject_weather_css():
+    """Injects custom CSS styles into the Streamlit app for the weather tab."""
     st.markdown(
         _html("""
         <style>
@@ -2944,7 +2959,7 @@ def render_spatial_map(detail_summary: pd.DataFrame, anchor_day=None):
             if not vm.empty:
                 # Optimized Mapbox view
                 size_val = (vm["humidity"].fillna(50) / 100 * 18 + 7).clip(6, 25)
-                fig = go.Figure(go.Scattermap(
+                fig = go.Figure(go.Scattermapbox(
                     lat=vm[lat_col], lon=vm[lon_col],
                     mode="markers",
                     marker=dict(
@@ -2966,8 +2981,8 @@ def render_spatial_map(detail_summary: pd.DataFrame, anchor_day=None):
                 ))
                 fig.update_layout(**_dash_layout(
                     height=420,
-                    map=dict(
-                        style="open-street-map",
+                    mapbox=dict(
+                        style="carto-positron",
                         zoom=7,
                         center=dict(lat=float(vm[lat_col].mean()), lon=float(vm[lon_col].mean())),
                     ),
@@ -3993,7 +4008,7 @@ def render(df: pd.DataFrame):
     if not detail_summary.empty:
         render_spatial_map(detail_summary, anchor_day)
     
-    # ── Item 9: Climate Scorecard — Bảng Xếp Hạng Khí Hậu Tổng Hợp ──────────────
+    # ── Item 9: Climate Scorecard — Comprehensive Climate Ranking ──────────────
     if not detail_summary.empty and "location" in detail_summary.columns:
         score_df = detail_summary.copy()
         # Compute AQI-aware comfort score

@@ -1495,7 +1495,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
     border-color: rgba(255, 255, 255, 0.2);
     position: relative;
     overflow: hidden;
-    min-height: 250px;
+    min-height: 240px;
 }
 
 .iq-hero-content {

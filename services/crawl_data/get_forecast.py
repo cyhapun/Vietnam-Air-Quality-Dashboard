@@ -23,7 +23,7 @@ BATCH_SIZE = 50
 
 # Cấu hình Session chống lỗi mạng
 session = requests.Session()
-retries = Retry(total=5, backoff_factor=2, status_forcelist=[429, 500, 502, 503, 504])
+retries = Retry(total=5, backoff_factor=3, status_forcelist=[429, 500, 502, 503, 504])
 session.mount("https://", HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10))
 
 # --- HÀM TIỆN ÍCH ---
@@ -316,7 +316,7 @@ def run_forecast_update():
         total_errors += err
         
         # CHỐNG LỖI 429
-        time.sleep(2)
+        time.sleep(4)
 
     print("-" * 50)
     print(f"✅ HOÀN TẤT CẬP NHẬT FORECAST!")

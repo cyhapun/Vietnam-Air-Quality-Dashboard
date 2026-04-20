@@ -577,7 +577,7 @@ def _inject_interaction_filter_styles():
     )
 
 
-def _render_rank_table_html(rank_top: pd.DataFrame, rank_col: str) -> str:
+def _render_rank_table_html(rank_top: pd.DataFrame, rank_col: str, subtitle: str = "Top tỉnh có mức giảm mạnh theo bộ lọc hiện tại") -> str:
     if rank_top.empty:
         return "<div class='interaction-rank-card'><div class='interaction-rank-title'>Bảng xếp hạng tỉnh</div><div style='font-size:12px;color:#60758b;padding:6px 4px;'>Không có dữ liệu.</div></div>"
 
@@ -600,7 +600,7 @@ def _render_rank_table_html(rank_top: pd.DataFrame, rank_col: str) -> str:
     return (
         "<div class='interaction-rank-card'>"
         "<div class='interaction-rank-title'>Bảng xếp hạng tỉnh</div>"
-        "<div class='interaction-rank-sub'>Top tỉnh có mức giảm mạnh theo bộ lọc hiện tại</div>"
+        f"<div class='interaction-rank-sub'>{html.escape(subtitle)}</div>"
         "<div class='interaction-rank-head'><span>Tỉnh</span><span>%</span></div>"
         "<div class='interaction-rank-list'>" + "".join(rows) + "</div>" + "</div>"
     )
@@ -857,6 +857,8 @@ def calc_province_cleaning_strength(df, min_samples):
         out.append(
             {
                 "province": province,
+                "aqi_wind_pct": aqi_wind,
+                "aqi_rain_pct": aqi_rain,
                 "aqi_cleaning_pct": np.nanmean([aqi_wind, aqi_rain]),
                 "pm2_5_cleaning_pct": np.nanmean([pm25_wind, pm25_rain]),
                 "overall_cleaning_pct": np.nanmean(
@@ -870,6 +872,8 @@ def calc_province_cleaning_strength(df, min_samples):
         return pd.DataFrame(
             columns=[
                 "province",
+                "aqi_wind_pct",
+                "aqi_rain_pct",
                 "aqi_cleaning_pct",
                 "pm2_5_cleaning_pct",
                 "overall_cleaning_pct",
@@ -883,6 +887,8 @@ def calc_province_cleaning_strength(df, min_samples):
         return pd.DataFrame(
             columns=[
                 "province",
+                "aqi_wind_pct",
+                "aqi_rain_pct",
                 "aqi_cleaning_pct",
                 "pm2_5_cleaning_pct",
                 "overall_cleaning_pct",
@@ -952,16 +958,16 @@ def render(df: pd.DataFrame):
     if "interaction_province_select" not in st.session_state:
         st.session_state["interaction_province_select"] = "Tất cả"
     if "interaction_time_range" not in st.session_state:
-        st.session_state["interaction_time_range"] = "2025"
+        st.session_state["interaction_time_range"] = "Năm 2025"
     if "interaction_rank_focus" not in st.session_state:
         st.session_state["interaction_rank_focus"] = "AQI"
 
-    time_options = ["2025", "24h", "7 ngày", "30 ngày", "3 tháng"]
+    time_options = ["Năm 2025", "24h", "7 ngày", "30 ngày", "3 tháng"]
     if st.session_state.get("interaction_time_range") not in time_options:
-        st.session_state["interaction_time_range"] = "2025"
+        st.session_state["interaction_time_range"] = "Năm 2025"
 
     current_time_range = st.session_state["interaction_time_range"]
-    if current_time_range == "2025":
+    if current_time_range == "Năm 2025":
         year_2025_df = load_weather_data()
         work = _prepare_interaction_source(year_2025_df)
         if work.empty:
@@ -1034,7 +1040,7 @@ def render(df: pd.DataFrame):
         if time_range != current_time_range:
             st.rerun()
 
-        if time_range == "2025":
+        if time_range == "Năm 2025":
             start_ts = work["timestamp"].min()
             end_ts = work["timestamp"].max()
         else:
@@ -1074,206 +1080,10 @@ def render(df: pd.DataFrame):
         st.warning("Không có dữ liệu phù hợp với bộ lọc hiện tại.")
         return
 
-    # Q1: Wind / rain cleaning effect (single chart with controls at top-right)
     if "interaction_weather_chart" not in st.session_state:
         st.session_state["interaction_weather_chart"] = "Gió"
 
-    col_table, col_chart = st.columns([3, 7], gap="medium")
-
-    with col_chart:
-        title_col, ctrl_weather = st.columns([4.9, 1.1], gap="small")
-
-        with ctrl_weather:
-            try:
-                sel_raw = st.segmented_control(
-                    "Loại biểu đồ",
-                    options=["Gió", "Mưa"],
-                    default=st.session_state["interaction_weather_chart"],
-                    key="interaction_weather_chart_segmented",
-                    label_visibility="collapsed",
-                )
-                weather_chart = (
-                    sel_raw
-                    if sel_raw is not None
-                    else st.session_state["interaction_weather_chart"]
-                )
-            except AttributeError:
-                weather_chart = st.radio(
-                    "Loại biểu đồ",
-                    ["Gió", "Mưa"],
-                    index=(
-                        0
-                        if st.session_state["interaction_weather_chart"] == "Gió"
-                        else 1
-                    ),
-                    horizontal=True,
-                    key="interaction_weather_chart_radio",
-                    label_visibility="collapsed",
-                )
-
-            if weather_chart != st.session_state["interaction_weather_chart"]:
-                st.session_state["interaction_weather_chart"] = weather_chart
-                st.rerun()
-
-        rank_focus = st.session_state.get("interaction_rank_focus", "AQI")
-
-        with title_col:
-            chart_title = (
-                "AQI & PM2.5 theo cường độ gió"
-                if st.session_state["interaction_weather_chart"] == "Gió"
-                else "AQI & PM2.5 theo cường độ mưa"
-            )
-            st.markdown(
-                f"<div class='interaction-chart-title'>{chart_title}</div>",
-                unsafe_allow_html=True,
-            )
-
-        if st.session_state["interaction_weather_chart"] == "Gió":
-            wind_curve = calc_wind_curve(f_df)
-            if wind_curve.empty:
-                st.info("Không đủ dữ liệu để phân tích theo nhóm gió.")
-            else:
-                wind_long = wind_curve.melt(
-                    id_vars=["wind_group", "n"],
-                    value_vars=["aqi", "pm2_5"],
-                    var_name="metric",
-                    value_name="value",
-                )
-                wind_long["metric"] = wind_long["metric"].replace(
-                    {"aqi": "AQI", "pm2_5": "PM2.5"}
-                )
-                fig_wind = px.line(
-                    wind_long,
-                    x="wind_group",
-                    y="value",
-                    color="metric",
-                    markers=True,
-                    height=360,
-                )
-                fig_wind.update_traces(
-                    line_shape="spline",
-                    line_smoothing=0.8,
-                    line=dict(width=3),
-                    marker=dict(size=6),
-                    hovertemplate="%{y:.2f}<extra></extra>",
-                )
-                fig_wind.update_layout(
-                    **get_base_layout(),
-                    yaxis_title="",
-                    xaxis_title="",
-                    margin={"t": 20, "r": 18, "l": 10, "b": 38},
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    legend=dict(font=dict(size=12)),
-                    hoverlabel=dict(
-                        bgcolor="rgba(255,255,255,0.92)",
-                        bordercolor="#c9d7e6",
-                        font=dict(size=14, color="#1f3b57"),
-                    ),
-                    hovermode="closest",
-                )
-                fig_wind.update_xaxes(
-                    showticklabels=False,
-                    showgrid=False,
-                    zeroline=False,
-                    showspikes=True,
-                    spikecolor="#9eb9d4",
-                    spikethickness=1,
-                    spikedash="dot",
-                )
-                fig_wind.update_yaxes(
-                    showspikes=True, spikecolor="#d1deeb", spikethickness=1
-                )
-                st.plotly_chart(
-                    fig_wind,
-                    width="stretch",
-                    config={"displayModeBar": False},
-                )
-                _render_flow_scale("Gió yếu", "Gió mạnh")
-        else:
-            rain_curve = calc_rain_curve(f_df)
-            if rain_curve.empty:
-                st.info("Không đủ dữ liệu để phân tích theo nhóm mưa.")
-            else:
-                rain_long = rain_curve.melt(
-                    id_vars=["rain_group", "n"],
-                    value_vars=["aqi", "pm2_5"],
-                    var_name="metric",
-                    value_name="value",
-                )
-                rain_long["metric"] = rain_long["metric"].replace(
-                    {"aqi": "AQI", "pm2_5": "PM2.5"}
-                )
-                fig_rain = px.line(
-                    rain_long,
-                    x="rain_group",
-                    y="value",
-                    color="metric",
-                    markers=True,
-                    height=360,
-                )
-                fig_rain.update_traces(
-                    line_shape="spline",
-                    line_smoothing=0.8,
-                    line=dict(width=3),
-                    marker=dict(size=6),
-                    hovertemplate="%{y:.2f}<extra></extra>",
-                )
-                fig_rain.update_layout(
-                    **get_base_layout(),
-                    yaxis_title="",
-                    xaxis_title="",
-                    margin={"t": 20, "r": 18, "l": 10, "b": 38},
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    legend=dict(font=dict(size=12)),
-                    hoverlabel=dict(
-                        bgcolor="rgba(255,255,255,0.92)",
-                        bordercolor="#c9d7e6",
-                        font=dict(size=14, color="#1f3b57"),
-                    ),
-                    hovermode="closest",
-                )
-                fig_rain.update_xaxes(
-                    showticklabels=False,
-                    showgrid=False,
-                    zeroline=False,
-                    showspikes=True,
-                    spikecolor="#9eb9d4",
-                    spikethickness=1,
-                    spikedash="dot",
-                )
-                fig_rain.update_yaxes(
-                    showspikes=True, spikecolor="#d1deeb", spikethickness=1
-                )
-                st.plotly_chart(
-                    fig_rain,
-                    width="stretch",
-                    config={"displayModeBar": False},
-                )
-                _render_flow_scale("Mưa ít", "Mưa nhiều")
-
-    with col_table:
-        province_strength = calc_province_cleaning_strength(
-            f_df, min_samples=min_samples
-        )
-        if province_strength.empty:
-            st.info("Không đủ mẫu để xếp hạng.")
-        else:
-            if rank_focus == "AQI":
-                rank_col = "aqi_cleaning_pct"
-            else:
-                rank_col = "pm2_5_cleaning_pct"
-
-            rank_top = (
-                province_strength.sort_values(rank_col, ascending=False).head(5).copy()
-            )
-            st.markdown(
-                _render_rank_table_html(rank_top=rank_top, rank_col=rank_col),
-                unsafe_allow_html=True,
-            )
-
-    # === BOTTOM SECTION: Interactive heatmap (1 row: weather vs AQI) + ranking ===
+    # === TOP SECTION: Interactive heatmap (weather vs AQI) + region AQI ranking ===
     st.markdown("<br>", unsafe_allow_html=True)
     map_df = f_df[f_df["region_6"] != "Chưa xếp vùng"].copy()
 
@@ -1370,13 +1180,14 @@ def render(df: pd.DataFrame):
     for region_name, grp in all_regions_df.groupby("region_6", observed=True):
         corr_data[region_name] = compute_aqi_corr_row(grp)
 
+    _region_order_map = {r: i for i, r in enumerate(REGION6_ORDER)}
     rank_regions = (
         all_regions_df.groupby("region_6", as_index=False, observed=True)
-        .agg(aqi_mean=("aqi", "mean"), lat=("lat", "mean"))
+        .agg(aqi_mean=("aqi", "mean"))
         .dropna(subset=["aqi_mean"])
-        .sort_values("lat", ascending=False)
-        .reset_index(drop=True)
     )
+    rank_regions["_order"] = rank_regions["region_6"].map(_region_order_map).fillna(999)
+    rank_regions = rank_regions.sort_values("_order").drop(columns=["_order"]).reset_index(drop=True)
     region_rows_html = _build_rank_rows(rank_regions, "region_6", key_prefix="")
 
     # Build province ranking (provinces within selected region, if filtered)
@@ -1582,3 +1393,205 @@ document.getElementById('rlist').addEventListener('mouseleave', function(e){{
     _component_slot = st.empty()
     with _component_slot:
         st_components.html(component_html, height=component_height_px, scrolling=False)
+
+    # === BOTTOM SECTION: Wind/rain chart + province ranking ===
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    col_table, col_chart = st.columns([3, 7], gap="medium")
+
+    with col_chart:
+        title_col, ctrl_weather = st.columns([4.9, 1.1], gap="small")
+
+        with ctrl_weather:
+            try:
+                sel_raw = st.segmented_control(
+                    "Loại biểu đồ",
+                    options=["Gió", "Mưa"],
+                    default=st.session_state["interaction_weather_chart"],
+                    key="interaction_weather_chart_segmented",
+                    label_visibility="collapsed",
+                )
+                weather_chart = (
+                    sel_raw
+                    if sel_raw is not None
+                    else st.session_state["interaction_weather_chart"]
+                )
+            except AttributeError:
+                weather_chart = st.radio(
+                    "Loại biểu đồ",
+                    ["Gió", "Mưa"],
+                    index=(
+                        0
+                        if st.session_state["interaction_weather_chart"] == "Gió"
+                        else 1
+                    ),
+                    horizontal=True,
+                    key="interaction_weather_chart_radio",
+                    label_visibility="collapsed",
+                )
+
+            if weather_chart != st.session_state["interaction_weather_chart"]:
+                st.session_state["interaction_weather_chart"] = weather_chart
+                st.rerun()
+
+        with title_col:
+            chart_title = (
+                "AQI & PM2.5 theo cường độ gió"
+                if st.session_state["interaction_weather_chart"] == "Gió"
+                else "AQI & PM2.5 theo cường độ mưa"
+            )
+            st.markdown(
+                f"<div class='interaction-chart-title'>{chart_title}</div>",
+                unsafe_allow_html=True,
+            )
+
+        if st.session_state["interaction_weather_chart"] == "Gió":
+            wind_curve = calc_wind_curve(f_df)
+            if wind_curve.empty:
+                st.info("Không đủ dữ liệu để phân tích theo nhóm gió.")
+            else:
+                wind_long = wind_curve.melt(
+                    id_vars=["wind_group", "n"],
+                    value_vars=["aqi", "pm2_5"],
+                    var_name="metric",
+                    value_name="value",
+                )
+                wind_long["metric"] = wind_long["metric"].replace(
+                    {"aqi": "AQI", "pm2_5": "PM2.5"}
+                )
+                fig_wind = px.line(
+                    wind_long,
+                    x="wind_group",
+                    y="value",
+                    color="metric",
+                    markers=True,
+                    height=360,
+                )
+                fig_wind.update_traces(
+                    line_shape="spline",
+                    line_smoothing=0.8,
+                    line=dict(width=3),
+                    marker=dict(size=6),
+                    hovertemplate="%{y:.2f}<extra></extra>",
+                )
+                fig_wind.update_layout(
+                    **get_base_layout(),
+                    yaxis_title="",
+                    xaxis_title="",
+                    margin={"t": 20, "r": 18, "l": 10, "b": 38},
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    legend=dict(font=dict(size=12)),
+                    hoverlabel=dict(
+                        bgcolor="rgba(255,255,255,0.92)",
+                        bordercolor="#c9d7e6",
+                        font=dict(size=14, color="#1f3b57"),
+                    ),
+                    hovermode="closest",
+                )
+                fig_wind.update_xaxes(
+                    showticklabels=False,
+                    showgrid=False,
+                    zeroline=False,
+                    showspikes=True,
+                    spikecolor="#9eb9d4",
+                    spikethickness=1,
+                    spikedash="dot",
+                )
+                fig_wind.update_yaxes(
+                    showspikes=True, spikecolor="#d1deeb", spikethickness=1
+                )
+                st.plotly_chart(
+                    fig_wind,
+                    width="stretch",
+                    config={"displayModeBar": False},
+                )
+                _render_flow_scale("Gió yếu", "Gió mạnh")
+        else:
+            rain_curve = calc_rain_curve(f_df)
+            if rain_curve.empty:
+                st.info("Không đủ dữ liệu để phân tích theo nhóm mưa.")
+            else:
+                rain_long = rain_curve.melt(
+                    id_vars=["rain_group", "n"],
+                    value_vars=["aqi", "pm2_5"],
+                    var_name="metric",
+                    value_name="value",
+                )
+                rain_long["metric"] = rain_long["metric"].replace(
+                    {"aqi": "AQI", "pm2_5": "PM2.5"}
+                )
+                fig_rain = px.line(
+                    rain_long,
+                    x="rain_group",
+                    y="value",
+                    color="metric",
+                    markers=True,
+                    height=360,
+                )
+                fig_rain.update_traces(
+                    line_shape="spline",
+                    line_smoothing=0.8,
+                    line=dict(width=3),
+                    marker=dict(size=6),
+                    hovertemplate="%{y:.2f}<extra></extra>",
+                )
+                fig_rain.update_layout(
+                    **get_base_layout(),
+                    yaxis_title="",
+                    xaxis_title="",
+                    margin={"t": 20, "r": 18, "l": 10, "b": 38},
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    legend=dict(font=dict(size=12)),
+                    hoverlabel=dict(
+                        bgcolor="rgba(255,255,255,0.92)",
+                        bordercolor="#c9d7e6",
+                        font=dict(size=14, color="#1f3b57"),
+                    ),
+                    hovermode="closest",
+                )
+                fig_rain.update_xaxes(
+                    showticklabels=False,
+                    showgrid=False,
+                    zeroline=False,
+                    showspikes=True,
+                    spikecolor="#9eb9d4",
+                    spikethickness=1,
+                    spikedash="dot",
+                )
+                fig_rain.update_yaxes(
+                    showspikes=True, spikecolor="#d1deeb", spikethickness=1
+                )
+                st.plotly_chart(
+                    fig_rain,
+                    width="stretch",
+                    config={"displayModeBar": False},
+                )
+                _render_flow_scale("Mưa ít", "Mưa nhiều")
+
+    with col_table:
+        province_strength = calc_province_cleaning_strength(
+            f_df, min_samples=min_samples
+        )
+        if province_strength.empty:
+            st.info("Không đủ mẫu để xếp hạng.")
+        else:
+            current_weather = st.session_state.get("interaction_weather_chart", "Gió")
+            if current_weather == "Gió":
+                rank_col = "aqi_wind_pct"
+                rank_subtitle = "Top tỉnh có AQI giảm mạnh nhất khi gió tăng"
+            else:
+                rank_col = "aqi_rain_pct"
+                rank_subtitle = "Top tỉnh có AQI giảm mạnh nhất khi có mưa"
+
+            rank_top = (
+                province_strength.dropna(subset=[rank_col])
+                .sort_values(rank_col, ascending=False)
+                .head(5)
+                .copy()
+            )
+            st.markdown(
+                _render_rank_table_html(rank_top=rank_top, rank_col=rank_col, subtitle=rank_subtitle),
+                unsafe_allow_html=True,
+            )
