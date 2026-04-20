@@ -65,6 +65,22 @@ def load_tier2_data(city_folder, filename):
         return pd.DataFrame()
 
 @st.cache_data(ttl=3600, show_spinner=False)
+def load_tier2_year_data(city_folder, filename):
+    base_dir = os.path.dirname(__file__)
+    file_path = os.path.join(base_dir, "..", "data", "aqi_year_2025", city_folder, filename)
+    if not os.path.exists(file_path):
+        return pd.DataFrame()
+    try:
+        df = pd.read_parquet(file_path)
+        if df.empty: return df
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+        df = df.dropna(subset=["timestamp", "aqi"])
+        df = df.sort_values("timestamp")
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_forecast_data(city_folder, filename):
     base_dir = os.path.dirname(__file__)
     # Try exact match first
@@ -253,31 +269,41 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
         "24h": pd.Timedelta(days=1),
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
-        "3 tháng": pd.Timedelta(days=90)
+        "3 tháng": pd.Timedelta(days=90),
+        "1 năm": pd.Timedelta(days=365)
     }
     label_map = {
         "24h": "Hôm qua",
         "7 ngày": "7 ngày trước",
         "30 ngày": "30 ngày trước",
-        "3 tháng": "3 tháng trước"
+        "3 tháng": "3 tháng trước",
+        "1 năm": "1 năm trước"
     }
     
     delta = delta_map.get(time_range, pd.Timedelta(days=1))
-    period_lbl = f"{label_map.get(time_range, 'Trước')} (cùng giờ)"
     
-    prev_ts = last_ts - delta
+    if time_range == "1 năm":
+        prev_ts = df["timestamp"].min()
+        period_lbl = "Đầu chu kỳ"
+    else:
+        period_lbl = f"{label_map.get(time_range, 'Trước')} (cùng giờ)"
+        prev_ts = last_ts - delta
+        
     # Find the record closest to (but not after) the target past timestamp
     prev_rows = df[df["timestamp"] <= prev_ts]
     
     if not prev_rows.empty:
         # Check if the closest record is reasonably close (within 3 hours) to be valid "same hour"
         closest_row = prev_rows.iloc[-1]
-        time_diff = abs((closest_row["timestamp"] - prev_ts).total_seconds()) / 3600
-        
-        if time_diff <= 3: # Allow 3hr window for missing samples
+        if time_range == "1 năm":
             prev_val = closest_row[poll_key]
         else:
-            prev_val = None
+            time_diff = abs((closest_row["timestamp"] - prev_ts).total_seconds()) / 3600
+            
+            if time_diff <= 3: # Allow 3hr window for missing samples
+                prev_val = closest_row[poll_key]
+            else:
+                prev_val = None
     else:
         prev_val = None
 
@@ -294,10 +320,17 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     arrow = "↓" if diff <= 0 else "↑"
     
     # Header with integrated Delta Badge
+    if time_range == "1 năm":
+        subtitle_lbl = "So sánh dữ liệu cuối chu kỳ với đầu chu kỳ"
+        curr_lbl = "Cuối chu kỳ"
+    else:
+        subtitle_lbl = f"So sánh dữ liệu hiện tại với {period_lbl.lower()}"
+        curr_lbl = "Hiện tại"
+        
     st.markdown(f'''<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
         <div>
             <div style="font-size: 16px; font-weight: 700; color: #0f172a;">Biến động nồng độ {poll_label}</div>
-            <div style="font-size: 12px; color: #64748b;">So sánh dữ liệu hiện tại với {period_lbl.lower()}</div>
+            <div style="font-size: 12px; color: #64748b;">{subtitle_lbl}</div>
         </div>
         <div style="background: {hex_rgba(status_color, 0.12)}; border: 1.5px solid {hex_rgba(status_color, 0.25)}; padding: 8px 15px; border-radius: 10px; text-align: right; min-width: 110px;">
             <div style="color: {status_color}; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">{status_msg}</div>
@@ -333,14 +366,14 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     
     # Current Bar
     fig.add_trace(go.Bar(
-        x=["Hiện tại"],
+        x=[curr_lbl],
         y=[curr_val],
         text=[f"<b>{curr_val:.1f}</b>"],
         textposition='auto',
-        name="Hiện tại",
+        name=curr_lbl,
         marker_color=curr_color, # Stronger current
         marker_line=dict(width=2, color="#fff"),
-        hovertemplate=f"Hiện tại: <b>%{{y:.1f}}</b><extra></extra>"
+        hovertemplate=f"{curr_lbl}: <b>%{{y:.1f}}</b><extra></extra>"
     ))
     
     fig.update_layout(
@@ -471,7 +504,16 @@ def render_correlation_heatmap(df_sub, time_range):
 
 
 def render_regional_comparison(global_df, poll_key, poll_label, time_range):
-    if global_df.empty or poll_key not in global_df.columns:
+    if time_range == "1 năm":
+        from services.data_loader import load_weather_data, _apply_aqi_labels
+        with st.spinner("Đang tải dữ liệu tổng quan 1 năm..."):
+            df_to_use = load_weather_data()
+            if not df_to_use.empty:
+                df_to_use = _apply_aqi_labels(df_to_use)
+    else:
+        df_to_use = global_df
+
+    if df_to_use.empty or poll_key not in df_to_use.columns:
         return
 
     # 1. Initialize session state for mode
@@ -480,15 +522,16 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
     comp_mode = st.session_state.aqi_comp_mode
 
     # 2. Filter by time range
-    max_d = global_df["timestamp"].max()
+    max_d = df_to_use["timestamp"].max()
     delta_map = {
         "24h": pd.Timedelta(hours=24),
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
-        "3 tháng": pd.Timedelta(days=90)
+        "3 tháng": pd.Timedelta(days=90),
+        "1 năm": pd.Timedelta(days=365)
     }
     min_d = max_d - delta_map.get(time_range, pd.Timedelta(hours=24))
-    df_sub = global_df[global_df["timestamp"] >= min_d].copy()
+    df_sub = df_to_use[df_to_use["timestamp"] >= min_d].copy()
 
     if df_sub.empty:
         return
@@ -509,7 +552,15 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
         df_sub["comp_label"] = df_sub["province"].astype(str)
 
     # 4. Section Header
-    date_range_str = f"{min_d.strftime('%d/%m')} - {max_d.strftime('%d/%m/%Y')}"
+    if time_range == "1 năm":
+        actual_min = df_sub["timestamp"].min()
+        actual_max = df_sub["timestamp"].max()
+        if pd.notna(actual_min) and pd.notna(actual_max):
+            date_range_str = f"{actual_min.strftime('%d/%m/%Y')} - {actual_max.strftime('%d/%m/%Y')}"
+        else:
+            date_range_str = f"{min_d.strftime('%d/%m')} - {max_d.strftime('%d/%m/%Y')}"
+    else:
+        date_range_str = f"{min_d.strftime('%d/%m')} - {max_d.strftime('%d/%m/%Y')}"
     st.markdown(f'''<div style="margin-top: 2rem; margin-bottom: 20px;">
         <div style="font-size: 20px; font-weight: 700; color: #0f172a;">Phân tích Đối chiếu</div>
         <div style="font-size: 13px; color: #64748b;">So sánh trực tiếp nồng độ {poll_label} - Giai đoạn: {date_range_str}</div>
@@ -740,7 +791,10 @@ def render(global_df):
     # Locate Tier 2 units dynamically
     folder_name = CITY_FOLDERS.get(selected_city, "ho_chi_minh")
     base_dir = os.path.dirname(__file__)
-    dir_path = os.path.join(base_dir, "..", "data", "aqi", folder_name)
+    if st.session_state.get("aqi_time_range") == "1 năm":
+        dir_path = os.path.join(base_dir, "..", "data", "aqi_year_2025", folder_name)
+    else:
+        dir_path = os.path.join(base_dir, "..", "data", "aqi", folder_name)
     tong_quan_lbl = f"Tổng quan ({selected_city})"
     tier2_options = [tong_quan_lbl]
     file_map = {tong_quan_lbl: "all.parquet"}
@@ -810,7 +864,7 @@ def render(global_df):
             st.rerun()
 
     with c4:
-        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng"]
+        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng", "1 năm"]
         idx_tr = tr_opts.index(st.session_state["aqi_time_range"]) if st.session_state["aqi_time_range"] in tr_opts else 1
         time_range = st.selectbox("Thời gian", tr_opts, index=idx_tr, key="aqi_time_select")
         if time_range != st.session_state["aqi_time_range"]:
@@ -847,7 +901,10 @@ def render(global_df):
 
     # Load and process data
     target_file = file_map.get(selected_tier2, "all.parquet")
-    df = load_tier2_data(folder_name, target_file)
+    if time_range == "1 năm":
+        df = load_tier2_year_data(folder_name, target_file)
+    else:
+        df = load_tier2_data(folder_name, target_file)
     
     if df.empty or selected_poll_key not in df.columns:
         st.warning(f"Không có đủ dữ liệu lịch sử đo lường cho {selected_tier2}.")
@@ -868,7 +925,8 @@ def render(global_df):
         "24h": pd.Timedelta(hours=24),
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
-        "3 tháng": pd.Timedelta(days=90)
+        "3 tháng": pd.Timedelta(days=90),
+        "1 năm": pd.Timedelta(days=365)
     }
     
     min_d = max_d - delta_map[time_range]
@@ -944,7 +1002,8 @@ def render(global_df):
         rule_map = {
             "7 ngày": "6h",
             "30 ngày": "1D",
-            "3 tháng": "3D"
+            "3 tháng": "3D",
+            "1 năm": "7D"
         }
         rule = rule_map.get(time_range)
         if rule:
@@ -987,7 +1046,8 @@ def render(global_df):
                     rule_delta = {
                         "7 ngày": pd.Timedelta(hours=6),
                         "30 ngày": pd.Timedelta(days=1),
-                        "3 tháng": pd.Timedelta(days=3)
+                        "3 tháng": pd.Timedelta(days=3),
+                        "1 năm": pd.Timedelta(days=7)
                     }
                     dt_end = dt_start + rule_delta.get(time_range, pd.Timedelta(hours=1))
                     
@@ -1319,7 +1379,10 @@ def render(global_df):
             
             try:
                 # Load raw data for this specific location
-                loc_df = load_tier2_data(folder_name, f_name)
+                if time_range == "1 năm":
+                    loc_df = load_tier2_year_data(folder_name, f_name)
+                else:
+                    loc_df = load_tier2_data(folder_name, f_name)
                 if loc_df.empty or selected_poll_key not in loc_df.columns:
                     continue
                 
