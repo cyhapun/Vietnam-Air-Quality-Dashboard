@@ -24,28 +24,30 @@ retries = Retry(total=5, backoff_factor=3, status_forcelist=[429, 500, 502, 503,
 session.mount("https://", HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10))
 
 def get_file_metadata(file_path):
-    """Đọc nhanh thông tin file bằng cách chỉ lấy dòng cuối cùng"""
+    """Checks file status and returns metadata if update is needed."""
     try:
-        df_tail = pd.read_parquet(file_path).tail(1) 
-        if df_tail.empty: return None
+        # Optimization: Read only once. 
+        # For Parquet, reading tail(1) still reads metadata which is fast.
+        full_df = pd.read_parquet(file_path)
+        if full_df.empty: return None
         
-        last_ts = pd.to_datetime(df_tail["timestamp"]).iloc[0]
+        last_ts = pd.to_datetime(full_df["timestamp"].iloc[-1])
         
-        # Đồng bộ múi giờ Asia/Bangkok
+        # Sync with Asia/Bangkok
         now_bkk = pd.Timestamp.utcnow().tz_convert("Asia/Bangkok").tz_localize(None)
         current_hour = now_bkk.floor("h")
         
         if last_ts >= current_hour:
             return "UP_TO_DATE"
             
+        # Do NOT return full_df here to save memory during the scanning phase
         return {
             "path": file_path,
-            "lat": df_tail["lat"].iloc[-1],
-            "lon": df_tail["lon"].iloc[-1],
+            "lat": full_df["lat"].iloc[-1],
+            "lon": full_df["lon"].iloc[-1],
             "last_ts": last_ts,
-            "province": df_tail["province"].iloc[-1],
-            "location": df_tail["location"].iloc[-1],
-            "old_df": pd.read_parquet(file_path) # Chỉ đọc full file khi chắc chắn cần update
+            "province": full_df["province"].iloc[-1],
+            "location": full_df["location"].iloc[-1]
         }
     except Exception:
         return None
@@ -149,8 +151,11 @@ def process_batch(batch_meta):
                 # Lọc bỏ các giờ trong tương lai (đã có script forecast lo việc này)
                 df_new = df_new[df_new["timestamp"] <= current_hour]
                 
-                # Gộp dữ liệu cũ và mới
-                df_final = pd.concat([meta["old_df"], df_new], ignore_index=True)
+                # Load old data right before processing
+                old_df = pd.read_parquet(meta["path"])
+                
+                # Merge old and new data
+                df_final = pd.concat([old_df, df_new], ignore_index=True)
                 df_final["timestamp"] = pd.to_datetime(df_final["timestamp"])
                 
                 # -------------------------------------------------------------
@@ -218,6 +223,7 @@ def run_hourly_update():
     print("-" * 50)
 
 if __name__ == "__main__":
+    from services.crawl_data.update_aqi_hourly import run_hourly_update
     start_time = datetime.now()
     run_hourly_update()
     duration = datetime.now() - start_time
