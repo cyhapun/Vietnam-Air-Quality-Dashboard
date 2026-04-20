@@ -769,7 +769,6 @@ def _render_layer1(df: pd.DataFrame):
         st.markdown("</div>", unsafe_allow_html=True)
 
     # ── Filter bar ───────────────────────────────────────────────────────────────
-    st.markdown("<div class='wth-filter-bar'>", unsafe_allow_html=True)
     fc1, fc2, fc3 = st.columns([1.8, 1.2, 1.0], gap="small")
     with fc1:
         st.markdown("<div class='wth-filter-label'>Giai đoạn phân tích</div>", unsafe_allow_html=True)
@@ -796,7 +795,6 @@ def _render_layer1(df: pd.DataFrame):
             f"{n_cities} tỉnh · {n_records:,} bản ghi</div></div>",
             unsafe_allow_html=True,
         )
-    st.markdown("</div>", unsafe_allow_html=True)
 
     filtered = _filter_by_season(df, preset, month)
     annual   = _agg_annual(filtered)
@@ -1016,7 +1014,6 @@ def _render_layer2(df: pd.DataFrame):
     )
 
     # Filter bar
-    st.markdown("<div class='wth-filter-bar'>", unsafe_allow_html=True)
     fc1, fc2 = st.columns([1.6, 1.4], gap="small")
     with fc1:
         st.markdown("<div class='wth-filter-label'>Giai đoạn phân tích</div>", unsafe_allow_html=True)
@@ -1026,10 +1023,9 @@ def _render_layer2(df: pd.DataFrame):
         l2_vars = [v for v in ["temp","rain","humidity","wind_speed","pressure"] if v in df.columns]
         pv = st.segmented_control(
             "Chỉ số", l2_vars,
-            format_func=lambda x: f"{VAR_META[x]['icon']} {VAR_META[x]['label']}",
+            format_func=lambda x: VAR_META[x]["label"],
             selection_mode="single", default=l2_vars[0], key="l2_pv_sg",
         ) or l2_vars[0]
-    st.markdown("</div>", unsafe_allow_html=True)
 
     filtered = _filter_by_season(df, preset, month)
 
