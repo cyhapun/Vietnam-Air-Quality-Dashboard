@@ -941,8 +941,8 @@ def render(df: pd.DataFrame):
         return
 
     st.markdown(
-        '<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
-        '<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
+        '<div class="card" style="padding: 1.3rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 0.4rem;">'
+        '<div style="font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
         '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">TƯƠNG TÁC</span>'
         "Phân tích tác động Thời tiết - Địa lý"
         "</div>"
