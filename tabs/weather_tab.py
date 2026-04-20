@@ -2944,7 +2944,7 @@ def render_spatial_map(detail_summary: pd.DataFrame, anchor_day=None):
             if not vm.empty:
                 # Optimized Mapbox view
                 size_val = (vm["humidity"].fillna(50) / 100 * 18 + 7).clip(6, 25)
-                fig = go.Figure(go.Scattermapbox(
+                fig = go.Figure(go.Scattermap(
                     lat=vm[lat_col], lon=vm[lon_col],
                     mode="markers",
                     marker=dict(
@@ -2966,8 +2966,8 @@ def render_spatial_map(detail_summary: pd.DataFrame, anchor_day=None):
                 ))
                 fig.update_layout(**_dash_layout(
                     height=420,
-                    mapbox=dict(
-                        style="carto-positron",
+                    map=dict(
+                        style="open-street-map",
                         zoom=7,
                         center=dict(lat=float(vm[lat_col].mean()), lon=float(vm[lon_col].mean())),
                     ),

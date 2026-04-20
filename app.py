@@ -192,8 +192,6 @@ def render_dashboard():
 
     st.session_state["dashboard_context"] = state
 
-    render_header(state, logo_html)
-
     st.markdown('<div class="main-limit">', unsafe_allow_html=True)
     active_tab = state.get("active_tab", "overview")
     previous_active_tab = st.session_state.get("_last_active_tab")
@@ -202,7 +200,18 @@ def render_dashboard():
     st.session_state["_last_active_tab"] = active_tab
 
     if active_tab == "overview":
+        ov_time = st.session_state.get("ov_time_range", "24h")
         overview_df = state["df"]
+        overview_df = overview_tab._filter_df_by_time_range(overview_df, ov_time)
+        
+        # Update s_d and e_d for the header to reflect the filtered range
+        if not overview_df.empty:
+            state["s_d"] = overview_df["timestamp"].min().date()
+            state["e_d"] = overview_df["timestamp"].max().date()
+
+    render_header(state, logo_html)
+
+    if active_tab == "overview":
         province_col = "province" if "province" in overview_df.columns else "city"
         province_options = sorted(
             overview_df[province_col].dropna().astype(str).unique().tolist()

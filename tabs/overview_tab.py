@@ -702,11 +702,7 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
         f"</div>"
         f"<div class='iq-hero-sub'>PM2.5 trung bình hiện tại: <strong>{avg_pm25} µg/m³</strong></div>"
         f"<div class='iq-hero-sub'>Nồng độ PM2.5 đang cao gấp <strong>{who_pm25_multi} lần</strong> mức hướng dẫn năm của WHO (5 µg/m³).</div>"
-        f"<div class='iq-chip-row'>"
-        f"<span class='iq-chip'>{len(sel)} khu vực</span>"
-        f"<span class='iq-chip'>{len(df):,} bản ghi</span>"
-        f"<span class='iq-chip'>{dangerp}% giờ AQI > 150</span>"
-        f"</div>"
+        f"<div class='iq-chip-row' style='margin-bottom: 8px;'></div>"
         f"{insight_block_html}"
         f"</div>"
         f"</div>"
@@ -815,7 +811,7 @@ def render(df):
     aqi_colorscale.append([1.0, AQI_DEF[-1][3]])
 
     fig_map = go.Figure(
-        go.Scattermapbox(
+        go.Scattermap(
             lat=city_geo["lat"],
             lon=city_geo["lon"],
             mode="markers",
@@ -853,8 +849,8 @@ def render(df):
         )
     )
     fig_map.update_layout(
-        mapbox=dict(
-            style="carto-positron",
+        map=dict(
+            style="open-street-map",
             center=dict(
                 lat=float(city_geo["lat"].mean()), lon=float(city_geo["lon"].mean())
             ),
@@ -879,9 +875,9 @@ def render(df):
                         method="relayout",
                         args=[
                             {
-                                "mapbox.center.lat": float(city_geo["lat"].mean()),
-                                "mapbox.center.lon": float(city_geo["lon"].mean()),
-                                "mapbox.zoom": 4.2,
+                                "map.center.lat": float(city_geo["lat"].mean()),
+                                "map.center.lon": float(city_geo["lon"].mean()),
+                                "map.zoom": 4.2,
                             }
                         ],
                     )
