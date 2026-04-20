@@ -624,9 +624,6 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     city_priority = local_state["city_priority"]
     vietnam_svg_base64 = local_state.get("vietnam_svg_base64", "")
     st.markdown('<div class="main-wrap">', unsafe_allow_html=True)
-    st.caption(
-        f"Đang hiển thị thống kê theo khung thời gian: {OV_TIMEFRAME_LABELS.get(selected_range, selected_range)}"
-    )
     hero_bg_html = ""
     if vietnam_svg_base64:
         hero_bg_html = (
@@ -702,10 +699,6 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
         f"</div>"
         f"<div class='iq-hero-sub'>PM2.5 trung bình hiện tại: <strong>{avg_pm25} µg/m³</strong></div>"
         f"<div class='iq-hero-sub'>Nồng độ PM2.5 đang cao gấp <strong>{who_pm25_multi} lần</strong> mức hướng dẫn năm của WHO (5 µg/m³).</div>"
-        f"<div class='iq-chip-row'>"
-        f"<span class='iq-chip'>{len(sel)} khu vực</span>"
-        f"<span class='iq-chip'>{len(df):,} bản ghi</span>"
-        f"<span class='iq-chip'>{dangerp}% giờ AQI > 150</span>"
         f"</div>"
         f"{insight_block_html}"
         f"</div>"

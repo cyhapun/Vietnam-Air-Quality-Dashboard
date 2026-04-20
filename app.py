@@ -73,19 +73,20 @@ def initialize_background_tasks():
 
 parser = argparse.ArgumentParser(description="Tùy chọn cho Vietnam AQI Dashboard")
 parser.add_argument(
-    "--real-time",
-    action="store_true",
+    "mode",
+    nargs="?",
+    choices=["realtime"],
     help="Bật tính năng chạy ngầm crawler để cập nhật dữ liệu real-time",
 )
 
 # Sử dụng parse_known_args để bỏ qua các tham số mặc định của lệnh `streamlit run`
 args, unknown = parser.parse_known_args()
 
-if args.real_time:
+if args.mode == "realtime":
     initialize_background_tasks()
     print("Đang bật chế độ Real-time.")
 else:
-    print("Không sử dụng chế độ Real-time. Thêm cờ '--real-time' khi chạy để bật.")
+    print("Không sử dụng chế độ Real-time. Thêm 'realtime' sau tên file khi chạy để bật.")
 
 st.set_page_config(
     layout="wide",
@@ -387,25 +388,41 @@ def render_dashboard():
     render_footer()
 
 
-is_first_boot = not st.session_state.get("_dashboard_boot_ready", False)
-show_toggle_loader = bool(st.session_state.pop("_header_toggle_loading", False))
+def main():
+    is_first_boot = not st.session_state.get("_dashboard_boot_ready", False)
+    show_toggle_loader = bool(st.session_state.pop("_header_toggle_loading", False))
 
-if is_first_boot:
-    with dashboard_loading(
-        "Đang tải dữ liệu dashboard...",
-        hint="Chuẩn hóa dữ liệu AQI, PM2.5 và dựng bố cục ban đầu.",
-        overlay=True,
-        min_duration=1.0,
-    ):
+    if is_first_boot:
+        with dashboard_loading(
+            "Đang tải dữ liệu dashboard...",
+            hint="Chuẩn hóa dữ liệu AQI, PM2.5 và dựng bố cục ban đầu.",
+            overlay=True,
+            min_duration=1.0,
+        ):
+            render_dashboard()
+        st.session_state["_dashboard_boot_ready"] = True
+    elif show_toggle_loader:
+        with dashboard_loading(
+            "Đang cập nhật chế độ mù màu...",
+            hint="Đang áp dụng bảng màu mới và dựng lại dashboard.",
+            overlay=True,
+            min_duration=0.75,
+        ):
+            render_dashboard()
+    else:
         render_dashboard()
-    st.session_state["_dashboard_boot_ready"] = True
-elif show_toggle_loader:
-    with dashboard_loading(
-        "Đang cập nhật chế độ mù màu...",
-        hint="Đang áp dụng bảng màu mới và dựng lại dashboard.",
-        overlay=True,
-        min_duration=0.75,
-    ):
-        render_dashboard()
-else:
-    render_dashboard()
+
+
+if st.runtime.exists():
+    main()
+elif __name__ == "__main__":
+    import os
+    import sys
+    from streamlit.web import cli as stcli
+
+    if len(sys.argv) > 1:
+        # Tự động chèn dấu '--' của Streamlit để hỗ trợ lệnh: python app.py realtime
+        sys.argv = ["streamlit", "run", sys.argv[0], "--", *sys.argv[1:]]
+    else:
+        sys.argv = ["streamlit", "run", sys.argv[0]]
+    sys.exit(stcli.main())
