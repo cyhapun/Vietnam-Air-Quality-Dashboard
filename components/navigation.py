@@ -2,7 +2,7 @@ import streamlit as st
 
 from components.sidebar import TAB_ITEMS
 
-REFRESH_ICON_SVG = """<svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M21 3v6h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
+REFRESH_ICON_SVG = """<svg viewBox="0 0 24 24" fill="none"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M21 3v6h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
 
 
 def render_navigation(active_tab: str):

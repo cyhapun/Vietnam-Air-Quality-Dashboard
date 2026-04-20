@@ -121,14 +121,14 @@ footer {
   top: 160px;
   left: 0;
   width: 68px;
-  background: linear-gradient(180deg, #0f2743 0%, #102844 70%, #112d4e 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, #f0f8ff 0%, #e8f4fd 60%, #eef5fc 100%);
+  border-right: 1px solid rgba(14, 165, 233, 0.18);
   border-radius: 0 20px 20px 0;
-  box-shadow: 8px 0 26px rgba(15, 23, 42, 0.26);
-  padding: 14px 8px;
+  box-shadow: 6px 0 20px rgba(14, 165, 233, 0.13), 2px 0 8px rgba(15, 23, 42, 0.06);
+  padding: 14px 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   overflow: hidden;
   transition:
     width 0.24s cubic-bezier(0.22, 1, 0.36, 1),
@@ -138,16 +138,16 @@ footer {
 }
 .az-nav:hover {
   width: 244px;
-  box-shadow: 12px 0 34px rgba(15, 23, 42, 0.36);
+  box-shadow: 10px 0 28px rgba(14, 165, 233, 0.18), 4px 0 12px rgba(15, 23, 42, 0.08);
 }
 .az-nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 46px;
-  padding: 9px 14px;
+  min-height: 48px;
+  padding: 9px 17px;
   border-radius: 14px;
-  color: #cbd5e1;
+  color: #1e5a8a;
   text-decoration: none !important;
   font-size: 0.9rem;
   font-weight: 700;
@@ -162,29 +162,38 @@ footer {
   user-select: none;
 }
 .az-nav-item:hover {
-  background: rgba(31, 79, 125, 0.46);
-  border-color: rgba(148, 184, 214, 0.36);
-  color: #f1f5f9;
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(14, 165, 233, 0.28);
+  color: #0c3460;
   transform: translateX(1px);
 }
 .az-nav-item.is-active {
   background: linear-gradient(135deg, #0ea5e9, #2563eb);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.34);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.38);
 }
 .az-nav-icon {
-  width: 28px;
-  min-width: 28px;
-  height: 28px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border-radius: 10px;
+  background: rgba(14, 165, 233, 0.1);
+  transition: background 0.2s ease;
+}
+.az-nav-item:hover .az-nav-icon {
+  background: rgba(14, 165, 233, 0.18);
+}
+.az-nav-item.is-active .az-nav-icon {
+  background: transparent;
 }
 .az-nav-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 .az-nav-label {
   opacity: 0;
