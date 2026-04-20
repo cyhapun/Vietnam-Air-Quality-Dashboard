@@ -30,21 +30,21 @@ def render_header(state, logo_html):
           <div class="hdr-school">ĐẠI HỌC KHOA HỌC TỰ NHIÊN, ĐHQG–HCM &nbsp;·&nbsp; KHOA CNTT &nbsp;·&nbsp; Trực quan hóa Dữ liệu</div>
           <div class="hdr-title">Phân tích Chỉ số Chất lượng Không khí tại Việt Nam</div>
           <div class="hdr-sub">GVHD: Bùi Tiến Lên &nbsp;·&nbsp; Lớp CQ2023/24 &nbsp;·&nbsp; Nhóm 8 &nbsp;·&nbsp; TP.HCM – 2026</div>
-          {colorblind_badge}
         </div>
       </div>
-      <div class="hdr-right">
-        <div class="hdr-stat">
-          <div class="hdr-stat-val">{len(sel)}</div>
-          <div class="hdr-stat-lbl">Khu vực</div>
-        </div>
+      <div class="hdr-right" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
         <div class="hdr-stat">
           <div class="hdr-stat-val">Từ {s_d.strftime('%d/%m/%y')} đến {e_d.strftime('%d/%m/%y')}</div>
-          <div class="hdr-stat-lbl">Thời gian</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <div class="hdr-stat" style="text-align: center;">
+            <div class="hdr-stat-val">{len(sel)}</div>
+            <div class="hdr-stat-lbl">Khu vực</div>
+          </div>
+          {colorblind_badge}
         </div>
       </div>
     </div>
     """,
         unsafe_allow_html=True,
     )
-

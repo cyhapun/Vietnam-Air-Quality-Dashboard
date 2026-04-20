@@ -41,10 +41,32 @@ footer {
 [data-testid="stAppViewBlockContainer"],
 [data-testid="stMainBlockContainer"],
 .main .block-container,
-.stMainBlockContainer {
+.stMainBlockContainer,
+[data-testid="stApp"],
+[data-testid="stHeader"] {
   padding-top: 0 !important;
-  margin-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: -1.5rem !important; /* Dịch chuyển toàn bộ nội dung lên trên */
   max-width: 100% !important;
+}
+
+/* Hide Streamlit decoration and reset header height */
+[data-testid="stDecoration"] {
+  display: none !important;
+}
+
+[data-testid="stHeader"] {
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  display: none !important;
+}
+
+/* Specific fix for top gap in new Streamlit versions */
+[data-testid="stAppViewContainer"] > section > div,
+[data-testid="column"],
+[data-testid="stVerticalBlock"] {
+  padding-top: 0 !important;
 }
 
 /* Limit content width to prevent eye fatigue on Ultra-wide screens */
@@ -294,6 +316,8 @@ div[data-testid="stVerticalBlock"] > div:has(.hdr) {
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
+  border-radius: 0 0 15px 15px; /* Chỉ bo góc ở dưới, phẳng ở trên */
+  border-top: none;
 }
 
 .hdr-left {
