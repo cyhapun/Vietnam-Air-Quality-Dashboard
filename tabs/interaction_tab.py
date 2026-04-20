@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -7,6 +7,7 @@ import re
 import unicodedata
 import html
 import json
+from services.data_loader import load_weather_data
 from utils.helpers import val_meta
 
 
@@ -693,6 +694,19 @@ def _safe_reduction(base_val, compare_val):
     return (base_val - compare_val) / base_val * 100.0
 
 
+def _prepare_interaction_source(frame: pd.DataFrame) -> pd.DataFrame:
+    if frame is None or frame.empty:
+        return pd.DataFrame()
+
+    out = _attach_region_interaction(frame.copy())
+    if "timestamp" not in out.columns:
+        return pd.DataFrame()
+
+    if not pd.api.types.is_datetime64_any_dtype(out["timestamp"]):
+        out["timestamp"] = pd.to_datetime(out["timestamp"], errors="coerce")
+    return out.dropna(subset=["timestamp"])
+
+
 @st.cache_data
 def calc_wind_curve(df):
     work = df.copy()
@@ -814,7 +828,7 @@ def calc_province_cleaning_strength(df, min_samples):
         return pd.DataFrame()
 
     out = []
-    for province, g in df.groupby("province"):
+    for province, g in df.groupby("province", observed=False):
         g = g.dropna(subset=["aqi", "pm2_5", "wind_speed", "rain"])
         if len(g) < min_samples:
             continue
@@ -885,7 +899,7 @@ def calc_region_factor_impact(df, min_samples):
         return pd.DataFrame()
 
     out = []
-    for region, g in df.groupby("region_6"):
+    for region, g in df.groupby("region_6", observed=False):
         if region == "Chưa xếp vùng":
             continue
 
@@ -915,32 +929,50 @@ def render(df: pd.DataFrame):
         st.warning("Không có dữ liệu.")
         return
 
-    work = _attach_region_interaction(df.copy())
-    if not pd.api.types.is_datetime64_any_dtype(work["timestamp"]):
-        work["timestamp"] = pd.to_datetime(work["timestamp"], errors="coerce")
-    work = work.dropna(subset=["timestamp"])
+    base_work = _prepare_interaction_source(df)
+    if base_work.empty:
+        st.warning("Không có dữ liệu.")
+        return
 
     st.markdown(
-        '<div class="card" style="padding: 0.85rem 1rem; margin-bottom: 0.35rem;">'
-        '<div class="card-title" style="margin-bottom: 4px;"><span class="q-tag">Tương tác</span>Phân tích tác động thời tiết - địa lý đến AQI/PM2.5</div>'
+        '<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
+        '<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
+        '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">TƯƠNG TÁC</span>'
+        "Phân tích tác động Thời tiết - Địa lý"
+        "</div>"
+        '<div style="font-size: 1rem; color: #64748b; line-height: 1.5;">Khám phá mối liên hệ giữa các yếu tố môi trường và vị trí địa lý đến chất lượng không khí.</div>'
         "</div>",
         unsafe_allow_html=True,
     )
 
     _inject_interaction_filter_styles()
 
-    available_regions = [
-        r for r in REGION6_ORDER if r in work["region_6"].dropna().unique().tolist()
-    ]
-
     if "interaction_region_select" not in st.session_state:
         st.session_state["interaction_region_select"] = "Tất cả"
     if "interaction_province_select" not in st.session_state:
         st.session_state["interaction_province_select"] = "Tất cả"
     if "interaction_time_range" not in st.session_state:
-        st.session_state["interaction_time_range"] = "3 tháng"
+        st.session_state["interaction_time_range"] = "2025"
     if "interaction_rank_focus" not in st.session_state:
         st.session_state["interaction_rank_focus"] = "AQI"
+
+    time_options = ["2025", "24h", "7 ngày", "30 ngày", "3 tháng"]
+    if st.session_state.get("interaction_time_range") not in time_options:
+        st.session_state["interaction_time_range"] = "2025"
+
+    current_time_range = st.session_state["interaction_time_range"]
+    if current_time_range == "2025":
+        year_2025_df = load_weather_data()
+        work = _prepare_interaction_source(year_2025_df)
+        if work.empty:
+            st.warning("Không tìm thấy dữ liệu trong nguồn aqi_year_2025.")
+            return
+    else:
+        work = base_work
+
+    available_regions = [
+        r for r in REGION6_ORDER if r in work["region_6"].dropna().unique().tolist()
+    ]
 
     # Keep a fixed minimum sample threshold after removing the slider from UI.
     min_samples = 60
@@ -965,7 +997,7 @@ def render(df: pd.DataFrame):
     st.markdown(
         '<div class="interaction-toolbar-anchor"></div>', unsafe_allow_html=True
     )
-    c1, c2, c3, c_spacer = st.columns([1.4, 0.8, 0.8, 4.0], gap="small")
+    c1, c2, c3, c_spacer = st.columns([2.0, 0.8, 0.8, 4.0], gap="small")
 
     with c1:
         selected_region = st.selectbox(
@@ -994,22 +1026,26 @@ def render(df: pd.DataFrame):
         )
 
     with c3:
-        time_options = ["24h", "7 ngày", "30 ngày", "3 tháng"]
-        if st.session_state.get("interaction_time_range") not in time_options:
-            st.session_state["interaction_time_range"] = "3 tháng"
         time_range = st.selectbox(
             "Thời gian",
             options=time_options,
             key="interaction_time_range",
         )
-        delta_map = {
-            "24h": pd.Timedelta(hours=24),
-            "7 ngày": pd.Timedelta(days=7),
-            "30 ngày": pd.Timedelta(days=30),
-            "3 tháng": pd.Timedelta(days=90),
-        }
-        end_ts = work["timestamp"].max()
-        start_ts = max(work["timestamp"].min(), end_ts - delta_map[time_range])
+        if time_range != current_time_range:
+            st.rerun()
+
+        if time_range == "2025":
+            start_ts = work["timestamp"].min()
+            end_ts = work["timestamp"].max()
+        else:
+            delta_map = {
+                "24h": pd.Timedelta(hours=24),
+                "7 ngày": pd.Timedelta(days=7),
+                "30 ngày": pd.Timedelta(days=30),
+                "3 tháng": pd.Timedelta(days=90),
+            }
+            end_ts = work["timestamp"].max()
+            start_ts = max(work["timestamp"].min(), end_ts - delta_map[time_range])
 
     with c_spacer:
         st.markdown("&nbsp;", unsafe_allow_html=True)
@@ -1150,7 +1186,7 @@ def render(df: pd.DataFrame):
                 )
                 st.plotly_chart(
                     fig_wind,
-                    use_container_width=True,
+                    width="stretch",
                     config={"displayModeBar": False},
                 )
                 _render_flow_scale("Gió yếu", "Gió mạnh")
@@ -1212,7 +1248,7 @@ def render(df: pd.DataFrame):
                 )
                 st.plotly_chart(
                     fig_rain,
-                    use_container_width=True,
+                    width="stretch",
                     config={"displayModeBar": False},
                 )
                 _render_flow_scale("Mưa ít", "Mưa nhiều")
@@ -1467,12 +1503,15 @@ const INITIAL_SUB = {initial_subtitle_json};
 // row: 1D array of correlation values (1 per weather feature vs AQI)
 function mkData(row){{
   const vals = row.map(v => v === null ? null : v);
+    const labelVals = vals.map(v => v === null ? '' : Number(v).toFixed(2));
   return [{{
     type: 'heatmap',
     z: [vals],
+        text: [labelVals],
     x: LABELS,
     y: ['AQI'],
-        texttemplate: '',
+                texttemplate: '%{{text}}',
+                textfont: {{size: 12, color: '#1f2f46'}},
         colorscale: [
             [0.0, '#2f7fc1'],
             [0.5, '#d6dde8'],

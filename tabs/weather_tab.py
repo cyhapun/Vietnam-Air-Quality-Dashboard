@@ -7,6 +7,7 @@ import uuid
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import streamlit as st
 
 from services.data_loader import list_detail_provinces, load_province_detail
@@ -226,6 +227,14 @@ def _inject_weather_css():
         /* ── Reset & base ── */
         .wx-root { font-family: 'Inter', sans-serif; }
 
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .wx-animate-up { animation: fadeInUp 0.6s ease-out both; }
+        .wx-animate-delay-1 { animation-delay: 0.1s; }
+        .wx-animate-delay-2 { animation-delay: 0.2s; }
+
         /* ── HERO BANNER (top blue card) ── */
         .wx-hero {
             position: relative;
@@ -236,6 +245,7 @@ def _inject_weather_css():
             margin-bottom: 14px;
             box-shadow: 0 8px 32px rgba(21, 101, 192, 0.30);
             color: #fff;
+            animation: fadeInUp 0.6s ease-out both;
         }
         .wx-hero::before {
             content: '';
@@ -295,9 +305,15 @@ def _inject_weather_css():
         .wx-hero-grid {
             display: grid;
             grid-template-columns: 1.4fr 1fr;
-            gap: 18px;
+            gap: 20px;
             align-items: start;
             padding-bottom: 8px;
+        }
+
+        /* Main layout: vertical stack for current info and hourly strip */
+        .wx-current-wrap {
+            margin-bottom: 24px;
+            animation: fadeInUp 0.6s ease-out both;
         }
 
         /* Big temperature display */
@@ -399,6 +415,20 @@ def _inject_weather_css():
             margin-bottom: 12px;
             padding-left: 2px;
             letter-spacing: 0.2px;
+        }
+        
+        /* ── Glass Parameters ── */
+        .wx-glass-params {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+            animation: fadeInUp 0.6s ease-out both;
+            animation-delay: 0.1s;
         }
         .wx-block-head {
             margin-bottom: 10px;
@@ -1055,8 +1085,7 @@ def _inject_weather_css():
             background: #0f172a;
             border-radius: 18px;
             padding: 14px;
-            margin-bottom: 14px;
-            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.20);
+            margin-bottom: 10px;
         }
         .wx-dark-card-title {
             font-size: 0.88rem;
@@ -1065,15 +1094,87 @@ def _inject_weather_css():
             margin-bottom: 10px;
         }
 
-        /* ── ADVANCED ANALYSIS CARD ── */
+        /* ── Leaderboard & Analysis Cards ── */
         .wx-analysis-card {
-            background: #fff;
-            border: 1px solid #e2eaf3;
-            border-radius: 18px;
-            padding: 16px;
-            margin-bottom: 14px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+            background-color: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+            transition: transform 0.3s ease;
+            animation: fadeInUp 0.7s ease-out both;
         }
+        .wx-analysis-card:hover { transform: translateY(-2px); }
+
+        .wx-leader-item {
+            display: flex;
+            align-items: center;
+            background-color: rgba(248, 250, 252, 0.6);
+            padding: 10px 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            transition: all 0.2s ease;
+        }
+        .wx-leader-item:hover { 
+            background-color: rgba(248, 250, 252, 0.95);
+            border-color: rgba(148, 163, 184, 0.3);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+            transform: translateX(4px);
+        }
+        .wx-medal { font-size: 1.1rem; width: 26px; text-align: center; margin-right: 12px; }
+        .wx-rank-num { font-size: 0.8rem; font-weight: 800; color: #94a3b8; width: 26px; text-align: center; margin-right: 12px; }
+
+        .wx-mini-bar-wrap {
+            flex: 1;
+            height: 6px;
+            background: rgba(226, 232, 240, 0.8);
+            border-radius: 3px;
+            margin: 0 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        .wx-mini-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s ease-out;
+        }
+
+        /* ── Forecast Tiles ── */
+        .wx-forecast-tile {
+            min-width: 82px;
+            text-align: center;
+            padding: 12px 8px;
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            transition: all 0.2s ease;
+        }
+        .wx-forecast-tile:hover {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: #3b82f6;
+            transform: scale(1.05);
+        }
+        .wx-pill-lvl {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .wx-daily-row {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+            transition: background 0.2s ease;
+        }
+        .wx-daily-row:hover { background: rgba(248, 250, 252, 0.8); }
         .wx-analysis-title { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-bottom: 3px; }
         .wx-analysis-sub   { font-size: 0.72rem; color: #64748b; margin-bottom: 10px; }
 
@@ -1092,6 +1193,16 @@ def _inject_weather_css():
             .wx-cal-temp { font-size: 1rem; }
             .wx-cal-temp-min { font-size: 0.74rem; }
             .wx-kpi-strip { grid-template-columns: 1fr; }
+        }
+        /* Streamlit Column Equal Height Hack */
+        [data-testid="stHorizontalBlock"] {
+            align-items: stretch;
+        }
+        [data-testid="stHorizontalBlock"] > div {
+            display: flex;
+        }
+        [data-testid="stHorizontalBlock"] > div > div > div {
+            height: 100%;
         }
         </style>
         """),
@@ -1166,14 +1277,24 @@ def _hourly_strip_html(hourly_df, count=6):
     parts = []
     for i, row in enumerate(rows):
         cls = "wx-hour-item now" if i == len(rows) - 1 else "wx-hour-item"
-        temp = _fmt_num(getattr(row, "temp", np.nan), 0)
+        temp_raw = getattr(row, "temp", np.nan)
+        temp = _fmt_num(temp_raw, 0)
         rain = getattr(row, "rain", np.nan)
         rain_txt = f"{_fmt_num(rain, 1)} mm" if not pd.isna(rain) and float(rain) > 0 else "0%"
         time_str = row.timestamp.strftime("%H:%M") if hasattr(row.timestamp, "strftime") else str(row.timestamp)[:5]
+        # Temperature color scale per requirements
+        if not pd.isna(temp_raw):
+            t = float(temp_raw)
+            if t >= 35:   chip_clr = "#ef4444"
+            elif t >= 30: chip_clr = "#f97316"
+            elif t >= 26: chip_clr = "#f59e0b"
+            else:         chip_clr = "#22c55e"
+        else:
+            chip_clr = "#94a3b8"
         parts.append(
             f"<div class='{cls}'>"
             f"<div class='wx-hour-time'>{time_str}</div>"
-            f"<div class='wx-hour-temp'>{temp}°</div>"
+            f"<div class='wx-hour-temp' style='color:{chip_clr}; font-size:17px; font-weight:900; margin:6px 0;'>{temp}°</div>"
             f"<div class='wx-hour-rain'>{rain_txt}</div>"
             "</div>"
         )
@@ -1458,6 +1579,10 @@ def _build_location_day_summary(detail_rows: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     frame = detail_rows.copy()
+    # Normalize coordinate column names
+    lat_col = next((c for c in frame.columns if c.lower() in ["lat", "latitude"]), None)
+    lon_col = next((c for c in frame.columns if c.lower() in ["lon", "longitude"]), None)
+    
     required_numeric_cols = [
         "temp",
         "humidity",
@@ -1473,17 +1598,23 @@ def _build_location_day_summary(detail_rows: pd.DataFrame) -> pd.DataFrame:
             frame[col] = np.nan
 
     grouped = frame.groupby("location", dropna=True, observed=False)
-    summary = grouped.agg(
-        temp_avg=("temp", "mean"),
-        temp_max=("temp", "max"),
-        temp_min=("temp", "min"),
-        humidity=("humidity", "mean"),
-        rain=("rain", "sum"),
-        wind_speed=("wind_speed", "mean"),
-        pressure=("pressure", "mean"),
-        cloud=("cloud", "mean"),
-        aqi=("aqi", "mean"),
-    )
+    
+    agg_dict = {
+        "temp_avg": ("temp", "mean"),
+        "temp_max": ("temp", "max"),
+        "temp_min": ("temp", "min"),
+        "humidity": ("humidity", "mean"),
+        "rain": ("rain", "sum"),
+        "wind_speed": ("wind_speed", "mean"),
+        "pressure": ("pressure", "mean"),
+        "cloud": ("cloud", "mean"),
+        "aqi": ("aqi", "mean"),
+    }
+    # Preserve coordinates if they exist
+    if lat_col: agg_dict["lat"] = (lat_col, "first")
+    if lon_col: agg_dict["lon"] = (lon_col, "first")
+
+    summary = grouped.agg(**agg_dict)
     summary["sample_count"] = grouped.size()
     summary["wind_dir"] = grouped["wind_dir"].apply(_circular_mean_deg)
     summary = summary.reset_index()
@@ -1563,10 +1694,23 @@ def _location_detail_table_html(location_df: pd.DataFrame, max_rows: int = 120) 
     if location_df.empty:
         return ""
 
+    def _temp_bg(v):
+        if pd.isna(v): return "transparent"
+        if v >= 35: return "rgba(239, 68, 68, 0.15)"  # Red
+        if v >= 30: return "rgba(251, 146, 60, 0.12)" # Orange
+        if v >= 20: return "rgba(34, 197, 94, 0.1)"  # Green
+        return "rgba(56, 189, 248, 0.1)"             # Blue
+
+    def _hum_bg(v):
+        if pd.isna(v): return "transparent"
+        if v >= 85: return "rgba(14, 165, 233, 0.15)" # Blue (Humid)
+        if v >= 40: return "rgba(34, 197, 94, 0.1)"   # Green (Optimal)
+        return "rgba(245, 158, 11, 0.12)"             # Amber (Dry)
+
     sub = location_df.head(max_rows)
     header = (
-        "<div class='wx-hourly-card wx-month-tone'>"
-        "<table class='wx-htable'><thead><tr>"
+        "<div class='wx-htable-scroll-container' style='border-radius:18px; overflow:hidden; border:1px solid #e2eaf3; margin-bottom:20px;'>"
+        "<table class='wx-htable' style='margin-bottom:0;'><thead><tr>"
         "<th>Địa điểm</th><th>Tình trạng</th><th>🌡 Nhiệt độ</th>"
         "<th>💧 Độ ẩm</th><th>🌬 Gió</th><th>☁ Mây</th><th>🌧 Mưa</th><th>AQI</th><th>Mẫu</th>"
         "</tr></thead><tbody>"
@@ -1577,10 +1721,15 @@ def _location_detail_table_html(location_df: pd.DataFrame, max_rows: int = 120) 
         location = escape(str(getattr(row, "location", "N/A")))
         condition = str(getattr(row, "condition", "Trời quang"))
         cond_icon = _condition_svg_inline(condition, 14)
-        temp_avg = _fmt_num(getattr(row, "temp_avg", np.nan), 1)
+        
+        t_val = getattr(row, "temp_avg", np.nan)
+        temp_avg = _fmt_num(t_val, 1)
         temp_max = _fmt_num(getattr(row, "temp_max", np.nan), 0)
         temp_min = _fmt_num(getattr(row, "temp_min", np.nan), 0)
-        humidity = _fmt_num(getattr(row, "humidity", np.nan), 0)
+        
+        h_val = getattr(row, "humidity", np.nan)
+        humidity = _fmt_num(h_val, 0)
+        
         wind_speed = _fmt_num(getattr(row, "wind_speed", np.nan), 1)
         wind_dir = _wind_dir_label(getattr(row, "wind_dir", np.nan))
         cloud = _fmt_num(getattr(row, "cloud", np.nan), 0)
@@ -1588,12 +1737,15 @@ def _location_detail_table_html(location_df: pd.DataFrame, max_rows: int = 120) 
         sample_count = _fmt_num(getattr(row, "sample_count", np.nan), 0)
         aqi_badge = _aqi_badge_html(getattr(row, "aqi", np.nan))
 
+        t_bg = _temp_bg(t_val)
+        h_bg = _hum_bg(h_val)
+
         rows_html.append(
             "<tr>"
             f"<td><b>{location}</b></td>"
             f"<td><div class='wx-htable-cond'>{cond_icon}{condition}</div></td>"
-            f"<td><b>{temp_avg}°C</b> <span style='color:#cbd5e1;font-size:0.68rem;'>({temp_max}° / {temp_min}°)</span></td>"
-            f"<td>{humidity}%</td>"
+            f"<td style='background-color:{t_bg};'><b>{temp_avg}°C</b> <span style='color:#94a3b8;font-size:0.68rem;'>({temp_max}° / {temp_min}°)</span></td>"
+            f"<td style='background-color:{h_bg}; font-weight:600;'>{humidity}%</td>"
             f"<td>{wind_speed} km/h · {wind_dir}</td>"
             f"<td>{cloud}%</td>"
             f"<td>{rain} mm</td>"
@@ -2431,7 +2583,680 @@ def _render_mode_switch(options, key, prefix):
     return st.session_state[key]
 
 
+
+# ─── Analysis Dashboard Helpers ───────────────────────────────────────────────
+
+_DASH_FONT = "Be Vietnam Pro, sans-serif"
+
+
+def _dash_layout(**kwargs):
+    base = dict(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family=_DASH_FONT, size=12, color="#334155"),
+        margin=dict(l=10, r=10, t=36, b=10),
+        template="plotly_white",
+    )
+    base.update(kwargs)
+    return base
+
+
+def _insight_html(content: str, color: str = "#3b82f6", bg_rgb: str = "59,130,246") -> str:
+    return (
+        f"<div style=\"background:rgba({bg_rgb},0.07);border-left:3px solid {color};"
+        "border-radius:10px;padding:12px 14px;font-size:13px;"
+        f"color:#334155;line-height:1.8;margin-top:8px;\">"
+        f"{content}</div>"
+    )
+
+
+def _dash_section_header(title: str, subtitle: str):
+    st.markdown(
+        f"<div class='wx-analysis-card' style='margin-top:2.5rem; border-top:1.5px solid rgba(148,163,184,0.12); padding-top:2rem;'>"
+        f"<div style='font-size:34px;font-weight:800;color:#0f172a;line-height:1.0;'>{title}</div>"
+        f"<div style='margin-top:4px;color:#64748b;font-size:0.8rem;'>{subtitle}</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def _lv_temp(v: float):
+    if v >= 35: return "Nắng nóng", "#ef4444"
+    if v >= 30: return "Nóng", "#fb923c"
+    if v >= 20: return "Dễ chịu", "#22c55e"
+    return "Mát", "#38bdf8"
+
+
+def _lv_hum(v: float):
+    if v >= 85: return "Ẩm cao", "#0ea5e9"
+    if v >= 40: return "Ổn định", "#22c55e"
+    return "Khô", "#f59e0b"
+
+
+def _lv_wind(v: float):
+    if v >= 30: return "Gió mạnh", "#0f766e"
+    if v >= 15: return "Có gió", "#14b8a6"
+    return "Gió nhẹ", "#22c55e"
+
+
+def _comfort_score(temp, humidity, wind_speed, aqi=None) -> float:
+    """0–100 comfort score; higher is more comfortable. AQI penalty applied."""
+    s = 100.0
+    if temp is not None and not pd.isna(temp):
+        t = float(temp)
+        s -= max(0, t - 28) * 3.5
+        s -= max(0, 18 - t) * 2.5
+    if humidity is not None and not pd.isna(humidity):
+        h = float(humidity)
+        s -= max(0, h - 70) * 0.8
+        s -= max(0, 30 - h) * 0.5
+    if wind_speed is not None and not pd.isna(wind_speed):
+        s += min(10, float(wind_speed) * 0.3)
+    # AQI penalty: unhealthy air quality reduces comfort score
+    if aqi is not None and not pd.isna(aqi):
+        a = float(aqi)
+        if a > 200:   penalty = 50
+        elif a > 150: penalty = 30
+        elif a > 100: penalty = 15
+        elif a > 50:  penalty = 5
+        else:         penalty = 0
+        s -= penalty
+    return float(np.clip(s, 0, 100))
+
+
+
+    # Use the provided hourly_df which is already filtered by the parent render()
+    src = hourly_df.copy()
+    src["hour"] = pd.to_datetime(src["timestamp"]).dt.hour
+
+    agg_cols: dict = {"temp": ("temp", "mean")}
+    if "humidity"   in src.columns: agg_cols["humidity"]   = ("humidity",   "mean")
+    if "wind_speed" in src.columns: agg_cols["wind_speed"] = ("wind_speed", "mean")
+    if "cloud"      in src.columns: agg_cols["cloud"]      = ("cloud",      "mean")
+
+    ha = src.groupby("hour", observed=False).agg(**agg_cols).reset_index().sort_values("hour")
+    if ha.empty:
+        st.info("Không đủ dữ liệu.")
+        return
+
+    col_l, col_r = st.columns([1.1, 1], gap="large")
+
+    # ── Left: Radar Chart ──
+    with col_l:
+        labels = [f"{h:02d}:00" for h in ha["hour"]]
+
+        def _norm(s):
+            lo, hi = s.min(), s.max()
+            rng = hi - lo if hi != lo else 1.0
+            return ((s - lo) / rng * 100).clip(0, 100)
+
+        t_norm = _norm(ha["temp"]).tolist()
+        h_norm = _norm(ha["humidity"]).tolist() if "humidity" in ha.columns else [50.0] * len(ha)
+
+        lc = labels + [labels[0]]
+        tc = t_norm + [t_norm[0]]
+        hc = h_norm + [h_norm[0]]
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatterpolar(
+            r=tc, theta=lc, fill="toself", name="Nhiệt độ",
+            line=dict(color="#ef4444", width=2.2),
+            fillcolor="rgba(239,68,68,0.15)",
+            hovertemplate="Giờ: %{theta}<br>Chuẩn hóa: %{r:.1f}<extra></extra>",
+        ))
+        fig.add_trace(go.Scatterpolar(
+            r=hc, theta=lc, fill="toself", name="Độ ẩm",
+            line=dict(color="#38bdf8", width=2.0),
+            fillcolor="rgba(56,189,248,0.12)",
+            hovertemplate="Giờ: %{theta}<br>Chuẩn hóa: %{r:.1f}<extra></extra>",
+        ))
+        fig.update_layout(**_dash_layout(
+            height=380,
+            polar=dict(
+                bgcolor="rgba(0,0,0,0)",
+                radialaxis=dict(visible=False, range=[0, 120]),
+                angularaxis=dict(
+                    direction="clockwise", rotation=90,
+                    tickfont=dict(size=9, color="#64748b"),
+                    gridcolor="rgba(148,163,184,0.15)",
+                ),
+            ),
+            legend=dict(orientation="h", x=0.1, y=-0.07, font=dict(size=11)),
+        ))
+        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
+
+    # ── Right: Dual-axis wind+cloud line + insight ──
+    with col_r:
+        if "wind_speed" in ha.columns and "cloud" in ha.columns:
+            fig2 = go.Figure()
+            fig2.add_trace(go.Scatter(
+                x=ha["hour"], y=ha["wind_speed"],
+                mode="lines+markers", name="Gió (km/h)",
+                line=dict(color="#10b981", width=2.5, shape="spline"),
+                marker=dict(size=5, color="#10b981"),
+                hovertemplate="Giờ %{x}:00<br>Gió: %{y:.1f} km/h<extra></extra>",
+            ))
+            fig2.add_trace(go.Scatter(
+                x=ha["hour"], y=ha["cloud"],
+                mode="lines", name="Mây (%)", yaxis="y2",
+                line=dict(color="#94a3b8", width=2, dash="dot"),
+                hovertemplate="Giờ %{x}:00<br>Mây: %{y:.0f}%<extra></extra>",
+            ))
+            fig2.update_layout(**_dash_layout(
+                height=210,
+                xaxis=dict(
+                    title="Giờ",
+                    tickvals=list(range(0, 24, 3)),
+                    ticktext=[f"{h:02d}h" for h in range(0, 24, 3)],
+                    gridcolor="rgba(0,0,0,0.04)",
+                ),
+                yaxis=dict(title="Gió (km/h)", gridcolor="rgba(0,0,0,0.04)", tickfont=dict(size=9)),
+                yaxis2=dict(
+                    overlaying="y", side="right", title="Mây (%)",
+                    showgrid=False, tickfont=dict(size=9), range=[0, 110],
+                ),
+                legend=dict(orientation="h", x=0, y=1.15, font=dict(size=10)),
+                hovermode="x unified",
+            ))
+            st.plotly_chart(fig2, width='stretch', config={"displayModeBar": False})
+
+        # Insight box
+        pk_t_hr  = int(ha.loc[ha["temp"].idxmax(), "hour"]) if not ha["temp"].isna().all() else 0
+        pk_t_val = float(ha["temp"].max())
+        _, clr_t = _lv_temp(pk_t_val)
+
+        insight_h = ""
+        if "humidity" in ha.columns and not ha["humidity"].isna().all():
+            lo_h_hr  = int(ha.loc[ha["humidity"].idxmin(), "hour"])
+            lo_h_val = float(ha["humidity"].min())
+            _, clr_h = _lv_hum(lo_h_val)
+            insight_h = f"💧 <b>Ẩm thấp nhất:</b> <span style='color:{clr_h};font-weight:700;'>{lo_h_hr:02d}:00</span> ({lo_h_val:.0f}%)<br>"
+
+        insight_w = ""
+        if "wind_speed" in ha.columns and not ha["wind_speed"].isna().all():
+            pk_w_hr  = int(ha.loc[ha["wind_speed"].idxmax(), "hour"])
+            pk_w_val = float(ha["wind_speed"].max())
+            _, clr_w = _lv_wind(pk_w_val)
+            insight_w = f"🌬️ <b>Gió mạnh nhất:</b> <span style='color:{clr_w};font-weight:700;'>{pk_w_hr:02d}:00</span> ({pk_w_val:.1f} km/h)"
+
+        content = (
+            f"🌡️ <b>Đỉnh nhiệt:</b> <span style='color:{clr_t};font-weight:700;'>"
+            f"{pk_t_hr:02d}:00</span> ({pk_t_val:.1f}°C)<br>"
+            + insight_h + insight_w
+        )
+        st.markdown(_insight_html(content, "#ef4444", "239,68,68"), unsafe_allow_html=True)
+
+
+# ── Dashboard 2 — Rain Season ──────────────────────────────────────────────────
+
+def render_rain_season(df: pd.DataFrame, city_name: str = "", scope_label: str = "72h"):
+    # Dynamic header based on scope
+    _headers = {
+        "24h": "🌧️ Lượng Mưa Theo Giờ",
+        "72h": "🌧️ Lượng Mưa Theo Giờ (3 ngày)",
+        "7 ngày": "🌧️ Lượng Mưa Theo Ngày (Tuần)",
+        "30 ngày": "🌧️ Lượng Mưa Theo Ngày (Tháng)",
+    }
+    _section_title = _headers.get(scope_label, "🌧️ Phân Tích Lượng Mưa")
+    _section_sub = "Phân bổ lượng mưa và độ ẩm theo thời gian — nhận diện thời điểm và tần suất mưa"
+    
+    _dash_section_header(_section_title, _section_sub)
+    if df.empty or "rain" not in df.columns or "timestamp" not in df.columns:
+        st.info("Không đủ dữ liệu mưa để phân tích mùa.")
+        return
+
+    src = df.copy()
+    src["timestamp"] = pd.to_datetime(src["timestamp"], errors="coerce")
+    src = src.dropna(subset=["timestamp"])
+    
+    # Dynamic X-axis key and label
+    if scope_label in ["24h", "72h"]:
+        src["x_key"] = src["timestamp"].dt.strftime("%H:00")
+        x_title = "Giờ"
+        x_prefix = ""
+    else:
+        src["x_key"] = src["timestamp"].dt.strftime("%d/%m")
+        x_title = "Ngày"
+        x_prefix = "N"
+
+    col_l, col_r = st.columns([1.3, 1], gap="large")
+
+    # ── Left: Heatmap location × month ──
+    with col_l:
+        if "location" in src.columns and src["location"].nunique() > 1:
+            piv_src = src.dropna(subset=["location"]).copy()
+            piv_src["location"] = piv_src["location"].astype(str).str.strip()
+            pivot = (
+                piv_src.groupby(["location", "x_key"], observed=False, sort=True)["rain"]
+                .sum().unstack(fill_value=0)
+            )
+            top_locs = pivot.sum(axis=1).nlargest(14).index
+            pivot = pivot.loc[top_locs]
+        elif "city" in src.columns and src["city"].nunique() > 1:
+            pivot = (
+                src.groupby(["city", "x_key"], observed=False, sort=True)["rain"]
+                .sum().unstack(fill_value=0)
+            )
+        else:
+            pivot = (
+                src.groupby("x_key", observed=False, sort=True)["rain"]
+                .sum().to_frame(city_name or "Trung bình").T
+            )
+
+        z = pivot.values.tolist()
+        x = [f"{x_prefix}{v}" for v in pivot.columns]
+        y = [str(v) for v in pivot.index.tolist()]
+
+        fig = go.Figure(go.Heatmap(
+            z=z, x=x, y=y,
+            colorscale=["#f0f9ff", "#38bdf8", "#4f46e5", "#1e1b4b"],
+            hovertemplate=f"{x_title} %{{x}}<br>%{{y}}<br>Mưa: %{{z:.1f}} mm<extra></extra>",
+            colorbar=dict(title="mm", thickness=12, len=0.8),
+        ))
+        fig.update_layout(**_dash_layout(
+            height=380,
+            xaxis=dict(title=x_title, gridcolor="rgba(0,0,0,0)"),
+            yaxis=dict(gridcolor="rgba(0,0,0,0)", tickfont=dict(size=10)),
+        ))
+        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
+
+    # ── Right: Bar (rain) + Line (humidity) + insight ──
+    with col_r:
+        agg_m: dict = {"rain": ("rain", "sum")}
+        if "humidity" in src.columns:
+            agg_m["humidity"] = ("humidity", "mean")
+        mth = src.groupby("x_key", observed=False, sort=True).agg(**agg_m).reset_index().dropna(subset=["rain"])
+
+        fig2 = go.Figure()
+        fig2.add_trace(go.Bar(
+            x=mth["x_key"], y=mth["rain"],
+            name="Mưa trung bình (mm)",
+            marker_color="#38bdf8",
+            hovertemplate=f"{x_title} %{{x}}<br>Mưa: %{{y:.1f}} mm<extra></extra>",
+        ))
+        if "humidity" in mth.columns:
+            fig2.add_trace(go.Scatter(
+                x=mth["x_key"], y=mth["humidity"],
+                name="Độ ẩm TB (%)", mode="lines+markers",
+                line=dict(color="#4f46e5", width=2.5),
+                marker=dict(size=6),
+                yaxis="y2",
+                hovertemplate=f"{x_title} %{{x}}<br>Độ ẩm: %{{y:.1f}}%<extra></extra>",
+            ))
+        fig2.update_layout(**_dash_layout(
+            height=220,
+            xaxis=dict(title=x_title, gridcolor="rgba(0,0,0,0.04)"),
+            yaxis=dict(title="Mưa (mm)", gridcolor="rgba(0,0,0,0.04)"),
+            yaxis2=dict(overlaying="y", side="right", title="Độ ẩm (%)", showgrid=False, range=[0, 110]),
+            legend=dict(orientation="h", x=0, y=1.15, font=dict(size=10)),
+            barmode="overlay",
+            hovermode="x unified",
+        ))
+        st.plotly_chart(fig2, width='stretch', config={"displayModeBar": False})
+
+        if not mth.empty and not mth["rain"].isna().all():
+            w_idx = mth["rain"].idxmax()
+            d_idx = mth["rain"].idxmin()
+            w_val = mth.loc[w_idx, "x_key"]
+            d_val = mth.loc[d_idx, "x_key"]
+            
+            content = (
+                f"🌧️ <b>{x_title} mưa nhiều nhất:</b> <span style='color:#1d4ed8;font-weight:700;'>{x_prefix}{w_val}</span>"
+                f" ({mth['rain'].max():.1f} mm)<br>"
+                f"☀️ <b>{x_title} ít mưa nhất:</b> <span style='color:#22c55e;font-weight:700;'>{x_prefix}{d_val}</span>"
+                f" ({mth['rain'].min():.1f} mm)"
+            )
+            st.markdown(_insight_html(content, "#38bdf8", "56,189,248"), unsafe_allow_html=True)
+
+
+
+
+# ── Dashboard 5 — Spatial Map ──────────────────────────────────────────────────
+
+def render_spatial_map(detail_summary: pd.DataFrame, anchor_day=None):
+    _dash_section_header(
+        "🗺️ Bản Đồ Không Gian",
+        "Phân bố nhiệt độ và độ ẩm theo địa điểm — nhận diện vùng oi bức và điểm dễ chịu",
+    )
+    if detail_summary.empty:
+        st.info("Không có dữ liệu chi tiết theo địa điểm.")
+        return
+
+    df = detail_summary.copy()
+    # Normalize coordinate column names if they exist under different names
+    lat_col = next((c for c in df.columns if c.lower() in ["lat", "latitude"]), None)
+    lon_col = next((c for c in df.columns if c.lower() in ["lon", "longitude"]), None)
+    
+    df["comfort"] = df.apply(
+        lambda r: _comfort_score(
+            r.get("temp_avg", np.nan),
+            r.get("humidity",  np.nan),
+            r.get("wind_speed", np.nan),
+        ),
+        axis=1,
+    )
+
+    col_l, col_r = st.columns([1.3, 1], gap="large")
+
+    with col_l:
+        if lat_col and lon_col:
+            vm = df.dropna(subset=[lat_col, lon_col, "temp_avg"]).copy()
+            if not vm.empty:
+                # Optimized Mapbox view
+                size_val = (vm["humidity"].fillna(50) / 100 * 18 + 7).clip(6, 25)
+                fig = go.Figure(go.Scattermapbox(
+                    lat=vm[lat_col], lon=vm[lon_col],
+                    mode="markers",
+                    marker=dict(
+                        size=size_val,
+                        color=vm["temp_avg"],
+                        colorscale="Plasma",
+                        showscale=True,
+                        colorbar=dict(title="°C", thickness=10, len=0.7, y=0.5),
+                        opacity=0.8,
+                    ),
+                    text=vm["location"] if "location" in vm.columns else None,
+                    customdata=np.stack([vm["humidity"].fillna(0), vm["comfort"]], axis=1),
+                    hovertemplate=(
+                        "<b>%{text}</b><br>"
+                        "Nhiệt độ: %{marker.color:.1f}°C<br>"
+                        "Độ ẩm: %{customdata[0]:.0f}%<br>"
+                        "Comfort: %{customdata[1]:.0f}/100<extra></extra>"
+                    ),
+                ))
+                fig.update_layout(**_dash_layout(
+                    height=420,
+                    mapbox=dict(
+                        style="carto-positron",
+                        zoom=7,
+                        center=dict(lat=float(vm[lat_col].mean()), lon=float(vm[lon_col].mean())),
+                    ),
+                    margin=dict(l=0, r=0, t=10, b=0),
+                ))
+                st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
+            else:
+                st.info("Không đủ tọa độ hợp lệ để vẽ bản đồ.")
+        else:
+            # Redesigned Fallback: Comfort Index Ranking (Bar Chart)
+            # This provides unique value instead of just another scatter plot.
+            top_df = df.nlargest(12, "comfort").sort_values("comfort", ascending=True)
+            if not top_df.empty:
+                fig = go.Figure(go.Bar(
+                    y=top_df["location"].str[:18],
+                    x=top_df["comfort"],
+                    orientation="h",
+                    marker=dict(
+                        color=top_df["comfort"],
+                        colorscale="RdYlGn",
+                        line=dict(width=1, color="white"),
+                    ),
+                    hovertemplate="Địa điểm: %{y}<br>Comfort: %{x:.1f}/100<extra></extra>",
+                ))
+                fig.update_layout(**_dash_layout(
+                    title=dict(text="Xếp hạng Chỉ số Tiện nghi (Comfort)", font=dict(size=13, weight=600)),
+                    height=420,
+                    xaxis=dict(title="Điểm số (0-100)", range=[0, 105], gridcolor="rgba(0,0,0,0.06)"),
+                    yaxis=dict(title="", tickfont=dict(size=10)),
+                ))
+                st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
+
+    with col_r:
+        # Humidity vs Temp Analysis
+        valid2 = df.dropna(subset=["temp_avg", "humidity"]).copy()
+        if not valid2.empty:
+            # Add padding to axes to avoid the "blank/edge" look in the screenshot
+            t_min, t_max = valid2["temp_avg"].min(), valid2["temp_avg"].max()
+            h_min, h_max = valid2["humidity"].min(), valid2["humidity"].max()
+            t_pad = (t_max - t_min) * 0.15 if t_max != t_min else 2.0
+            h_pad = (h_max - h_min) * 0.15 if h_max != h_min else 5.0
+            
+            t_hi = max(36.0, t_max + 1.0)
+            h_hi = max(95.0, h_max + 2.0)
+            
+            fig2 = go.Figure()
+            # Heatmap Underlay for zones (Optional but nice)
+            fig2.add_shape(
+                type="rect", x0=75, x1=100, y0=30, y1=45,
+                fillcolor="rgba(239,68,68,0.08)", line_width=0, layer="below"
+            )
+            
+            fig2.add_trace(go.Scatter(
+                x=valid2["humidity"], y=valid2["temp_avg"],
+                mode="markers",
+                marker=dict(
+                    size=11, opacity=0.9,
+                    color=valid2["comfort"],
+                    colorscale="RdYlGn",
+                    showscale=False,
+                    line=dict(width=1, color="white"),
+                ),
+                text=valid2["location"] if "location" in valid2.columns else None,
+                hovertemplate="<b>%{text}</b><br>Độ ẩm: %{x:.0f}%<br>Nhiệt độ: %{y:.1f}°C<extra></extra>",
+            ))
+            
+            fig2.add_shape(
+                type="rect",
+                x0=75, x1=h_hi, y0=30, y1=t_hi,
+                line=dict(color="#ef4444", width=2, dash="dash"),
+                fillcolor="rgba(239,68,68,0.03)",
+            )
+            fig2.add_annotation(
+                x=85, y=30.5,
+                text="⚠️ Vùng oi bức (Sultry)",
+                showarrow=False,
+                font=dict(size=11, color="#ef4444", weight="bold"),
+                bgcolor="rgba(255,255,255,0.9)",
+                borderpad=4,
+            )
+            fig2.update_layout(**_dash_layout(
+                height=280,
+                xaxis=dict(
+                    title="Độ ẩm (%)", gridcolor="rgba(0,0,0,0.04)", 
+                    range=[max(0, h_min - h_pad), min(105, h_max + h_pad)]
+                ),
+                yaxis=dict(
+                    title="Nhiệt độ (°C)", gridcolor="rgba(0,0,0,0.04)",
+                    range=[t_min - t_pad, t_max + t_pad]
+                ),
+                hovermode="closest",
+            ))
+
+            # Add linear trend line (numpy polyfit)
+            if len(valid2) >= 3:
+                x_vals = valid2["humidity"].values.astype(float)
+                y_vals = valid2["temp_avg"].values.astype(float)
+                mask = np.isfinite(x_vals) & np.isfinite(y_vals)
+                if mask.sum() >= 2:
+                    coef = np.polyfit(x_vals[mask], y_vals[mask], 1)
+                    x_line = np.linspace(x_vals[mask].min(), x_vals[mask].max(), 50)
+                    y_line = np.polyval(coef, x_line)
+                    fig2.add_trace(go.Scatter(
+                        x=x_line, y=y_line,
+                        mode="lines",
+                        line=dict(color="#64748b", width=1.8, dash="dash"),
+                        name="Xu hướng",
+                        hoverinfo="skip",
+                        showlegend=False,
+                    ))
+
+            # Add "Vùng dễ chịu" comfort zone annotation (temp 22–29, humidity 50–75)
+            fig2.add_shape(
+                type="rect", x0=50, x1=75, y0=22, y1=29,
+                fillcolor="rgba(34,197,94,0.08)",
+                line=dict(color="#22c55e", width=1.5, dash="dash"),
+                layer="below",
+            )
+            fig2.add_annotation(
+                x=62.5, y=22.5,
+                text="✅ Vùng dễ chịu",
+                showarrow=False,
+                font=dict(size=10, color="#16a34a"),
+                bgcolor="rgba(255,255,255,0.85)",
+                borderpad=3,
+            )
+
+            st.plotly_chart(fig2, width='stretch', config={"displayModeBar": False})
+            st.caption("Mỗi điểm = 1 địa điểm. Màu xanh = thoải mái, đỏ = ôi bức. Đường nét đứt = xu hướng tuyến tính (hồi quy). Hình chữ nhật xanh = Vùng nhiệt độ/ẩm lý tưởng.")
+
+        if "comfort" in df.columns and "location" in df.columns:
+            top5 = df.nlargest(5, "comfort")[["location", "comfort"]].copy()
+            lines = []
+            for _, row in top5.iterrows():
+                c = float(row["comfort"])
+                clr = "#22c55e" if c >= 70 else "#f59e0b" if c >= 50 else "#ef4444"
+                lines.append(
+                    f"<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>"
+                    f"<span style='font-weight:600;color:#334155;'>🏠 {escape(str(row['location'])[:22])}</span>"
+                    f"<span style='background:{clr}20;color:{clr};padding:2px 8px;border-radius:6px;font-weight:800;font-size:12px;'>{c:.0f}/100</span>"
+                    f"</div>"
+                )
+            content = "".join(lines) if lines else "Chưa đủ dữ liệu."
+            st.markdown(_insight_html(content, "#10b981", "16,185,129"), unsafe_allow_html=True)
+
+
+# ── Dashboard 6 — Comparison ───────────────────────────────────────────────────
+
+def render_comparison(df: pd.DataFrame, comparison_items: list, level: str = "city"):
+    # Dynamic header based on level
+    _titles = {
+        "city": "📊 So Sánh Đa Tỉnh",
+        "location": "📊 So Sánh Khu Vực",
+    }
+    _subs = {
+        "city": "Radar 5 chiều và điểm tiện nghi — xếp hạng các tỉnh thành thoải mái nhất",
+        "location": "Radar 5 chiều và điểm tiện nghi — xếp hạng các xã phường trong khu vực",
+    }
+    _dash_section_header(_titles.get(level, "📊 So Sánh"), _subs.get(level, ""))
+
+    _group_col = "city" if level == "city" else "location"
+    if df.empty or not comparison_items or _group_col not in df.columns:
+        st.info(f"Không đủ dữ liệu để so sánh các {'tỉnh thành' if level=='city' else 'địa điểm'}.")
+        return
+
+    axes = ["temp", "humidity", "rain", "wind_speed", "cloud"]
+    axes_labels = ["Nhiệt độ", "Độ ẩm", "Mưa", "Gió", "Mây"]
+    ranges = {
+        "temp": (15.0, 40.0), "humidity": (20.0, 100.0),
+        "rain": (0.0, 20.0), "wind_speed": (0.0, 30.0), "cloud": (0.0, 100.0),
+    }
+
+    stats_map: dict = {}
+    for item in comparison_items:
+        cdf = df[df[_group_col] == item]
+        if cdf.empty:
+            continue
+        row: dict = {}
+        for ax in axes:
+            row[ax] = float(cdf[ax].mean()) if ax in cdf.columns and not cdf[ax].isna().all() else np.nan
+        # Add AQI to the comparison stats
+        row["aqi"] = float(cdf["aqi"].mean()) if "aqi" in cdf.columns and not cdf["aqi"].isna().all() else np.nan
+        stats_map[item] = row
+
+    if not stats_map:
+        st.info(f"Không có dữ liệu thống kê theo {'tỉnh' if level=='city' else 'địa điểm'}.")
+        return
+
+    def _norm_val(ax: str, v) -> float:
+        if pd.isna(v): return 50.0
+        lo, hi = ranges[ax]
+        return float(np.clip((v - lo) / (hi - lo) * 100, 0, 100))
+
+    _PALETTE = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6"]
+    _FILL    = ["rgba(59,130,246,0.12)", "rgba(239,68,68,0.12)", "rgba(16,185,129,0.12)",
+                "rgba(245,158,11,0.12)", "rgba(139,92,246,0.12)", "rgba(236,72,153,0.12)",
+                "rgba(20,184,166,0.12)"]
+
+    col_l, col_r = st.columns([1.2, 1], gap="large")
+
+    # ── Left: Multi-trace Scatterpolar ──
+    with col_l:
+        fig = go.Figure()
+        
+        scores = {
+            item: _comfort_score(
+                stats.get("temp"), stats.get("humidity"),
+                stats.get("wind_speed"), stats.get("aqi")
+            )
+            for item, stats in stats_map.items()
+        }
+        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        max_score = max(scores.values()) if scores else 100.0
+
+        # Radar chart: Limit to Top 6 to prevent spaghetti chaos in UI
+        top_radar_items = [item for item, _ in ranked[:6]]
+
+        for i, item in enumerate(top_radar_items):
+            stats = stats_map[item]
+            r_vals = [_norm_val(ax, stats.get(ax, np.nan)) for ax in axes]
+            rc = r_vals + [r_vals[0]]
+            tc = axes_labels + [axes_labels[0]]
+            clr  = _PALETTE[i % len(_PALETTE)]
+            fill = _FILL[i % len(_FILL)]
+            fig.add_trace(go.Scatterpolar(
+                r=rc, theta=tc, fill="toself", name=item,
+                line=dict(color=clr, width=2.2),
+                fillcolor=fill,
+                hovertemplate=f"<b>{item}</b><br>%{{theta}}: %{{r:.1f}}<extra></extra>",
+            ))
+        fig.update_layout(**_dash_layout(
+            height=380,
+            polar=dict(
+                bgcolor="rgba(0,0,0,0)",
+                radialaxis=dict(visible=True, range=[0, 100], showticklabels=False, gridcolor="rgba(148,163,184,0.2)"),
+                angularaxis=dict(tickfont=dict(size=11, color="#334155"), gridcolor="rgba(148,163,184,0.2)"),
+            ),
+            legend=dict(orientation="h", x=0, y=-0.08, font=dict(size=11)),
+        ))
+        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
+
+    # ── Right: Animated progress bars + mini dataframe ──
+    with col_r:
+        medals = ["🥇", "🥈", "🥉"]
+
+        # Limit UI bars/tables to top 10 items so UI bounding box doesn't break
+        display_ranked = ranked[:10]
+
+        bars_html = "<div style='margin-bottom:14px;'>"
+        for rank, (city, sc) in enumerate(display_ranked):
+            # Bug fix: normalize bars to max score, not raw 0–100 so relative differences are visible
+            pct = (sc / max_score * 100) if max_score > 0 else 0
+            clr = "#22c55e" if sc >= 70 else "#f59e0b" if sc >= 50 else "#ef4444"
+            medal = medals[rank] if rank < 3 else f"#{rank+1}"
+            # Bug fix: was `{item}` (dangling/wrong var) — corrected to `{city}`
+            bars_html += f"""
+<div style='margin-bottom:10px;'>
+  <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;'>
+    <span style='font-size:13px;font-weight:700;color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;' title='{escape(city)}'>{medal} {escape(city)}</span>
+    <span style='font-size:13px;font-weight:800;color:{clr};'>{sc:.0f}<span style='font-size:11px;color:#94a3b8;font-weight:500;'>/100</span></span>
+  </div>
+  <div style='background:rgba(148,163,184,0.15);border-radius:99px;height:8px;overflow:hidden;'>
+    <div style='width:{pct:.1f}%;height:100%;background:{clr};border-radius:99px;transition:width 0.5s ease;'></div>
+  </div>
+</div>"""
+        bars_html += "</div>"
+        st.markdown(bars_html, unsafe_allow_html=True)
+
+        table_rows = []
+        for city, _ in display_ranked:
+            s = stats_map[city]
+            sc = scores[city]
+            temp_val = f"{s['temp']:.1f}°C" if not pd.isna(s.get('temp', np.nan)) else "--"
+            hum_val = f"{s['humidity']:.0f}%" if not pd.isna(s.get('humidity', np.nan)) else "--"
+            aqi_val = f"{s['aqi']:.0f}" if not pd.isna(s.get('aqi', np.nan)) else "--"
+            table_rows.append({
+                "Địa điểm" if level == "location" else "Tỉnh thành": city,
+                "AQI": aqi_val,
+                "Comfort": f"{sc:.0f}/100",
+                "Nhiệt độ": temp_val,
+                "Độ ẩm": hum_val,
+            })
+        if table_rows:
+            st.dataframe(pd.DataFrame(table_rows), hide_index=True, width='stretch')
+        st.caption("Radar càng lớn = chỉ số tại địa điểm đó càng cao so với range chuẩn. Comfort score tích hợp AQI penalty.")
+
+
 # ─── Main render ──────────────────────────────────────────────────────────────
+
 
 def render(df: pd.DataFrame):
     ctx = st.session_state.get("dashboard_context", {})
@@ -2474,31 +3299,35 @@ def render(df: pd.DataFrame):
         st.session_state.weather_location_scope = ""
 
     # ── TOP CONTROLS ──
-    c_top1, c_top2, c_top3 = st.columns([1.5, 1.5, 2], gap="small")
-    with c_top1:
-        selected_city = st.selectbox("Khu vực", options=cities, key="weather_city",
-                                     help="Chọn khu vực xem thời tiết.")
+    with st.container():
+        st.markdown("<div class='wx-glass-params'>", unsafe_allow_html=True)
+        c_top1, c_top2, c_top3 = st.columns([1.5, 1.5, 2], gap="small")
+        with c_top1:
+            selected_city = st.selectbox("Khu vực", options=cities, key="weather_city",
+                                         help="Chọn khu vực xem thời tiết.")
 
-    # We need city_df_all to get valid date range for the date picker
-    city_df_all = weather_df[weather_df["city"] == selected_city].sort_values("timestamp").copy()
-    day_series_all = pd.to_datetime(city_df_all["timestamp"]).dt.normalize()
-    min_day = day_series_all.min().date()
-    max_day = day_series_all.max().date()
-    default_anchor = day_series_all.iloc[max(0, len(day_series_all) - 10)].date()
+        # We need city_df_all to get valid date range for the date picker
+        city_df_all = weather_df[weather_df["city"] == selected_city].sort_values("timestamp").copy()
+        day_series_all = pd.to_datetime(city_df_all["timestamp"]).dt.normalize()
+        min_day = day_series_all.min().date()
+        max_day = day_series_all.max().date()
+        default_anchor = day_series_all.iloc[max(0, len(day_series_all) - 10)].date()
 
-    if "weather_anchor_picker" not in st.session_state:
-        st.session_state["weather_anchor_picker"] = default_anchor
-    if (st.session_state["weather_anchor_picker"] < min_day or st.session_state["weather_anchor_picker"] > max_day):
-        st.session_state["weather_anchor_picker"] = default_anchor
+        if "weather_anchor_picker" not in st.session_state:
+            st.session_state["weather_anchor_picker"] = default_anchor
+        if (st.session_state["weather_anchor_picker"] < min_day or st.session_state["weather_anchor_picker"] > max_day):
+            st.session_state["weather_anchor_picker"] = default_anchor
 
-    with c_top2:
-        anchor_pick = st.date_input(
-            "Ngày mốc dự báo",
-            min_value=min_day,
-            max_value=max_day,
-            key="weather_anchor_picker",
-            help="Chọn ngày khởi đầu để xem chi tiết và dự báo."
-        )
+        with c_top2:
+            anchor_pick = st.date_input(
+                "Ngày mốc dự báo",
+                min_value=min_day,
+                max_value=max_day,
+                key="weather_anchor_picker",
+                help="Chọn ngày khởi đầu để xem chi tiết và dự báo."
+            )
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
     # Variables for the lower controls (moved from above)
     location_options = [f"Tổng quan ({selected_city})"]
@@ -2599,13 +3428,11 @@ def render(df: pd.DataFrame):
 
     big_icon = _condition_img(cond_now, size=64)
 
-    # ── HERO CARD ──────────────────────────────────────────────────────────────
+    # ── HERO CARD (Grid Layout Restored) ───────────────────────────────────────
     st.markdown(_html(f"""
     <div class='wx-hero'>
       <div class='wx-hero-inner'>
-        <div class='wx-breadcrumb'>
-          Thời tiết &gt; Việt Nam &gt; {selected_city}
-        </div>
+        <div class='wx-breadcrumb'>Thời tiết &gt; Việt Nam &gt; {selected_city}</div>
         <div class='wx-nav-pills'>
           <span class='wx-nav-pill'>AQI</span>
           <span class='wx-nav-pill active'>Thời tiết</span>
@@ -2613,7 +3440,7 @@ def render(df: pd.DataFrame):
         <div class='wx-hero-grid'>
           <!-- Left: Current conditions -->
           <div>
-                        <div class='wx-city-name'>{selected_city} – Điều kiện thời tiết ngày mốc {anchor_day:%d/%m/%Y}</div>
+            <div class='wx-city-name'>{selected_city} – Điều kiện thời tiết ngày {anchor_day:%d/%m/%Y}</div>
             <div class='wx-title-row'>
               {big_icon}
               <div>
@@ -2624,31 +3451,19 @@ def render(df: pd.DataFrame):
             <div class='wx-cond-text'>{cond_now}</div>
             <div class='wx-hilow'>Cao {_fmt_num(day_high,0)}° / Thấp {_fmt_num(day_low,0)}°</div>
             <div class='wx-stat-row'>
-              <span class='wx-stat-pill'>
-                <svg width='12' height='12' viewBox='0 0 20 20' fill='none'><path d='M10 3C10 3 4 9 4 13a6 6 0 0 0 12 0c0-4-6-10-6-10Z' stroke='#93c5fd' stroke-width='2'/></svg>
-                Ẩm {_fmt_num(latest.get("humidity",np.nan),0)}%
-              </span>
-              <span class='wx-stat-pill'>
-                <svg width='12' height='12' viewBox='0 0 20 20' fill='none'><circle cx='10' cy='10' r='6' stroke='#fca5a5' stroke-width='2'/><path d='M10 10V6' stroke='#fca5a5' stroke-width='2' stroke-linecap='round'/></svg>
-                Cảm giác {_fmt_num(feels_like,1)}°C
-              </span>
-              <span class='wx-stat-pill'>
-                <svg width='12' height='12' viewBox='0 0 20 20' fill='none'><path d='M3 10h14M13 6l4 4-4 4' stroke='#86efac' stroke-width='2' stroke-linecap='round'/></svg>
-                Mưa {_fmt_num(rain_chance,0)}%
-              </span>
-              <span class='wx-stat-pill'>
-                🕐 {latest_ts:%H:%M, %d/%m/%Y}
-              </span>
+              <span class='wx-stat-pill'><svg width='12' height='12' viewBox='0 0 20 20' fill='none'><path d='M10 3C10 3 4 9 4 13a6 6 0 0 0 12 0c0-4-6-10-6-10Z' stroke='#93c5fd' stroke-width='2'/></svg> Ẩm {_fmt_num(latest.get("humidity",np.nan),0)}%</span>
+              <span class='wx-stat-pill'><svg width='12' height='12' viewBox='0 0 20 20' fill='none'><circle cx='10' cy='10' r='6' stroke='#fca5a5' stroke-width='2'/><path d='M10 10V6' stroke='#fca5a5' stroke-width='2' stroke-linecap='round'/></svg> Cảm giác {_fmt_num(feels_like,1)}°C</span>
+              <span class='wx-stat-pill'><svg width='12' height='12' viewBox='0 0 20 20' fill='none'><path d='M3 10h14M13 6l4 4-4 4' stroke='#86efac' stroke-width='2' stroke-linecap='round'/></svg> Mưa {_fmt_num(rain_chance,0)}%</span>
+              <span class='wx-stat-pill'>🕐 {latest_ts:%H:%M, %d/%m/%Y}</span>
             </div>
           </div>
           <!-- Right: Hourly strip -->
           <div class='wx-hour-panel'>
             <div class='wx-hour-tabs'>
               <span class='wx-hour-tab active'>Hàng giờ</span>
-              <span class='wx-hour-tab'>Hàng ngày</span>
             </div>
             <div class='wx-hour-strip'>
-                            {_hourly_strip_html(base_day_df, 6)}
+              {_hourly_strip_html(base_day_df, 6)}
             </div>
             <div class='wx-hour-note'>Xu hướng theo khu vực đang chọn.</div>
           </div>
@@ -2656,6 +3471,68 @@ def render(df: pd.DataFrame):
       </div>
     </div>
     """), unsafe_allow_html=True)
+
+    # ── Item 7: Insight Banner — 3 auto chips ──────────────────────────────────
+    _chip_rows = []
+
+    # Chip 1 — Best time to go outside
+    if "temp" in base_day_df.columns and "rain" in base_day_df.columns:
+        cloud_series = base_day_df["cloud"] if "cloud" in base_day_df.columns else pd.Series(100, index=base_day_df.index)
+        wind_series  = base_day_df["wind_speed"] if "wind_speed" in base_day_df.columns else pd.Series(30, index=base_day_df.index)
+        good_mask = (
+            base_day_df["temp"].between(24, 30) &
+            (base_day_df["rain"].fillna(0) == 0) &
+            (cloud_series.fillna(100) < 50) &
+            (wind_series.fillna(30) < 20)
+        )
+        good_hours = base_day_df[good_mask].copy()
+        if not good_hours.empty:
+            h_start = int(pd.to_datetime(good_hours["timestamp"].min()).hour)
+            h_end   = int(pd.to_datetime(good_hours["timestamp"].max()).hour)
+            chip1_txt = f"🌤 Ra ngoài lúc {h_start:02d}:00–{h_end:02d}:00"
+            chip1_bg = "#dcfce7"; chip1_clr = "#15803d"
+        else:
+            chip1_txt = "⚠️ Hôm nay không thuận lợi"
+            chip1_bg = "#fef3c7"; chip1_clr = "#92400e"
+    else:
+        chip1_txt = "🌤 --"; chip1_bg = "#f1f5f9"; chip1_clr = "#64748b"
+
+    # Chip 2 — UV/Heat warning
+    if not pd.isna(day_high):
+        dh = float(day_high)
+        if dh >= 35:
+            chip2_txt = "🔴 Nắng nóng cực đoan"; chip2_bg = "#fee2e2"; chip2_clr = "#b91c1c"
+        elif dh >= 32:
+            chip2_txt = "🟠 Hạn chế ra ngoài 11h–15h"; chip2_bg = "#ffedd5"; chip2_clr = "#c2410c"
+        else:
+            chip2_txt = "🟢 Nhiệt độ trong ngưỡng an toàn"; chip2_bg = "#dcfce7"; chip2_clr = "#15803d"
+    else:
+        chip2_txt = "🟢 --"; chip2_bg = "#f1f5f9"; chip2_clr = "#64748b"
+
+    # Chip 3 — Rain forecast summary
+    if "rain" in base_day_df.columns:
+        total_rain = float(base_day_df["rain"].fillna(0).sum())
+        if total_rain == 0:
+            chip3_txt = "☀️ Không mưa"; chip3_bg = "#e0f2fe"; chip3_clr = "#0369a1"
+        elif total_rain <= 2:
+            chip3_txt = "🌦 Mưa nhẹ, mang ô"; chip3_bg = "#dbeafe"; chip3_clr = "#1d4ed8"
+        else:
+            chip3_txt = "🌧 Mưa nhiều, hạn chế đi chuyển"; chip3_bg = "#ede9fe"; chip3_clr = "#6d28d9"
+    else:
+        chip3_txt = "☀️ --"; chip3_bg = "#f1f5f9"; chip3_clr = "#64748b"
+
+    chips_html = (
+        "<div style='display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-start;"
+        "align-items:center;padding:16px 0 8px;'>"
+        f"<span style='background:{chip1_bg};color:{chip1_clr};padding:10px 18px;"
+        f"border-radius:999px;font-weight:700;font-size:13px;'>{chip1_txt}</span>"
+        f"<span style='background:{chip2_bg};color:{chip2_clr};padding:10px 18px;"
+        f"border-radius:999px;font-weight:700;font-size:13px;'>{chip2_txt}</span>"
+        f"<span style='background:{chip3_bg};color:{chip3_clr};padding:10px 18px;"
+        f"border-radius:999px;font-weight:700;font-size:13px;'>{chip3_txt}</span>"
+        "</div>"
+    )
+    st.markdown(chips_html, unsafe_allow_html=True)
 
     # ── PARAMS SECTION ──────────────────────────────────────────────────────────
     st.markdown(_params_section_html(latest, base_day_df), unsafe_allow_html=True)
@@ -2683,7 +3560,7 @@ def render(df: pd.DataFrame):
     detail_summary = _build_location_day_summary(detail_rows)
 
     st.markdown(_html(f"""
-    <div class='wx-analysis-card wx-month-tone'>
+    <div class='wx-analysis-card' style='background:#ffffff;border:1px solid #e2eaf3;'>
             <div class='wx-block-head'>
                 <div class='wx-block-title'>Chi tiết theo địa điểm trong tỉnh</div>
                 <div class='wx-block-sub'>Ngày mốc {anchor_day:%d/%m/%Y} tại {selected_city}. Nguồn: dữ liệu chi tiết data/aqi.</div>
@@ -2798,41 +3675,41 @@ def render(df: pd.DataFrame):
     def _weather_level(value: float) -> tuple[str, str, str, str]:
         if metric_key == "temp":
             if value >= 35:
-                return ("Nắng nóng", "#ef4444", "#fff1f2", "Nhiệt độ cao, nên hạn chế ra ngoài vào khung giờ nắng gắt.")
+                return ("Nắng nóng", "#ef4444", "#fff1f2", "Chỉ số nhiệt độ ở mức rất cao. Bạn nên hạn chế tối đa các hoạt động ngoài trời trong khung giờ từ 11h đến 16h. Nếu bắt buộc phải ra ngoài, hãy sử dụng kem chống nắng, mặc quần áo bảo hộ và bổ sung nước liên tục để tránh sốc nhiệt.")
             if value >= 30:
-                return ("Nóng", "#fb923c", "#fff7ed", "Trời khá nóng, cần bổ sung nước và theo dõi thể trạng.")
+                return ("Nóng", "#fb923c", "#fff7ed", "Thời tiết tương đối nóng bức. Cơ thể sẽ mất nước nhanh hơn bình thường, do đó bạn cần chú ý bổ sung nước đều đặn. Hãy ưu tiên các không gian có máy lạnh hoặc quạt mát và hạn chế vận động mạnh dưới ánh nắng mặt trời.")
             if value >= 20:
-                return ("Dễ chịu", "#22c55e", "#f0fdf4", "Mức nhiệt độ tương đối dễ chịu cho phần lớn hoạt động ngoài trời.")
-            return ("Mát", "#38bdf8", "#ecfeff", "Nhiệt độ thấp, nên giữ ấm nếu hoạt động ngoài trời kéo dài.")
+                return ("Dễ chịu", "#22c55e", "#f0fdf4", "Điều kiện nhiệt độ lý tưởng và rất dễ chịu cho hầu hết các hoạt động. Đây là thời điểm tuyệt vời để tham gia các hoạt động thể thao ngoài trời, dã ngoại hoặc làm việc. Không cần các biện pháp bảo hộ đặc biệt về nhiệt độ.")
+            return ("Mát", "#38bdf8", "#ecfeff", "Nhiệt độ đang ở mức thấp và có cảm giác se lạnh. Bạn nên mang theo áo khoác nhẹ khi ra ngoài, đặc biệt là vào sáng sớm hoặc chiều tối. Chú ý giữ ấm vùng cổ và ngực để bảo vệ hệ hô hấp trong điều kiện thời tiết này.")
         if metric_key == "humidity":
             if value >= 85:
-                return ("Ẩm cao", "#0ea5e9", "#eff6ff", "Độ ẩm cao có thể gây oi bức, cần không gian thông thoáng.")
+                return ("Ẩm cao", "#0ea5e9", "#eff6ff", "Độ ẩm trong không khí rất cao có thể gây cảm giác oi bức, khó chịu và là điều kiện thuận lợi cho nấm mốc phát triển. Nên sử dụng máy hút ẩm hoặc chế độ 'Dry' của điều hòa để duy trì không gian khô thoáng.")
             if value >= 40:
-                return ("Ổn định", "#22c55e", "#f0fdf4", "Độ ẩm nằm trong vùng tương đối dễ chịu.")
-            return ("Khô", "#f59e0b", "#fffbeb", "Không khí khô, nên bổ sung nước và dưỡng ẩm.")
+                return ("Ổn định", "#22c55e", "#f0fdf4", "Độ ẩm đang ở ngưỡng rất tốt cho sức khỏe và làn da. Không khí không quá khô cũng không quá ẩm, giúp cơ thể cảm thấy thoải mái và hệ hô hấp hoạt động ổn định.")
+            return ("Khô", "#f59e0b", "#fffbeb", "Độ ẩm thấp có thể khiến da bị khô nẻ và gây kích ứng niêm mạc mũi. Bạn nên sử dụng máy phun sương làm ẩm không khí, uống nhiều nước và sử dụng kem dưỡng ẩm để bảo vệ làn da.")
         if metric_key == "rain":
             if value >= 10:
-                return ("Mưa lớn", "#1d4ed8", "#eff6ff", "Có khả năng mưa mạnh, chú ý an toàn khi di chuyển.")
+                return ("Mưa lớn", "#1d4ed8", "#eff6ff", "Dự báo có mưa lớn kèm theo nguy cơ ngập úng tại các vùng thấp trũng. Bạn nên hạn chế di chuyển nếu không cần thiết, chú ý quan sát khi lái xe và chuẩn bị các phương án bảo vệ tài sản khỏi nước mưa.")
             if value > 0:
-                return ("Có mưa", "#0ea5e9", "#ecfeff", "Có mưa rải rác, nên chuẩn bị áo mưa/ô.")
-            return ("Khô ráo", "#22c55e", "#f0fdf4", "Thời tiết khô ráo, thuận lợi cho hoạt động ngoài trời.")
+                return ("Có mưa", "#0ea5e9", "#ecfeff", "Thời tiết có mưa rải rác. Hãy luôn mang theo ô hoặc áo mưa khi đi ra ngoài để tránh bị ướt. Chú ý mặt đường có thể trơn trượt, cần giảm tốc độ khi tham gia giao thông.")
+            return ("Khô ráo", "#22c55e", "#f0fdf4", "Thời tiết hoàn toàn khô ráo và không có dấu hiệu của mưa. Rất thuận lợi cho các hoạt động di chuyển, phơi phóng đồ đạc hoặc tổ chức các sự kiện ngoài trời.")
         if metric_key == "wind_speed":
             if value >= 30:
-                return ("Gió mạnh", "#0f766e", "#f0fdfa", "Gió mạnh, cần thận trọng với hoạt động ngoài trời.")
+                return ("Gió mạnh", "#0f766e", "#f0fdfa", "Gió thổi mạnh có thể gây nguy hiểm cho các phương tiện giao thông hai bánh và làm đổ gãy cây cối. Hãy thận trọng khi di chuyển gần các tòa nhà cao tầng hoặc dưới các tán cây lớn.")
             if value >= 15:
-                return ("Có gió", "#14b8a6", "#f0fdfa", "Điều kiện gió trung bình, tương đối ổn định.")
-            return ("Gió nhẹ", "#22c55e", "#f0fdf4", "Gió nhẹ, điều kiện thời tiết ổn định.")
+                return ("Có gió", "#14b8a6", "#f0fdfa", "Điều kiện gió ở mức trung bình, có thể cảm nhận rõ rệt khi ở ngoài trời. Thời tiết này khá thoáng mát nhưng cần chú ý cố định các vật dụng nhẹ để tránh bị gió thổi bay.")
+            return ("Gió nhẹ", "#22c55e", "#f0fdf4", "Gió thổi nhẹ nhàng, mang lại cảm giác thư thái và không gây trở ngại cho các hoạt động. Đây là điều kiện thời tiết ổn định, phù hợp cho mọi kế hoạch di chuyển.")
         if metric_key == "pressure":
             if value < 1000:
-                return ("Áp thấp", "#f97316", "#fff7ed", "Áp suất thấp, thời tiết có thể biến động.")
+                return ("Áp thấp", "#f97316", "#fff7ed", "Áp suất khí quyển thấp thường đi kèm với những biến động bất ngờ của thời tiết như mưa hoặc dông. Những người nhạy cảm với thời tiết có thể cảm thấy mệt mỏi hoặc đau đầu nhẹ.")
             if value > 1020:
-                return ("Áp cao", "#22c55e", "#f0fdf4", "Áp suất cao, xu hướng thời tiết khá ổn định.")
-            return ("Ổn định", "#0ea5e9", "#eff6ff", "Áp suất trong ngưỡng ổn định.")
+                return ("Áp cao", "#22c55e", "#f0fdf4", "Áp suất cao thường mang lại bầu trời quang đãng và thời tiết ổn định kéo dài. Đây là dấu hiệu của một ngày nắng đẹp, rất phù hợp cho các kế hoạch dài hơi ngoài trời.")
+            return ("Ổn định", "#0ea5e9", "#eff6ff", "Chỉ số áp suất nằm trong ngưỡng bình thường. Thời tiết không có nhiều biến động cực đoan, giúp cơ thể duy trì trạng thái cân bằng và thoải mái.")
         if value >= 80:
-            return ("Nhiều mây", "#64748b", "#f8fafc", "Mây che phủ cao, khả năng nắng giảm đáng kể.")
+            return ("Nhiều mây", "#64748b", "#f8fafc", "Bầu trời bị bao phủ bởi lớp mây dày, làm giảm cường độ ánh sáng mặt trời. Thời tiết này khá mát mẻ nhưng có thể gây cảm giác âm u, không phù hợp cho các công việc cần nhiều ánh sáng tự nhiên.")
         if value >= 40:
-            return ("Có mây", "#94a3b8", "#f8fafc", "Mây che phủ trung bình.")
-        return ("Ít mây", "#22c55e", "#f0fdf4", "Trời khá quang, thuận lợi cho hoạt động ngoài trời.")
+            return ("Có mây", "#94a3b8", "#f8fafc", "Lượng mây che phủ ở mức vừa phải, thỉnh thoảng có những khoảng nắng xen kẽ. Đây là kiểu thời tiết biến chuyển nhẹ nhàng, mang lại cảm giác dễ chịu và không quá gắt.")
+        return ("Ít mây", "#22c55e", "#f0fdf4", "Trời quang đãng với rất ít mây. Ánh nắng mặt trời sẽ chiếu trực tiếp, do đó bạn nên chú ý bảo vệ mắt và da nếu phải hoạt động ngoài trời trong thời gian dài.")
 
     if is_radar:
         hist_source = scope_df.dropna(subset=["timestamp"]).copy()
@@ -2894,26 +3771,14 @@ def render(df: pd.DataFrame):
             if chart_type == "Mạng nhện (Radar)":
                 radar_fig = _plot_weather_radar(hist_source, escape(str(selected_location)))
                 if radar_fig:
-                    st.plotly_chart(radar_fig, use_container_width=True, config={"displayModeBar": False})
+                    st.plotly_chart(radar_fig, width='stretch', config={"displayModeBar": False})
             else:
                 metric_chart = _plot_weather_metric(hist_source[["timestamp", metric_key]].copy(), metric_key, chart_type, ml_fn, ax_fn)
                 if metric_chart is not None:
-                    st.plotly_chart(metric_chart, use_container_width=True, config={"displayModeBar": False})
+                    st.plotly_chart(metric_chart, width='stretch', config={"displayModeBar": False})
 
         with cRank:
-            st.markdown(
-                f"<div style=\"font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;\">Top 8 {metric_label} ({scope_label})</div>",
-                unsafe_allow_html=True,
-            )
-
-            top_list_html = f"""
-            <div style="display:flex; font-size:12px; font-weight:600; color:#64748b; padding-bottom: 10px; border-bottom: 2px solid rgba(148,163,184,0.1); margin-bottom: 12px; text-transform:uppercase;">
-                <div style="flex:4;">Địa điểm</div>
-                <div style="flex:3; text-align:center;">Trạng thái</div>
-                <div style="flex:2; text-align:right;">{metric_label}</div>
-            </div>
-            """
-
+            # 1. Prepare Ranking Data
             if "location" in city_df_all.columns:
                 rank_df = city_df_all[
                     (city_df_all["timestamp"] >= start_ts)
@@ -2930,8 +3795,7 @@ def render(df: pd.DataFrame):
                 top_df = (
                     detail_summary.dropna(subset=["location", detail_metric_col])
                     .sort_values(detail_metric_col, ascending=False)
-                    .head(8)
-                    .copy()
+                    .head(8).copy()
                 )
                 top_df = top_df.rename(columns={detail_metric_col: "metric_value"})
             elif not rank_df.empty:
@@ -2945,68 +3809,68 @@ def render(df: pd.DataFrame):
             else:
                 top_df = pd.DataFrame()
 
+            # 2. Render Sidebar Leaderboard
+            medal_map = {0: "🥇", 1: "🥈", 2: "🥉"}
+            rank_rows = []
+            # Bug fix: ensure proper normalization — bars relative to max value
+            max_r_val = float(top_df["metric_value"].max()) if not top_df.empty else 1.0
+            if max_r_val == 0:
+                max_r_val = 1.0
+            
             if not top_df.empty:
-                for row in top_df.itertuples(index=False):
+                for i, row in enumerate(top_df.itertuples(index=False)):
                     loc_name = str(row.location)
-                    val = float(getattr(row, "metric_value"))
+                    val = float(row.metric_value)
                     lbl, clr, _, _ = _weather_level(val)
-                    top_list_html += (
-                        "<div style='display:flex; align-items:center; background-color: rgba(248,250,252,0.6); padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(148,163,184,0.15);'>"
-                        f"<div style='flex:4; font-size:13px; font-weight:600; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:8px;' title='{escape(loc_name)}'>{escape(loc_name)}</div>"
-                        f"<div style='flex:3; display:flex; justify-content:center;'><span style='background-color: {clr}; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight:600; white-space:nowrap;'>{lbl}</span></div>"
-                        f"<div style='flex:2; text-align:right; font-size:15px; font-weight:700; color:#0f172a;'>{val:.1f}{metric_unit}</div>"
-                        "</div>"
+                    # Normalize to top value so bars show relative differences correctly
+                    pct = float(np.clip(val / max_r_val * 100, 0, 100))
+                    medal = medal_map.get(i, "")
+                    rank_indicator = f"<div class='wx-medal'>{medal}</div>" if medal else f"<div class='wx-rank-num'>{i+1}</div>"
+                    
+                    rank_rows.append(
+                        f"<div class='wx-leader-item'>"
+                        f"  {rank_indicator}"
+                        f"  <div style='flex: 4; min-width: 0;'>"
+                        f"    <div style='font-weight: 700; color: #1e293b; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' title='{escape(loc_name)}'>{escape(loc_name)}</div>"
+                        f"  </div>"
+                        f"  <div style='flex: 3; display: flex; justify-content: center;'>"
+                        f"    <span class='wx-pill-lvl' style='background:{clr}15; color:{clr}; border: 0.5px solid {clr}30; font-size: 10px; padding: 3px 8px;'>{lbl}</span>"
+                        f"  </div>"
+                        f"  <div style='flex: 2; text-align: right;'>"
+                        f"    <span style='font-weight: 800; color: #0f172a; font-size: 0.95rem;'>{val:.1f}</span>"
+                        f"    <span style='font-size: 0.7rem; color: #64748b; font-weight: 600; margin-left: 1px;'>{metric_unit}</span>"
+                        f"  </div>"
+                        f"</div>"
                     )
-                if use_detail_fallback:
-                    top_list_html += (
-                        f"<div style='margin-top:6px;color:#64748b;font-size:11px;font-style:italic;'>"
-                        f"* Top 8 lấy từ dữ liệu địa điểm của ngày mốc {anchor_day:%d/%m/%Y} do chưa đủ dữ liệu theo giờ trong khung {scope_label}."
-                        "</div>"
-                    )
+                footer_html = f"<div style='margin-top:8px;color:#64748b;font-size:10px;font-style:italic;text-align:center;'>* Top 8 ({anchor_day:%d/%m/%Y})</div>" if use_detail_fallback else ""
+                st.markdown(
+                    f"<div class='wx-analysis-card' style='padding:20px 16px; height:100%; display:flex; flex-direction:column;'>"
+                    f"<div style='font-size:16px; font-weight:800; color:#0f172a; margin-bottom:16px;'>Top 8 {metric_label} ({scope_label})</div>"
+                    f"<div style='flex:1;'>{''.join(rank_rows)}</div>{footer_html}</div>", 
+                    unsafe_allow_html=True
+                )
             else:
-                top_list_html += "<div style='color:#64748b; font-size:13px; font-style:italic; text-align:center; padding: 20px 0;'>Không có dữ liệu theo địa điểm trong khung thời gian này</div>"
-
-            st.markdown(top_list_html, unsafe_allow_html=True)
+                st.markdown("<div class='wx-analysis-card' style='text-align:center; padding:30px 10px; color:#64748b; font-size:13px; font-style:italic;'>Không có dữ liệu theo địa điểm</div>", unsafe_allow_html=True)
 
     # ── WEATHER FORECAST STYLE (lower part) ───────────────────────────────────
 
     metric_source = city_df.dropna(subset=["timestamp", metric_key]).copy() if metric_key in city_df.columns else pd.DataFrame()
-    if metric_source.empty:
-        st.info(f"Chưa có dữ liệu {metric_label.lower()} cho khu vực đã chọn.")
-    else:
+    if not metric_source.empty:
         metric_source["timestamp"] = pd.to_datetime(metric_source["timestamp"], errors="coerce")
         metric_source = metric_source.dropna(subset=["timestamp"])
-
-        hourly_metric = (
-            metric_source.set_index("timestamp")[[metric_key]]
-            .resample("1h")
-            .mean()
-            .dropna()
-            .reset_index()
-        )
-        hourly_view = hourly_metric.tail(24).copy()
+        hourly_view = metric_source.set_index("timestamp")[[metric_key]].resample("1h").mean().dropna().reset_index().tail(24).copy()
 
         if metric_key == "temp" and "temp_avg" in forecast_df.columns:
             daily_view = forecast_df[["timestamp", "temp_avg"]].rename(columns={"temp_avg": "value"}).dropna().tail(4).copy()
         elif metric_key in forecast_df.columns:
             daily_view = forecast_df[["timestamp", metric_key]].rename(columns={metric_key: "value"}).dropna().tail(4).copy()
         else:
-            daily_view = (
-                metric_source.set_index("timestamp")[[metric_key]]
-                .resample("1D")
-                .mean()
-                .dropna()
-                .reset_index()
-                .rename(columns={metric_key: "value"})
-                .tail(4)
-                .copy()
-            )
+            daily_view = metric_source.set_index("timestamp")[[metric_key]].resample("1D").mean().dropna().reset_index().rename(columns={metric_key: "value"}).tail(4).copy()
 
-        if hourly_view.empty or daily_view.empty:
-            st.info("Chưa đủ dữ liệu để dựng phần dự báo theo giờ/hằng ngày.")
-        else:
+        if not hourly_view.empty and not daily_view.empty:
             scope_name = selected_location if selected_location != f"Tổng quan ({selected_city})" else selected_city
 
+            # 1. Hourly Forecast
             hour_items = []
             for i, row in enumerate(hourly_view.itertuples(index=False)):
                 ts = pd.to_datetime(row.timestamp)
@@ -3015,83 +3879,188 @@ def render(df: pd.DataFrame):
                 hour_label = "Bây giờ" if i == len(hourly_view) - 1 else ts.strftime("%H:%M")
                 day_label = ts.strftime("Th %w") if ts.weekday() != 6 else "CN"
                 hour_items.append(
-                    f"<div style='min-width:76px;text-align:center;'>"
-                    f"<div style='font-size:11px;color:#64748b;font-weight:700;'>{day_label}</div>"
-                    f"<div style='font-size:12px;color:#64748b;margin:4px 0 8px;'>{hour_label}</div>"
-                    f"<div style='display:inline-block;background:{col_bg};color:{col_fg};padding:4px 10px;border-radius:7px;font-size:14px;font-weight:800;'>{val:.0f}{metric_unit}</div>"
-                    f"<div style='font-size:10px;color:#64748b;margin-top:5px;'>{level}</div>"
-                    "</div>"
+                    f"<div class='wx-forecast-tile'>"
+                    f"  <div style='font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;'>{day_label}</div>"
+                    f"  <div style='font-size:13px; color:#334155; font-weight:700; margin:4px 0 10px;'>{hour_label}</div>"
+                    f"  <div style='color:{col_bg}; font-size:18px; font-weight:900;'>{val:.0f}{metric_unit}</div>"
+                    f"  <div style='margin-top:8px;'><span class='wx-pill-lvl' style='background:{col_bg}15; color:{col_bg};'>{level}</span></div>"
+                    f"</div>"
                 )
-
             st.markdown(
-                f"""
-                <div class='wx-analysis-card'>
-                    <div style='font-size:34px;font-weight:800;color:#0f172a;line-height:1.0;'>Dự báo {metric_label} theo giờ</div>
-                    <div style='margin-top:6px;color:#64748b;font-size:14px;'>Khu vực: <b style='color:#334155'>{escape(str(scope_name))}</b></div>
-                    <div style='margin-top:14px;display:flex;overflow-x:auto;gap:12px;padding-bottom:8px;'>
-                        {''.join(hour_items)}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
+                f"<div class='wx-analysis-card' style='padding:24px 20px;'>"
+                f"  <div style='display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px;'>"
+                f"    <div><div style='font-size:28px; font-weight:800; color:#0f172a; line-height:1.0;'>Dự báo {metric_label}</div>"
+                f"    <div style='margin-top:4px; color:#64748b; font-size:14px;'>Xu hướng 24h tới tại <b>{escape(str(scope_name))}</b></div></div>"
+                f"    <div style='font-size:12px; color:#94a3b8; font-weight:600;'>Cuộn ngang →</div>"
+                f"  </div>"
+                f"  <div style='display:flex; overflow-x:auto; gap:14px; padding:4px 4px 12px; scrollbar-width: none;'>{''.join(hour_items)}</div>"
+                f"</div>", unsafe_allow_html=True
             )
 
-            c_daily, c_advice = st.columns([1.6, 1.0], gap="small")
+            # 2. Daily & Advice
+            c_daily, c_advice = st.columns([1.6, 1.0], gap="large")
             with c_daily:
                 rows = []
                 for idx, row in enumerate(daily_view.itertuples(index=False)):
-                    d = pd.to_datetime(row.timestamp)
-                    val = float(row.value)
-                    label, col_bg, col_fg, _ = _weather_level(val)
-                    day_name = "Hôm nay" if idx == len(daily_view) - 1 else _weekday_vi(d)
-                    row_bg = "#ffffff" if idx % 2 == 0 else "#f8fafc"
+                    d, v = pd.to_datetime(row.timestamp), float(row.value)
+                    lbl, c_bg, c_fg, _ = _weather_level(v)
+                    day_nm = "Hôm nay" if idx == len(daily_view) - 1 else _weekday_vi(d)
                     rows.append(
-                        f"<div style='display:flex;align-items:center;padding:12px 16px;background:{row_bg};border-bottom:1px solid #eef2f7;'>"
-                        f"<div style='width:90px;font-weight:700;color:#334155;'>{day_name}</div>"
-                        f"<div style='width:86px;'><span style='display:inline-block;background:{col_bg};color:{col_fg};padding:4px 12px;border-radius:7px;font-weight:800;'>{val:.0f}{metric_unit}</span></div>"
-                        f"<div style='flex:1;color:#334155;font-weight:600;'>{label}</div>"
-                        f"<div style='width:100px;text-align:right;color:#64748b;font-size:12px;'>{d.strftime('%d/%m/%Y')}</div>"
-                        "</div>"
+                        f"<div class='wx-daily-row'>"
+                        f"  <div style='width:100px; font-weight:800; color:#334155; font-size:0.95rem;'>{day_nm}</div>"
+                        f"  <div style='width:90px;'><span style='display:inline-block; color:{c_bg}; font-weight:900; font-size:1.1rem;'>{v:.0f}{metric_unit}</span></div>"
+                        f"  <div style='flex:1; color:#1e293b; font-weight:700; margin-left:10px;'>{lbl}</div>"
+                        f"  <div style='width:100px; text-align:right; color:#94a3b8; font-size:11px; font-weight:600;'>{d.strftime('%d/%m/%Y')}</div>"
+                        f"</div>"
                     )
-
                 st.markdown(
-                    f"""
-                    <div class='wx-analysis-card' style='padding:0;overflow:hidden;'>
-                        <div style='padding:14px 16px 10px;'>
-                            <div style='font-size:36px;font-weight:800;color:#0f172a;line-height:1.0;'>Dự báo {metric_label} hằng ngày</div>
-                            <div style='margin-top:4px;color:#64748b;'>Dự báo tại {escape(str(scope_name))} trong {len(daily_view)} ngày tới</div>
-                        </div>
-                        {''.join(rows)}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
+                    f"<div class='wx-analysis-card' style='padding:0; overflow:hidden; height:100%; display:flex; flex-direction:column;'>"
+                    f"  <div style='padding:22px 20px 14px; border-bottom:1px solid rgba(148,163,184,0.12);'>"
+                    f"    <div style='font-size:30px; font-weight:800; color:#0f172a; line-height:1.0;'>Dự báo hằng ngày</div>"
+                    f"    <div style='margin-top:6px; color:#64748b; font-size:14px;'>Xu hướng tại <b>{escape(str(scope_name))}</b></div>"
+                    f"  </div><div style='flex:1;'>{''.join(rows)}</div></div>", unsafe_allow_html=True
                 )
 
             with c_advice:
-                avg_val = float(daily_view["value"].mean())
-                advice_label, advice_bg, advice_fg, advice_desc = _weather_level(avg_val)
+                av_v = float(daily_view["value"].mean())
+                adv_l, adv_bg, adv_fg, adv_d = _weather_level(av_v)
                 st.markdown(
-                    f"""
-                    <div class='wx-analysis-card' style='border:1.5px solid {advice_bg};background:{advice_fg}10;'>
-                        <div style='font-size:26px;font-weight:800;color:{advice_bg};line-height:1.1;'>KHUYẾN CÁO THỜI TIẾT</div>
-                        <div style='margin-top:14px;display:flex;align-items:center;gap:10px;'>
-                            <div style='width:12px;height:12px;border-radius:50%;background:{advice_bg};'></div>
-                            <div style='font-size:40px;font-weight:900;color:#0f172a;line-height:1.0;'>{advice_label}</div>
-                        </div>
-                        <div style='margin-top:14px;color:#334155;font-size:15px;line-height:1.55;font-weight:500;'>
-                            {advice_desc}
-                        </div>
-                        <div style='margin-top:16px;padding-top:10px;border-top:1px dashed {advice_bg};font-size:12px;color:#64748b;font-style:italic;'>
-                            * Khuyến cáo dựa trên giá trị trung bình phần dự báo theo thông số đã chọn.
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
+                    f"<div class='wx-analysis-card' style='border:1.5px solid {adv_bg}40; background: {adv_bg}08; backdrop-filter:blur(10px); height:100%; display:flex; flex-direction:column; padding: 22px 24px; margin-bottom:0;'>"
+                    f"  <div style='display:flex; align-items:center; margin-bottom:12px; gap:10px;'>"
+                    f"    <div style='width:32px; height:32px; border-radius:8px; background:{adv_bg}; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px {adv_bg}40;'><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/><line x1='12' y1='9' x2='12' y2='13'/><line x1='12' y1='17' x2='12.01' y2='17'/></svg></div>"
+                    f"    <span style='font-size:13px; font-weight:800; color:{adv_bg}; text-transform:uppercase; letter-spacing:0.5px;'>Khuyến cáo thông minh</span>"
+                    f"  </div>"
+                    f"  <div style='font-size:24px; font-weight:800; color:#0f172a; margin-bottom:12px; display:flex; align-items:center;'>"
+                    f"    <div style='width:10px; height:10px; background:{adv_bg}; border-radius:50%; margin-right:10px;'></div>{adv_l}"
+                    f"  </div>"
+                    f"  <div style='padding:18px; background:rgba(255,255,255,0.4); border-radius:14px; color:#334155; font-size:15px; border: 1px solid rgba(255,255,255,0.2); line-height:1.6; flex:1; display:flex; align-items:center;'>{adv_d}</div>"
+                    f"  <div style='margin-top:16px; font-size:11px; color:#64748b; font-style:italic; padding-left:4px; opacity:0.8;'>* Dựa trên phân tích xu hướng trung bình {len(daily_view)} ngày tới.</div>"
+                    f"</div>", unsafe_allow_html=True
                 )
 
-    # Data coverage footer
-    coverage_cols = [c for c in WEATHER_FEATURES if c in city_df.columns]
-    if coverage_cols:
-        coverage = (city_df[coverage_cols].notna().mean() * 100).sort_values(ascending=False)
-        coverage_text = " | ".join([f"{k}: {v:.1f}%" for k, v in coverage.items()])
-        st.caption(f"Độ phủ dữ liệu: {coverage_text}")
+    # ── ANALYSIS DASHBOARDS ──────────────────────────────────────────────────────
+    st.markdown(
+        '<hr style="margin: 2.5rem 0 0.5rem 0; border-color: rgba(148,163,184,0.18);">',
+        unsafe_allow_html=True,
+    )
+    # Filter multi-city data by the same range if applicable
+    weather_df_scoped = weather_df[weather_df["timestamp"] >= start_ts].copy()
+    
+    # Scoped daily_df for consistency in Analysis dashboards
+    # Ensure timezone-naive comparison if needed
+    d_start = start_ts.replace(hour=0, minute=0, second=0, microsecond=0)
+    daily_df_scoped = daily_df[pd.to_datetime(daily_df["timestamp"]) >= d_start].copy()
+    
+    # Determine if we show global or localized analysis
+    is_global = (selected_city == "Toàn quốc")
+    
+    if is_global:
+        rain_src = weather_df_scoped
+        comp_items = cities[:6]
+        comp_level = "city"
+    else:
+        # High-Fidelity Localized Data: Load station-level details for the entire time range
+        res_name = _resolve_detail_province_name(selected_city)
+        if res_name:
+            # We fetch detailed data for the selected range (start_ts to end_ts)
+            with st.spinner(f"Đang tải dữ liệu chi tiết {selected_city}..."):
+                detailed_df = load_province_detail(
+                    res_name, 
+                    start_date=start_ts.strftime("%Y-%m-%d"), 
+                    end_date=end_ts.strftime("%Y-%m-%d"),
+                    prefer_all_csv=False # Must be False to get individual wards/communes
+                )
+                if not detailed_df.empty:
+                    # Filter precisely by hours
+                    rain_src = detailed_df[
+                        (detailed_df["timestamp"] >= start_ts) & 
+                        (detailed_df["timestamp"] <= end_ts)
+                    ].copy()
+                else:
+                    rain_src = scope_df # Fallback to aggregated
+        else:
+            rain_src = scope_df
+
+        if "location" in rain_src.columns:
+            # Filter matches based on data completeness
+            counts = rain_src["location"].dropna().value_counts()
+            comp_items = counts[counts > 0].index.tolist()
+        else:
+            comp_items = []
+        comp_level = "location"
+
+    render_rain_season(rain_src, selected_city, scope_label=scope_label)
+    if not detail_summary.empty:
+        render_spatial_map(detail_summary, anchor_day)
+    
+    # ── Item 9: Climate Scorecard — Bảng Xếp Hạng Khí Hậu Tổng Hợp ──────────────
+    if not detail_summary.empty and "location" in detail_summary.columns:
+        score_df = detail_summary.copy()
+        # Compute AQI-aware comfort score
+        aqi_col = "aqi" if "aqi" in score_df.columns else None
+        score_df["_comfort"] = score_df.apply(
+            lambda r: _comfort_score(
+                r.get("temp_avg", np.nan), r.get("humidity", np.nan),
+                r.get("wind_speed", np.nan),
+                r.get(aqi_col, np.nan) if aqi_col else None,
+            ), axis=1
+        )
+        top10 = score_df.nlargest(10, "_comfort").reset_index(drop=True)
+
+        def _badge(comfort, aqi_val):
+            aqi_ok = pd.isna(aqi_val) or float(aqi_val) <= 100
+            if comfort >= 90 and (pd.isna(aqi_val) or float(aqi_val) <= 50):
+                return "🏆 Xuất sắc"
+            if comfort >= 80 and aqi_ok:
+                return "✅ Tốt"
+            if comfort >= 70:
+                return "🆗 Khá"
+            return "⚠️ Trung bình"
+
+        _dash_section_header(
+            "🏅 Bảng Xếp Hạng Khí Hậu Tổng Hợp",
+            "Top 10 địa điểm có điều kiện khí hậu tốt nhất dựa trên Comfort Score tổng hợp",
+        )
+
+        gold_bg   = "rgba(251,191,36,0.12)"
+        silver_bg = "rgba(148,163,184,0.10)"
+        rows_html_list = []
+        for rank, row in top10.iterrows():
+            aqi_v = row.get("aqi", np.nan) if aqi_col else np.nan
+            badge = _badge(float(row["_comfort"]), aqi_v)
+            if rank == 0:   row_bg = gold_bg
+            elif rank <= 2: row_bg = silver_bg
+            else:           row_bg = "transparent"
+            _rank_icons = ["🥇", "🥈", "🥉"]
+            rank_icon = _rank_icons[rank] if rank < 3 else f"{rank+1}."
+            loc_name = escape(str(row.get("location", ""))[:28])
+            temp_s = f"{row.get('temp_avg', np.nan):.1f}°C" if not pd.isna(row.get("temp_avg", np.nan)) else "--"
+            hum_s  = f"{row.get('humidity', np.nan):.0f}%"   if not pd.isna(row.get("humidity",  np.nan)) else "--"
+            aqi_s  = f"{aqi_v:.0f}" if not pd.isna(aqi_v) else "--"
+            cscore = f"{row['_comfort']:.0f}★"
+            rows_html_list.append(
+                f"<tr style='background:{row_bg};'>"
+                f"<td style='padding:8px 10px;font-weight:700;'>{rank_icon} {loc_name}</td>"
+                f"<td style='padding:8px 10px;text-align:center;'>{temp_s}</td>"
+                f"<td style='padding:8px 10px;text-align:center;'>{hum_s}</td>"
+                f"<td style='padding:8px 10px;text-align:center;font-weight:800;color:#22c55e;'>{cscore}</td>"
+                f"<td style='padding:8px 10px;text-align:center;'>{aqi_s}</td>"
+                f"<td style='padding:8px 10px;text-align:center;'>{badge}</td>"
+                f"</tr>"
+            )
+        table_html = (
+            "<div class='wx-analysis-card' style='background:#ffffff;border:1px solid #e2eaf3;padding:20px;overflow-x:auto;'>"
+            "<table style='width:100%;border-collapse:collapse;font-size:13px;color:#334155;'>"
+            "<thead><tr style='background:#f8fafc;'>"
+            "<th style='padding:8px 10px;text-align:left;font-weight:700;color:#0f172a;'>Địa điểm</th>"
+            "<th style='padding:8px 10px;text-align:center;'>Độ/Ẩm ℃</th>"
+            "<th style='padding:8px 10px;text-align:center;'>Độ Ẩm</th>"
+            "<th style='padding:8px 10px;text-align:center;'>Comfort ★</th>"
+            "<th style='padding:8px 10px;text-align:center;'>AQI</th>"
+            "<th style='padding:8px 10px;text-align:center;'>Đánh giá</th>"
+            "</tr></thead>"
+            f"<tbody>{''.join(rows_html_list)}</tbody>"
+            "</table>"
+            "</div>"
+        )
+        st.markdown(table_html, unsafe_allow_html=True)

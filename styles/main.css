@@ -28,14 +28,35 @@ body,
     font-family: 'Be Vietnam Pro', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif !important;
 }
 
+header[data-testid="stHeader"],
 #MainMenu,
 footer {
-    visibility: hidden;
+    display: none !important;
 }
 
-.block-container {
-    padding: 3.1rem 0 0 !important;
+.block-container,
+[data-testid="stAppViewContainer"] > .main,
+[data-testid="stAppViewBlockContainer"],
+[data-testid="stMainBlockContainer"],
+.main .block-container,
+.stMainBlockContainer {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
     max-width: 100% !important;
+}
+
+/* Limit content width to prevent eye fatigue on Ultra-wide screens */
+.main-limit {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+[data-testid="stVerticalBlock"] > div:has(.hdr) {
+    position: sticky;
+    top: 0rem;
+    z-index: 999;
+    margin-bottom: 1rem;
 }
 
 ::-webkit-scrollbar {
@@ -248,13 +269,22 @@ footer {
 }
 
 /* ── HEADER ── */
+div[data-testid="stVerticalBlock"] > div:has(.hdr) {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
+
 .hdr {
     background: var(--pri-800);
     padding: 12px 24px;
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    justify-content: space-between;
     gap: 16px;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .hdr-left {
@@ -298,7 +328,7 @@ footer {
     display: flex;
     align-items: center;
     gap: 20px;
-    flex-shrink: 0;
+    justify-content: flex-end;
 }
 
 .hdr-stat {
@@ -350,7 +380,7 @@ footer {
 /* ── KPI STRIP ── */
 .kpi-strip {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
     margin-bottom: 12px;
 }
@@ -442,6 +472,17 @@ footer {
     transform: translateY(-2px);
     box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
     border-color: #bfdbfe;
+}
+
+/* Reduced spacing for Plotly charts inside cards */
+.js-plotly-plot .plotly .main-svg {
+    background: transparent !important;
+}
+.plotly .modebar-container {
+    opacity: 0.2;
+}
+.plotly .modebar-container:hover {
+    opacity: 1;
 }
 
 .q-tag {
@@ -1454,7 +1495,7 @@ div[data-role="radiogroup"] button[aria-checked="true"] span {
     border-color: rgba(255, 255, 255, 0.2);
     position: relative;
     overflow: hidden;
-    min-height: 290px;
+    min-height: 240px;
 }
 
 .iq-hero-content {
@@ -2465,6 +2506,7 @@ section[data-testid="stSidebar"][aria-expanded="false"]>div:first-child {
     padding-top: 2.2rem !important;
     padding-left: 1rem !important;
     padding-right: 1rem !important;
+    padding-bottom: 1rem !important;
 }
 
 .hdr {
@@ -2926,6 +2968,7 @@ section.main [role="option"] * {
     .hdr {
         padding: 10px 12px;
         border-radius: 10px;
+        grid-template-columns: 1fr;
     }
 
     .hdr-right {
@@ -3562,6 +3605,41 @@ section[data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
 section[data-testid="stSidebar"]:hover .sb-nav-label {
     opacity: 1 !important;
     transform: translateX(0) !important;
+}
+
+/* ── OVERVIEW FILTER BAR ── */
+.ov-filter-bar {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    padding: 12px 20px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.ov-filter-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.ov-status-pill {
+    background: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    display: inline-block;
+    margin-top: 2px;
 }
 
 /* no toggle button, purely hover-expand */

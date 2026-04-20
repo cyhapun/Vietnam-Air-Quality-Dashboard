@@ -2,8 +2,8 @@ import streamlit as st
 import threading
 import time
 
-from services.crawl_data.update_aqi_hourly import run_hourly_update 
-from services.crawl_data.get_province_aqi import run_province_aggregation 
+from services.crawl_data.update_aqi_hourly import run_hourly_update
+from services.crawl_data.get_province_aqi import run_province_aggregation
 from services.crawl_data.get_forecast import run_forecast_update
 import argparse
 
@@ -11,7 +11,7 @@ from components.footer import render_footer
 from components.header import render_header
 from components.sidebar import render_sidebar
 from services.data_loader import load_data
-from tabs import overview_tab, location_tab, datetime_tab, atmos_tab, aqi_tab, weather_tab, interaction_tab
+from tabs import overview_tab, aqi_tab, weather_dashboard, interaction_tab
 from utils.css import inject_css
 from utils.loading import dashboard_loading
 from utils.helpers import (
@@ -34,6 +34,7 @@ from utils.helpers import (
     rank_rows_html,
 )
 
+
 # Hàm chạy ngầm để lập lịch
 def start_crawler_thread():
     time.sleep(20)
@@ -42,9 +43,13 @@ def start_crawler_thread():
             print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler đang chạy ngầm...")
             # Bước 1: Cào dữ liệu mới cho từng trạm (Batch API)
             run_hourly_update()
-            
+
+            time.sleep(15)
+
             # Bước 2: Tính toán lại giá trị đại diện (Mean/Mode) cho từng tỉnh thành
             run_province_aggregation()
+
+            time.sleep(15)
 
             # 3. Cập nhật dữ liệu Dự báo (Forecast tương lai)
             run_forecast_update()
@@ -52,11 +57,12 @@ def start_crawler_thread():
             print("Đã hoàn tất cập nhật dữ liệu!")
         except Exception as e:
             print(f"❌ Lỗi crawler: {e}")
-        
-        # Ngủ 1 tiếng (3610 giây) rồi chạy tiếp (chừa 10s để API cập nhật dữ liệu tránh lỗi)
-        time.sleep(3610) 
 
-# Sử dụng decorator cache để đảm bảo thread này CHỈ KHỞI TẠO 1 LẦN 
+        # Ngủ 1 tiếng (3610 giây) rồi chạy tiếp (chừa 10s để API cập nhật dữ liệu tránh lỗi)
+        time.sleep(3610)
+
+
+# Sử dụng decorator cache để đảm bảo thread này CHỈ KHỞI TẠO 1 LẦN
 # ngay cả khi Streamlit rerun (do user thao tác trên web)
 @st.cache_resource
 def initialize_background_tasks():
@@ -64,21 +70,23 @@ def initialize_background_tasks():
     thread.start()
     return "Crawler started"
 
+
 parser = argparse.ArgumentParser(description="Tùy chọn cho Vietnam AQI Dashboard")
 parser.add_argument(
-    "--real-time", 
-    action="store_true", 
-    help="Bật tính năng chạy ngầm crawler để cập nhật dữ liệu real-time"
+    "mode",
+    nargs="?",
+    choices=["realtime"],
+    help="Bật tính năng chạy ngầm crawler để cập nhật dữ liệu real-time",
 )
 
 # Sử dụng parse_known_args để bỏ qua các tham số mặc định của lệnh `streamlit run`
 args, unknown = parser.parse_known_args()
 
-if args.real_time:
+if args.mode == "realtime":
     initialize_background_tasks()
     print("Đang bật chế độ Real-time.")
 else:
-    print("Không sử dụng chế độ Real-time. Thêm cờ '--real-time' khi chạy để bật.")
+    print("Không sử dụng chế độ Real-time. Thêm 'realtime' sau tên file khi chạy để bật.")
 
 st.set_page_config(
     layout="wide",
@@ -131,9 +139,22 @@ def _consume_header_actions():
 
     if use_modern_qp:
         action = st.query_params.get("cb")
+        refresh_action = st.query_params.get("refresh")
     else:
         qp = st.experimental_get_query_params()
         action = qp.get("cb", [None])[0]
+        refresh_action = qp.get("refresh", [None])[0]
+
+    # Handle Refresh
+    if refresh_action == "1":
+        st.cache_data.clear()
+        if use_modern_qp:
+            del st.query_params["refresh"]
+        else:
+            qp = st.experimental_get_query_params()
+            if "refresh" in qp: del qp["refresh"]
+            st.experimental_set_query_params(**qp)
+        st.rerun()
 
     if action != "toggle":
         return
@@ -153,6 +174,7 @@ def _consume_header_actions():
 
 
 _consume_header_actions()
+
 
 def render_tab_or_blank(tab_module, df):
     render_fn = getattr(tab_module, "render", None)
@@ -190,12 +212,19 @@ def render_dashboard():
 
     render_header(state, logo_html)
 
+    st.markdown('<div class="main-limit">', unsafe_allow_html=True)
     active_tab = state.get("active_tab", "overview")
+    previous_active_tab = st.session_state.get("_last_active_tab")
+    if active_tab == "interaction" and previous_active_tab != "interaction":
+        st.session_state["interaction_time_range"] = "2025"
+    st.session_state["_last_active_tab"] = active_tab
 
     if active_tab == "overview":
         overview_df = state["df"]
         province_col = "province" if "province" in overview_df.columns else "city"
-        province_options = sorted(overview_df[province_col].dropna().astype(str).unique().tolist())
+        province_options = sorted(
+            overview_df[province_col].dropna().astype(str).unique().tolist()
+        )
         hcm_default = next(
             (
                 p
@@ -214,27 +243,39 @@ def render_dashboard():
         if st.session_state["ov_time_range"] not in time_options:
             st.session_state["ov_time_range"] = "24h"
 
-        c_filter_mode, c_filter_target, c_filter_time = st.columns([1.15, 1.45, 0.85], gap="small")
+        c_filter_mode, c_filter_target, c_filter_time = st.columns(
+            [1, 1.3, 0.8], gap="small"
+        )
         with c_filter_mode:
-            st.markdown("<div class='ov-filter-label'>Phạm vi</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='ov-filter-label'>Phạm vi</div>", unsafe_allow_html=True
+            )
             if "overview_scope_mode" not in st.session_state:
                 st.session_state.overview_scope_mode = "Cả nước"
 
             b1, b2 = st.columns(2, gap="small")
             if b1.button(
                 "Cả nước",
-                type="primary" if st.session_state.overview_scope_mode == "Cả nước" else "secondary",
-                use_container_width=True,
+                type=(
+                    "primary"
+                    if st.session_state.overview_scope_mode == "Cả nước"
+                    else "secondary"
+                ),
+                width="stretch",
             ):
                 st.session_state.overview_scope_mode = "Cả nước"
                 st.session_state["overview_scope_province"] = None
                 st.rerun()
             if b2.button(
-                "Theo tỉnh/thành",
-                type="primary" if st.session_state.overview_scope_mode == "Theo tỉnh/thành" else "secondary",
-                use_container_width=True,
+                "Theo Tỉnh thành",
+                type=(
+                    "primary"
+                    if st.session_state.overview_scope_mode == "Theo Tỉnh thành"
+                    else "secondary"
+                ),
+                width="stretch",
             ):
-                st.session_state.overview_scope_mode = "Theo tỉnh/thành"
+                st.session_state.overview_scope_mode = "Theo Tỉnh thành"
                 if not st.session_state.get("overview_scope_province") and hcm_default:
                     st.session_state["overview_scope_province"] = hcm_default
                 st.rerun()
@@ -242,34 +283,54 @@ def render_dashboard():
             scope_mode = st.session_state.overview_scope_mode
         selected_scope_label = "Việt Nam"
         with c_filter_target:
-            st.markdown("<div class='ov-filter-label'>Khu vực cụ thể</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='ov-filter-label'>Khu vực cụ thể</div>",
+                unsafe_allow_html=True,
+            )
             if (
-                scope_mode == "Theo tỉnh/thành"
+                scope_mode == "Theo Tỉnh thành"
                 and not st.session_state.get("overview_scope_province")
                 and hcm_default
             ):
                 st.session_state["overview_scope_province"] = hcm_default
+
+            cur_prov = st.session_state.get("overview_scope_province")
+            if scope_mode == "Theo Tỉnh thành":
+                if cur_prov in province_options:
+                    sb_index = province_options.index(cur_prov)
+                else:
+                    sb_index = (
+                        province_options.index(hcm_default)
+                        if hcm_default in province_options
+                        else 0
+                    )
+            else:
+                sb_index = None
+
             selected_province = st.selectbox(
                 "Chọn tỉnh/thành",
                 options=province_options,
-                index=(
-                    province_options.index(st.session_state["overview_scope_province"])
-                    if st.session_state.get("overview_scope_province") in province_options
-                    else (province_options.index(hcm_default) if hcm_default in province_options else None)
-                ),
-                key="overview_scope_province",
+                index=sb_index,
                 placeholder=(
                     "Vui lòng chọn tỉnh thành"
-                    if scope_mode == "Theo tỉnh/thành"
-                    else "Chỉ áp dụng khi chọn Theo tỉnh/thành"
+                    if scope_mode == "Theo Tỉnh thành"
+                    else "Chỉ áp dụng khi chọn Theo Tỉnh thành"
                 ),
-                disabled=scope_mode != "Theo tỉnh/thành",
+                disabled=scope_mode != "Theo Tỉnh thành",
                 label_visibility="collapsed",
             )
-            if scope_mode == "Theo tỉnh/thành":
+
+            if scope_mode == "Theo Tỉnh thành" and selected_province != cur_prov:
+                st.session_state["overview_scope_province"] = selected_province
+                st.rerun()
+            if scope_mode == "Theo Tỉnh thành":
                 if selected_province:
                     try:
-                        from services.data_loader import load_province_detail, _apply_aqi_labels
+                        from services.data_loader import (
+                            load_province_detail,
+                            _apply_aqi_labels,
+                        )
+
                         s_arg = str(state["s_d"]) if "s_d" in state else None
                         e_arg = str(state["e_d"]) if "e_d" in state else None
                         with dashboard_loading(
@@ -282,16 +343,20 @@ def render_dashboard():
                                 selected_province,
                                 s_arg,
                                 e_arg,
-                                prefer_all_csv=True,
+                                prefer_all_csv=False,
                             )
                         overview_df = _apply_aqi_labels(detail_raw.copy())
                     except Exception:
-                        overview_df = overview_df[overview_df[province_col] == selected_province].copy()
+                        overview_df = overview_df[
+                            overview_df[province_col] == selected_province
+                        ].copy()
                     selected_scope_label = selected_province
                 else:
                     overview_df = overview_df.iloc[0:0]
         with c_filter_time:
-            st.markdown("<div class='ov-filter-label'>Thời gian</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='ov-filter-label'>Thời gian</div>", unsafe_allow_html=True
+            )
             selected_time = st.selectbox(
                 "Thời gian",
                 options=time_options,
@@ -302,6 +367,7 @@ def render_dashboard():
             if selected_time != st.session_state["ov_time_range"]:
                 st.session_state["ov_time_range"] = selected_time
                 st.rerun()
+
         if overview_df.empty:
             st.info("Không có dữ liệu cho phạm vi đã chọn.")
         else:
@@ -309,43 +375,54 @@ def render_dashboard():
                 state, df_override=overview_df, scope_label=selected_scope_label
             )
             render_tab_or_blank(overview_tab, overview_df)
-    elif active_tab == "location":
-        render_tab_or_blank(location_tab, state["df"])
-    elif active_tab == "datetime":
-        render_tab_or_blank(datetime_tab, state["df"])
-    elif active_tab == "atmos":
-        render_tab_or_blank(atmos_tab, state["df"])
     elif active_tab == "aqi":
         render_tab_or_blank(aqi_tab, state["df"])
     elif active_tab == "weather":
-        render_tab_or_blank(weather_tab, state["df"])
+        render_tab_or_blank(weather_dashboard, state["df"])
     elif active_tab == "interaction":
         render_tab_or_blank(interaction_tab, state["df"])
     else:
         render_tab_or_blank(overview_tab, state["df"])
 
+    st.markdown("</div>", unsafe_allow_html=True)  # Closing main-limit
     render_footer()
 
 
-is_first_boot = not st.session_state.get("_dashboard_boot_ready", False)
-show_toggle_loader = bool(st.session_state.pop("_header_toggle_loading", False))
+def main():
+    is_first_boot = not st.session_state.get("_dashboard_boot_ready", False)
+    show_toggle_loader = bool(st.session_state.pop("_header_toggle_loading", False))
 
-if is_first_boot:
-    with dashboard_loading(
-        "Đang tải dữ liệu dashboard...",
-        hint="Chuẩn hóa dữ liệu AQI, PM2.5 và dựng bố cục ban đầu.",
-        overlay=True,
-        min_duration=1.0,
-    ):
+    if is_first_boot:
+        with dashboard_loading(
+            "Đang tải dữ liệu dashboard...",
+            hint="Chuẩn hóa dữ liệu AQI, PM2.5 và dựng bố cục ban đầu.",
+            overlay=True,
+            min_duration=1.0,
+        ):
+            render_dashboard()
+        st.session_state["_dashboard_boot_ready"] = True
+    elif show_toggle_loader:
+        with dashboard_loading(
+            "Đang cập nhật chế độ mù màu...",
+            hint="Đang áp dụng bảng màu mới và dựng lại dashboard.",
+            overlay=True,
+            min_duration=0.75,
+        ):
+            render_dashboard()
+    else:
         render_dashboard()
-    st.session_state["_dashboard_boot_ready"] = True
-elif show_toggle_loader:
-    with dashboard_loading(
-        "Đang cập nhật chế độ mù màu...",
-        hint="Đang áp dụng bảng màu mới và dựng lại dashboard.",
-        overlay=True,
-        min_duration=0.75,
-    ):
-        render_dashboard()
-else:
-    render_dashboard()
+
+
+if st.runtime.exists():
+    main()
+elif __name__ == "__main__":
+    import os
+    import sys
+    from streamlit.web import cli as stcli
+
+    if len(sys.argv) > 1:
+        # Tự động chèn dấu '--' của Streamlit để hỗ trợ lệnh: python app.py realtime
+        sys.argv = ["streamlit", "run", sys.argv[0], "--", *sys.argv[1:]]
+    else:
+        sys.argv = ["streamlit", "run", sys.argv[0]]
+    sys.exit(stcli.main())

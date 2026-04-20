@@ -286,11 +286,6 @@ def _render_kpi_strip(_col, avg_aqi, _lbl, avg_pm25, cig_n, exposure_label, wors
     st.markdown(
         f"""
     <div class="kpi-strip">
-      <div class="kpi-box accent-blue">
-        <div class="kpi-lbl">AQI phạm vi chọn</div>
-        <div class="kpi-val" style="color:{_col}">{avg_aqi} <span class="u">{_lbl}</span></div>
-        <div class="kpi-sub">WHO khuyến nghị AQI ≤ 50</div>
-      </div>
       <div class="kpi-box accent-amber">
         <div class="kpi-lbl">PM2.5 trung bình</div>
         <div class="kpi-val">{avg_pm25} <span class="u">µg/m³</span></div>
@@ -629,9 +624,6 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     city_priority = local_state["city_priority"]
     vietnam_svg_base64 = local_state.get("vietnam_svg_base64", "")
     st.markdown('<div class="main-wrap">', unsafe_allow_html=True)
-    st.caption(
-        f"Đang hiển thị thống kê theo khung thời gian: {OV_TIMEFRAME_LABELS.get(selected_range, selected_range)}"
-    )
     hero_bg_html = ""
     if vietnam_svg_base64:
         hero_bg_html = (
@@ -645,7 +637,7 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     pm25_warning_map = {
         "Tốt": "Không có cảnh báo đáng kể.",
         "Vừa phải": "Nhóm nhạy cảm nên giảm vận động ngoài trời.",
-        "Không lành mạnh cho các nhóm nhạy cảm": "Nhóm nhạy cảm tránh hoạt động ngoài trời kéo dài.",
+        "Không lành mạnh cho nhóm nhạy cảm": "Nhóm nhạy cảm tránh hoạt động ngoài trời kéo dài.",
         "Không khỏe mạnh": "Hạn chế ra ngoài, ưu tiên khẩu trang lọc bụi mịn.",
         "Rất không tốt cho sức khỏe": "Tránh hoạt động gắng sức ngoài trời.",
         "Nguy hiểm": "Mọi người nên hạn chế tối đa hoạt động ngoài trời.",
@@ -707,10 +699,6 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
         f"</div>"
         f"<div class='iq-hero-sub'>PM2.5 trung bình hiện tại: <strong>{avg_pm25} µg/m³</strong></div>"
         f"<div class='iq-hero-sub'>Nồng độ PM2.5 đang cao gấp <strong>{who_pm25_multi} lần</strong> mức hướng dẫn năm của WHO (5 µg/m³).</div>"
-        f"<div class='iq-chip-row'>"
-        f"<span class='iq-chip'>{len(sel)} khu vực</span>"
-        f"<span class='iq-chip'>{len(df):,} bản ghi</span>"
-        f"<span class='iq-chip'>{dangerp}% giờ AQI > 150</span>"
         f"</div>"
         f"{insight_block_html}"
         f"</div>"
@@ -750,6 +738,17 @@ def render(df):
     globals().update(ctx)
     selected_range = st.session_state.get("ov_time_range", "24h")
     df = _filter_df_by_time_range(df, selected_range)
+    st.markdown(
+        '<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
+        '<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
+        '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">TỔNG QUAN</span>'
+        'Chỉ số Chất lượng Không khí Việt Nam'
+        '</div>'
+        '<div style="font-size: 1rem; color: #64748b; line-height: 1.5;">Bản đồ nhiệt và phân tích chất lượng không khí toàn diện trên 63 tỉnh thành Việt Nam.</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
     if df.empty:
         st.info(f"Không có dữ liệu để hiển thị bản đồ/xếp hạng trong khung {selected_range}.")
         return

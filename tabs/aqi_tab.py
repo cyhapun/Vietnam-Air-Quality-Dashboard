@@ -16,6 +16,13 @@ CITY_FOLDERS = {
     "Lâm Đồng": "lam_dong", "Lạng Sơn": "lang_son", "Lào Cai": "lao_cai", "Nghệ An": "nghe_an",
     "Ninh Bình": "ninh_binh", "Phú Thọ": "phu_tho", "Quảng Ngãi": "quang_ngai", "Quảng Ninh": "quang_ninh",
     "Quảng Trị": "quang_tri", "Sơn La": "son_la", "Tây Ninh": "tay_ninh", "Thái Nguyên": "thai_nguyen",
+    "Thanh Hóa": "thanh_hoa", "Tuyên Quang": "tuyen_quang", "Vĩnh Long": "vinh_long"
+}
+
+REGIONS = {
+    "Miền Bắc": ["Hà Nội", "Bắc Ninh", "Cao Bằng", "Điện Biên", "Hải Phòng", "Hưng Yên", "Lai Châu", "Lạng Sơn", "Lào Cai", "Ninh Bình", "Phú Thọ", "Quảng Ninh", "Sơn La", "Thái Nguyên", "Tuyên Quang"],
+    "Miền Trung": ["Đà Nẵng", "Huế", "Hà Tĩnh", "Khánh Hòa", "Lâm Đồng", "Nghệ An", "Quảng Ngãi", "Quảng Trị", "Gia Lai", "Đắk Lắk", "Thanh Hóa"],
+    "Miền Nam": ["Thành phố Hồ Chí Minh", "An Giang", "Cà Mau", "Cần Thơ", "Đồng Nai", "Đồng Tháp", "Tây Ninh", "Vĩnh Long"]
 }
 
 @st.cache_data(ttl=3600*24, show_spinner=False)
@@ -45,6 +52,22 @@ def get_location_map(dir_path):
 def load_tier2_data(city_folder, filename):
     base_dir = os.path.dirname(__file__)
     file_path = os.path.join(base_dir, "..", "data", "aqi", city_folder, filename)
+    if not os.path.exists(file_path):
+        return pd.DataFrame()
+    try:
+        df = pd.read_parquet(file_path)
+        if df.empty: return df
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+        df = df.dropna(subset=["timestamp", "aqi"])
+        df = df.sort_values("timestamp")
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_tier2_year_data(city_folder, filename):
+    base_dir = os.path.dirname(__file__)
+    file_path = os.path.join(base_dir, "..", "data", "aqi_year_2025", city_folder, filename)
     if not os.path.exists(file_path):
         return pd.DataFrame()
     try:
@@ -132,7 +155,7 @@ def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_na
         day_label = ""
         is_boundary = False
         if i == 0 or ts.hour == 0:
-            day_label = ts.strftime("Th %w") if ts.weekday() != 6 else "CN"
+            day_label = f"Th {ts.weekday() + 2}" if ts.weekday() != 6 else "CN"
             if i != 0: is_boundary = True # Start of a new day
 
         border_style = "border-left: 1px dashed #cbd5e1; padding-left: 12px;" if is_boundary else ""
@@ -246,31 +269,41 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
         "24h": pd.Timedelta(days=1),
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
-        "3 tháng": pd.Timedelta(days=90)
+        "3 tháng": pd.Timedelta(days=90),
+        "1 năm": pd.Timedelta(days=365)
     }
     label_map = {
         "24h": "Hôm qua",
         "7 ngày": "7 ngày trước",
         "30 ngày": "30 ngày trước",
-        "3 tháng": "3 tháng trước"
+        "3 tháng": "3 tháng trước",
+        "1 năm": "1 năm trước"
     }
     
     delta = delta_map.get(time_range, pd.Timedelta(days=1))
-    period_lbl = f"{label_map.get(time_range, 'Trước')} (cùng giờ)"
     
-    prev_ts = last_ts - delta
+    if time_range == "1 năm":
+        prev_ts = df["timestamp"].min()
+        period_lbl = "Đầu chu kỳ"
+    else:
+        period_lbl = f"{label_map.get(time_range, 'Trước')} (cùng giờ)"
+        prev_ts = last_ts - delta
+        
     # Find the record closest to (but not after) the target past timestamp
     prev_rows = df[df["timestamp"] <= prev_ts]
     
     if not prev_rows.empty:
         # Check if the closest record is reasonably close (within 3 hours) to be valid "same hour"
         closest_row = prev_rows.iloc[-1]
-        time_diff = abs((closest_row["timestamp"] - prev_ts).total_seconds()) / 3600
-        
-        if time_diff <= 3: # Allow 3hr window for missing samples
+        if time_range == "1 năm":
             prev_val = closest_row[poll_key]
         else:
-            prev_val = None
+            time_diff = abs((closest_row["timestamp"] - prev_ts).total_seconds()) / 3600
+            
+            if time_diff <= 3: # Allow 3hr window for missing samples
+                prev_val = closest_row[poll_key]
+            else:
+                prev_val = None
     else:
         prev_val = None
 
@@ -287,10 +320,17 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     arrow = "↓" if diff <= 0 else "↑"
     
     # Header with integrated Delta Badge
+    if time_range == "1 năm":
+        subtitle_lbl = "So sánh dữ liệu cuối chu kỳ với đầu chu kỳ"
+        curr_lbl = "Cuối chu kỳ"
+    else:
+        subtitle_lbl = f"So sánh dữ liệu hiện tại ({last_ts.strftime('%H:%M %d/%m')}) với {period_lbl.lower()}"
+        curr_lbl = "Hiện tại"
+        
     st.markdown(f'''<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
         <div>
             <div style="font-size: 16px; font-weight: 700; color: #0f172a;">Biến động nồng độ {poll_label}</div>
-            <div style="font-size: 12px; color: #64748b;">So sánh dữ liệu hiện tại với {period_lbl.lower()}</div>
+            <div style="font-size: 12px; color: #64748b;">{subtitle_lbl}</div>
         </div>
         <div style="background: {hex_rgba(status_color, 0.12)}; border: 1.5px solid {hex_rgba(status_color, 0.25)}; padding: 8px 15px; border-radius: 10px; text-align: right; min-width: 110px;">
             <div style="color: {status_color}; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">{status_msg}</div>
@@ -316,26 +356,30 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     fig.add_trace(go.Bar(
         x=[period_lbl],
         y=[prev_val],
+        text=[f"<b>{prev_val:.1f}</b>"],
+        textposition='auto',
         name=period_lbl,
         marker_color=hex_rgba(prev_c, 0.4), # More subtle past
-        marker_line=dict(width=2, color=prev_c),
+        marker_line=dict(width=2, color="#fff"),
         hovertemplate=f"{period_lbl}: <b>%{{y:.1f}}</b><extra></extra>"
     ))
     
     # Current Bar
     fig.add_trace(go.Bar(
-        x=["Hiện tại"],
+        x=[curr_lbl],
         y=[curr_val],
-        name="Hiện tại",
+        text=[f"<b>{curr_val:.1f}</b>"],
+        textposition='auto',
+        name=curr_lbl,
         marker_color=curr_color, # Stronger current
-        marker_line=dict(width=2, color="white"),
-        hovertemplate=f"Hiện tại: <b>%{{y:.1f}}</b><extra></extra>"
+        marker_line=dict(width=2, color="#fff"),
+        hovertemplate=f"{curr_lbl}: <b>%{{y:.1f}}</b><extra></extra>"
     ))
     
     fig.update_layout(
         showlegend=False,
         height=450,
-        margin=dict(l=10, r=10, t=40, b=10), # More top margin for text labels
+        margin=dict(l=10, r=10, t=50, b=10), # Increased top margin for labels
         yaxis={**ax(), "gridcolor": "rgba(148,163,184,0.08)", "zeroline": False},
         xaxis=dict(**ax()),
         paper_bgcolor="rgba(0,0,0,0)",
@@ -410,26 +454,33 @@ def render_correlation_heatmap(df_sub, time_range):
     # Create mask for triangular heatmap (keep only lower triangle, exclude diagonal)
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=0)
     df_masked = corr_matrix.where(~mask)
-    z = df_masked.values
-    
-    # Custom hover text matrix to avoid "NaN" on empty areas
-    custom_hover = []
+
+    # Create matrices for text and hover
+    text_matrix = []
+    hover_matrix = []
     for i in range(len(labels)):
-        row = []
+        t_row = []
+        h_row = []
         for j in range(len(labels)):
-            if i > j: # Only lower triangle
+            if i > j:
                 val = corr_matrix.values[i, j]
-                row.append(f"Tương quan giữa <b>{labels[j]}</b> và <b>{labels[i]}</b>: <b>{val:.2f}</b>")
+                t_row.append(f"<b>{val:.2f}</b>")
+                h_row.append(f"Tương quan giữa <b>{labels[j]}</b> và <b>{labels[i]}</b>: <b>{val:.2f}</b>")
             else:
-                row.append("") # Empty for hidden cells
-        custom_hover.append(row)
+                t_row.append("")
+                h_row.append("")
+        text_matrix.append(t_row)
+        hover_matrix.append(h_row)
 
     # Standard scientific colorscale: Red (Positive Correlation) to Blue (Negative Correlation)
     fig = go.Figure(data=go.Heatmap(
-        z=z,
+        z=df_masked.values,
         x=labels,
         y=labels,
-        customdata=custom_hover,
+        customdata=hover_matrix,
+        text=text_matrix,
+        texttemplate="%{text}",
+        textfont={"size": 11, "family": "Be Vietnam Pro"},
         colorscale='RdBu_r', 
         zmin=-1, zmax=1,
         xgap=2, ygap=2,
@@ -451,14 +502,226 @@ def render_correlation_heatmap(df_sub, time_range):
     </div>''', unsafe_allow_html=True)
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=f"corr_heatmap_{time_range}")
 
+
+def render_regional_comparison(global_df, poll_key, poll_label, time_range):
+    if time_range == "1 năm":
+        from services.data_loader import load_weather_data, _apply_aqi_labels
+        with st.spinner("Đang tải dữ liệu tổng quan 1 năm..."):
+            df_to_use = load_weather_data()
+            if not df_to_use.empty:
+                df_to_use = _apply_aqi_labels(df_to_use)
+    else:
+        df_to_use = global_df
+
+    if df_to_use.empty or poll_key not in df_to_use.columns:
+        return
+
+    # 1. Initialize session state for mode
+    if "aqi_comp_mode" not in st.session_state:
+        st.session_state.aqi_comp_mode = "Theo Miền"
+    comp_mode = st.session_state.aqi_comp_mode
+
+    # 2. Filter by time range
+    max_d = df_to_use["timestamp"].max()
+    delta_map = {
+        "24h": pd.Timedelta(hours=24),
+        "7 ngày": pd.Timedelta(days=7),
+        "30 ngày": pd.Timedelta(days=30),
+        "3 tháng": pd.Timedelta(days=90),
+        "1 năm": pd.Timedelta(days=365)
+    }
+    min_d = max_d - delta_map.get(time_range, pd.Timedelta(hours=24))
+    df_sub = df_to_use[df_to_use["timestamp"] >= min_d].copy()
+
+    if df_sub.empty:
+        return
+
+    # 3. Define options and defaults based on mode
+    if comp_mode == "Theo Miền":
+        options = list(REGIONS.keys())
+        default1, default2 = "Miền Bắc", "Miền Nam"
+        
+        prov_to_reg = {}
+        for reg, provs in REGIONS.items():
+            for p in provs: prov_to_reg[p] = reg
+        df_sub["comp_label"] = df_sub["province"].map(prov_to_reg).astype(str)
+    else:
+        options = sorted(df_sub["province"].unique().astype(str))
+        default1 = "Hà Nội" if "Hà Nội" in options else options[0]
+        default2 = "Hồ Chí Minh" if "Hồ Chí Minh" in options else options[-1]
+        df_sub["comp_label"] = df_sub["province"].astype(str)
+
+    # 4. Section Header
+    if time_range == "1 năm":
+        actual_min = df_sub["timestamp"].min()
+        actual_max = df_sub["timestamp"].max()
+        if pd.notna(actual_min) and pd.notna(actual_max):
+            date_range_str = f"{actual_min.strftime('%d/%m/%Y')} - {actual_max.strftime('%d/%m/%Y')}"
+        else:
+            date_range_str = f"{min_d.strftime('%d/%m')} - {max_d.strftime('%d/%m/%Y')}"
+    else:
+        date_range_str = f"{min_d.strftime('%d/%m')} - {max_d.strftime('%d/%m/%Y')}"
+    st.markdown(f'''<div style="margin-top: 2rem; margin-bottom: 20px;">
+        <div style="font-size: 20px; font-weight: 700; color: #0f172a;">Phân tích Đối chiếu</div>
+        <div style="font-size: 13px; color: #64748b;">So sánh trực tiếp nồng độ {poll_label} - Giai đoạn: {date_range_str}</div>
+    </div>''', unsafe_allow_html=True)
+
+    # 5. Layout Setup
+    col_left, col_right = st.columns([1.6, 1], gap="large")
+    
+    with col_left:
+        # Selector Row - Increased width for c_mode to prevent wrapping
+        c_mode, c_sel1, c_sel2 = st.columns([1.5, 1, 1], gap="medium")
+        
+        with c_mode:
+            st.markdown("<div style='font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;'>PHẠM VI</div>", unsafe_allow_html=True)
+            b1, b2 = st.columns(2, gap="small")
+            if b1.button("Theo Miền", type="primary" if comp_mode == "Theo Miền" else "secondary", width="stretch", key=f"btn_mien_{poll_key}"):
+                st.session_state.aqi_comp_mode = "Theo Miền"
+                st.session_state[f"comp_sel1_{poll_key}"] = "Miền Bắc"
+                st.session_state[f"comp_sel2_{poll_key}"] = "Miền Nam"
+                st.rerun()
+            if b2.button("Theo Tỉnh thành", type="primary" if comp_mode == "Theo Tỉnh thành" else "secondary", width="stretch", key=f"btn_tinh_{poll_key}"):
+                st.session_state.aqi_comp_mode = "Theo Tỉnh thành"
+                st.session_state[f"comp_sel1_{poll_key}"] = "Hà Nội"
+                st.session_state[f"comp_sel2_{poll_key}"] = "Hồ Chí Minh"
+                st.rerun()
+
+        with c_sel1:
+            st.markdown("<div style='font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;'>KHU VỰC 1</div>", unsafe_allow_html=True)
+            if f"comp_sel1_{poll_key}" not in st.session_state or st.session_state[f"comp_sel1_{poll_key}"] not in options:
+                st.session_state[f"comp_sel1_{poll_key}"] = default1
+            sel1 = st.selectbox("Khu vực 1", options, key=f"comp_sel1_{poll_key}", label_visibility="collapsed")
+        
+        with c_sel2:
+            st.markdown("<div style='font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;'>KHU VỰC 2</div>", unsafe_allow_html=True)
+            options2 = [o for o in options if o != sel1]
+            if f"comp_sel2_{poll_key}" not in st.session_state or st.session_state[f"comp_sel2_{poll_key}"] not in options2:
+                st.session_state[f"comp_sel2_{poll_key}"] = default2 if default2 in options2 else options2[0]
+            sel2 = st.selectbox("Khu vực 2", options2, key=f"comp_sel2_{poll_key}", label_visibility="collapsed")
+
+        # 6. Process Plot Data
+        df_raw = df_sub[df_sub["comp_label"].isin([sel1, sel2])].copy()
+        
+        # Calculate mean for Insights
+        df_plot = df_raw.groupby("comp_label", observed=False)[poll_key].mean().reset_index()
+        df_plot = df_plot.rename(columns={"comp_label": "label"})
+        df_plot["label"] = df_plot["label"].astype(str)
+        df_plot["sort_idx"] = df_plot["label"].apply(lambda x: 0 if x == sel1 else 1)
+        df_plot = df_plot.sort_values("sort_idx")
+
+        if len(df_plot) < 2:
+            st.info("Không có đủ dữ liệu cho cặp so sánh này.")
+        else:
+            fig = go.Figure()
+            for sel in [sel1, sel2]:
+                df_sel = df_raw[df_raw["comp_label"] == sel]
+                if not df_sel.empty:
+                    mean_val = df_sel[poll_key].mean()
+                    _, color = val_meta(mean_val, poll_key)
+                    fig.add_trace(go.Box(
+                        y=df_sel[poll_key],
+                        name=sel,
+                        marker_color=color,
+                        boxmean=True, # Hiển thị đường nét đứt giá trị Trung bình
+                        boxpoints='outliers', # Chỉ hiển thị các điểm đột biến (outliers)
+                        marker=dict(size=4, opacity=0.8),
+                        line=dict(width=2),
+                        hovertemplate=f"{sel}<br>{poll_label}: <b>%{{y:.1f}}</b><extra></extra>"
+                    ))
+
+            fig.update_layout(
+                height=320, margin=dict(l=10, r=10, t=10, b=10),
+                xaxis={**ax("Khu vực Đối chiếu"), "showline": False, "tickfont": dict(size=13, color="#0f172a")},
+                yaxis={**ax(f"Phân bố {poll_label} ({time_range})"), "showgrid": True},
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                showlegend=False
+            )
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=f"regional_comp_chart_{poll_key}")
+
+    # 7. Insights (Right Column)
+    with col_right:
+        if len(df_plot) >= 2:
+            med1 = df_raw[df_raw["comp_label"] == sel1][poll_key].median()
+            med2 = df_raw[df_raw["comp_label"] == sel2][poll_key].median()
+            max1 = df_raw[df_raw["comp_label"] == sel1][poll_key].max()
+            max2 = df_raw[df_raw["comp_label"] == sel2][poll_key].max()
+            
+            diff = abs(med1 - med2)
+            ratio = (diff / med2 * 100) if med2 > 0 else 0
+            status1, color1 = val_meta(med1, poll_key)
+            status2, color2 = val_meta(med2, poll_key)
+            
+            if diff < 0.1:
+                eval_text = "Mặt bằng chung chất lượng không khí giữa hai khu vực là <b>tương đồng</b>."
+                detail_text = "Cả hai đều có mức trung vị gần như bằng nhau. Bạn có thể quan sát thêm độ trải dài của hộp để xem nơi nào có nhiều biến động hơn."
+                b_color = "#94a3b8"
+            elif ratio < 1:
+                eval_text = f"Chênh lệch trung vị giữa hai khu vực là <b>không đáng kể</b> (khoảng {ratio:.2f}%)."
+                detail_text = "Mặt bằng chung khá giống nhau, sự khác biệt chủ yếu nằm ở các đợt ô nhiễm cực đoan (chấm nhỏ phía trên hộp)."
+                b_color = "#94a3b8"
+            else:
+                cleaner = sel1 if med1 < med2 else sel2
+                polluted = sel2 if med1 < med2 else sel1
+                eval_text = f"Về mặt bằng chung, <b>{cleaner}</b> sạch hơn <b>{polluted}</b> khoảng <b>{ratio:.1f}%</b>."
+                
+                max_diff_text = f" Đặc biệt, mức ô nhiễm đỉnh điểm tại <b>{sel1}</b> lên tới {max1:.0f}, trong khi <b>{sel2}</b> là {max2:.0f}."
+                if med2 > 100 or med1 > 100:
+                    detail_text = f"Nồng độ trung vị {poll_label} đang ở mức cao. Boxplot cho thấy <b>{cleaner}</b> có sự phân bố ổn định và an toàn hơn.{max_diff_text}"
+                else:
+                    detail_text = f"Dựa trên dải phân bố, <b>{cleaner}</b> duy trì chất lượng không khí ở dải an toàn tốt hơn.{max_diff_text}"
+                b_color = color1 if med1 < med2 else color2
+
+            # Health Advice based on the worse area's maximum values
+            max_val = max(max1, max2)
+            if max_val <= 50:
+                advice = "Điều kiện lý tưởng cho mọi hoạt động ngoài trời tại cả hai khu vực. Hầu như không có rủi ro đột biến."
+            elif max_val <= 100:
+                advice = "Chất lượng không khí khá an toàn. Tuy nhiên, nhóm nhạy cảm vẫn nên lưu ý vào các ngày xuất hiện mốc đột biến (outliers)."
+            else:
+                worse_peak = sel1 if max1 > max2 else sel2
+                advice = f"Cảnh báo: Đã ghi nhận các đỉnh ô nhiễm nguy hiểm tại <b>{worse_peak}</b>. Cần chú ý bảo vệ hô hấp trong các đợt bùng phát này."
+
+            # Ensure no leading whitespace for the f-string to prevent markdown code block rendering
+            html_insight = f'''<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+<div>
+    <div style="font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 1.25rem; letter-spacing: 0.5px;">Phân tích phân bố</div>
+    <div style="margin-bottom: 1.25rem;">
+        <div style="font-size: 13px; color: #64748b;">Chênh lệch Trung vị (Median)</div>
+        <div style="font-size: 28px; font-weight: 800; color: #0f172a;">{diff:.1f} <span style="font-size: 14px; font-weight: 500; color: #64748b;">đơn vị</span></div>
+    </div>
+    <div style="padding: 14px; background: white; border-radius: 8px; border-left: 4px solid {b_color}; margin-bottom: 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="font-size: 14px; color: #1e293b; line-height: 1.6;">{eval_text}</div>
+        <div style="font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 8px;">{detail_text}</div>
+    </div>
+</div>
+<div>
+    <div style="font-size: 13px; color: #64748b; line-height: 1.8; margin-bottom: 1rem;">
+        • <b>{sel1}</b>: Trạng thái Trung vị <span style="color: {color1}; font-weight: 700;">{status1}</span><br>
+        • <b>{sel2}</b>: Trạng thái Trung vị <span style="color: {color2}; font-weight: 700;">{status2}</span>
+    </div>
+    <div style="padding-top: 12px; border-top: 1px dashed #e2e8f0;">
+        <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase;">Khuyến nghị từ Outliers</div>
+        <div style="font-size: 13px; color: #1e293b; line-height: 1.5;">{advice}</div>
+    </div>
+</div>
+</div>'''
+            st.markdown(html_insight, unsafe_allow_html=True)
+
 def render(global_df):
     ctx = st.session_state.get("dashboard_context", {})
     if ctx: globals().update(ctx)
     
-    st.markdown('<div class="card" style="padding: 1.5rem; margin-bottom: 1rem;">'
-                '<div class="card-title" style="margin-bottom: 4px;"><span class="q-tag">Lịch Sử</span>Phân tích Chuỗi thời gian & Xu hướng</div>'
-                '<div class="card-sub" style="margin-bottom: 16px;">Theo dõi dao động nồng độ chất ô nhiễm tại một khu vực cụ thể qua các mốc thời gian.</div>', 
-                unsafe_allow_html=True)    
+    st.markdown(
+        '<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
+        '<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
+        '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">LỊCH SỬ</span>'
+        'Phân tích Chuỗi thời gian & Xu hướng'
+        '</div>'
+        '<div style="font-size: 1rem; color: #64748b; line-height: 1.5;">Theo dõi dao động nồng độ chất ô nhiễm tại một khu vực cụ thể qua các mốc thời gian.</div>'
+        '</div>',
+        unsafe_allow_html=True
+    )
     cities = list(CITY_FOLDERS.keys())
     
     # Initialize State
@@ -472,6 +735,9 @@ def render(global_df):
         st.session_state["aqi_time_range"] = "24h"
     if "aqi_pollutant" not in st.session_state:
         st.session_state["aqi_pollutant"] = "aqi"
+    
+    if "aqi_selected_bar" not in st.session_state:
+        st.session_state["aqi_selected_bar"] = None
         
     # Inject local CSS for Blue Theme on Chart Type widget (Frames only)
     st.markdown(f"""
@@ -528,12 +794,16 @@ def render(global_df):
             st.session_state["aqi_city_version"] = st.session_state.get("aqi_city_version", 0) + 1
             st.session_state["aqi_selected_city"] = selected_city
             st.session_state["aqi_selected_tier2"] = f"Tổng quan ({selected_city})"
+            st.session_state["aqi_selected_bar"] = None
             st.rerun()
 
     # Locate Tier 2 units dynamically
     folder_name = CITY_FOLDERS.get(selected_city, "ho_chi_minh")
     base_dir = os.path.dirname(__file__)
-    dir_path = os.path.join(base_dir, "..", "data", "aqi", folder_name)
+    if st.session_state.get("aqi_time_range") == "1 năm":
+        dir_path = os.path.join(base_dir, "..", "data", "aqi_year_2025", folder_name)
+    else:
+        dir_path = os.path.join(base_dir, "..", "data", "aqi", folder_name)
     tong_quan_lbl = f"Tổng quan ({selected_city})"
     tier2_options = [tong_quan_lbl]
     file_map = {tong_quan_lbl: "all.parquet"}
@@ -571,6 +841,7 @@ def render(global_df):
         
         if selected_tier2 != st.session_state.get("aqi_selected_tier2"):
             st.session_state["aqi_selected_tier2"] = selected_tier2
+            st.session_state["aqi_selected_bar"] = None
             st.rerun()
 
     with c3:
@@ -602,11 +873,12 @@ def render(global_df):
             st.rerun()
 
     with c4:
-        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng"]
+        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng", "1 năm"]
         idx_tr = tr_opts.index(st.session_state["aqi_time_range"]) if st.session_state["aqi_time_range"] in tr_opts else 1
         time_range = st.selectbox("Thời gian", tr_opts, index=idx_tr, key="aqi_time_select")
         if time_range != st.session_state["aqi_time_range"]:
             st.session_state["aqi_time_range"] = time_range
+            st.session_state["aqi_selected_bar"] = None
             st.rerun()
 
     with c5:
@@ -633,11 +905,15 @@ def render(global_df):
         
         if selected_poll != curr_pol:
             st.session_state["aqi_pollutant"] = selected_poll
+            st.session_state["aqi_selected_bar"] = None
             st.rerun()
 
     # Load and process data
     target_file = file_map.get(selected_tier2, "all.parquet")
-    df = load_tier2_data(folder_name, target_file)
+    if time_range == "1 năm":
+        df = load_tier2_year_data(folder_name, target_file)
+    else:
+        df = load_tier2_data(folder_name, target_file)
     
     if df.empty or selected_poll_key not in df.columns:
         st.warning(f"Không có đủ dữ liệu lịch sử đo lường cho {selected_tier2}.")
@@ -658,7 +934,8 @@ def render(global_df):
         "24h": pd.Timedelta(hours=24),
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
-        "3 tháng": pd.Timedelta(days=90)
+        "3 tháng": pd.Timedelta(days=90),
+        "1 năm": pd.Timedelta(days=365)
     }
     
     min_d = max_d - delta_map[time_range]
@@ -734,7 +1011,8 @@ def render(global_df):
         rule_map = {
             "7 ngày": "6h",
             "30 ngày": "1D",
-            "3 tháng": "3D"
+            "3 tháng": "3D",
+            "1 năm": "7D"
         }
         rule = rule_map.get(time_range)
         if rule:
@@ -756,6 +1034,42 @@ def render(global_df):
                 # Bar Chart vần trục thời gian chia khoảng Đều (Uniform) để các cột được tính toán chiều ngang to rõ ràng
                 # Ta vẫn dùng .max() để nhặt ra mốc ô nhiễm nặng nhất, không lo bị chà phẳng
                 df_sub = df_sub.set_index("timestamp").resample(rule)[[y_col]].max().dropna().reset_index()
+
+    # --- Interaction Logic: Filter by selected bar ---
+    dt_start, dt_end = min_d, max_d + pd.Timedelta(seconds=1) # Default to full range
+    selected_bar_time = st.session_state.get("aqi_selected_bar")
+    
+    if selected_bar_time and "Tổng quan" in str(selected_tier2):
+        try:
+            # Convert back to datetime and ensure it's naive (matches parquet data)
+            sel_ts = pd.to_datetime(selected_bar_time).replace(tzinfo=None)
+            
+            # Find the actual bar in df_sub to ensure it exists
+            if chart_type == "Cột (Bar)":
+                df_match = df_sub[df_sub["timestamp"] == sel_ts]
+                if not df_match.empty:
+                    # Determine period for ranking
+                    dt_start = sel_ts
+                    
+                    # Calculate end of period based on resampling rule OR hourly
+                    rule_delta = {
+                        "7 ngày": pd.Timedelta(hours=6),
+                        "30 ngày": pd.Timedelta(days=1),
+                        "3 tháng": pd.Timedelta(days=3),
+                        "1 năm": pd.Timedelta(days=7)
+                    }
+                    dt_end = dt_start + rule_delta.get(time_range, pd.Timedelta(hours=1))
+                    
+                    # We no longer filter df_sub here to keep all bars visible (highlight/fade logic below)
+                    pass
+        except Exception:
+            st.session_state["aqi_selected_bar"] = None
+    else:
+        # Clear selection if not in 'Tổng quan' view
+        if st.session_state.get("aqi_selected_bar"):
+            st.session_state["aqi_selected_bar"] = None
+        selected_bar_time = None
+    
 
     # Prepare array colors & labels for Plotly based on selected pollutant scale
     df_sub["clr"] = df_sub[y_col].apply(lambda x: val_meta(x, y_col)[1])
@@ -965,12 +1279,21 @@ def render(global_df):
                         showlegend=False
                     ))
     else:
+        # Handle highlight/fade effect for selections
+        bar_opacities = [0.9] * len(df_sub)
+        if selected_bar_time and "Tổng quan" in str(selected_tier2):
+             try:
+                 sel_ts_norm = pd.to_datetime(selected_bar_time).replace(tzinfo=None)
+                 bar_opacities = [0.9 if ts == sel_ts_norm else 0.25 for ts in df_sub["timestamp"]]
+             except Exception:
+                 pass
+
         fig.add_trace(go.Bar(
             x=df_sub["timestamp"],
             y=df_sub[y_col],
             marker_color=df_sub["clr"],
+            marker_opacity=bar_opacities, # Apply selective opacity
             marker_line=dict(width=1, color="#fff"),
-            opacity=0.9,
             hovertemplate=f"<span style='color:%{{customdata[1]}}'><b>Chỉ số</b></span>: %{{y:.1f}}{u_suffix}<extra></extra>",
             customdata=cd_vals
         ))
@@ -985,7 +1308,37 @@ def render(global_df):
     )
     
     with cChart:
-        st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key="aqi_plotly_chart")
+        # Configuration for selection
+        select_data = st.plotly_chart(
+            fig, 
+            width="stretch", 
+            config={"displayModeBar": False}, 
+            key="aqi_plotly_chart",
+            on_select="rerun" if "Tổng quan" in str(selected_tier2) else "ignore",
+            selection_mode="points" if "Tổng quan" in str(selected_tier2) else []
+        )
+        
+        # Process selection event from Plotly (ONLY if in 'Tổng quan' view)
+        if select_data and "Tổng quan" in str(selected_tier2):
+            try:
+                # Use attribute access for SelectionEvent object
+                sel_dict = getattr(select_data, "selection", {})
+                points = sel_dict.get("points", [])
+                
+                if points:
+                    clicked_x = points[0].get("x")
+                    if clicked_x:
+                        curr_sel = st.session_state.get("aqi_selected_bar")
+                        
+                        # Toggle logic: If click same bar twice, reset. Else select new bar.
+                        if curr_sel == clicked_x:
+                            st.session_state["aqi_selected_bar"] = None
+                            st.rerun()
+                        else:
+                            st.session_state["aqi_selected_bar"] = clicked_x
+                            st.rerun()
+            except Exception:
+                pass
         
         # Legend Explanation
         bands = POLL_BANDS.get(y_col, POLL_BANDS["aqi"])
@@ -1005,7 +1358,21 @@ def render(global_df):
         
     with cRank:
         # Title of Rank
-        st.markdown(f'''<div style="font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;">Top 8 Ô nhiễm ({time_range})</div>''', unsafe_allow_html=True)
+        rank_time_lbl = time_range
+        if st.session_state.get("aqi_selected_bar"):
+            # Format display time for the selected bar
+            sel_dt = pd.to_datetime(st.session_state["aqi_selected_bar"])
+            if time_range == "24h":
+                rank_time_lbl = sel_dt.strftime("%H:%M, %d/%m")
+            else:
+                # For ranges, show the period start and end
+                if (dt_end - dt_start).days >= 1:
+                    rank_time_lbl = sel_dt.strftime("%d/%m") + f" - {dt_end.strftime('%d/%m')}"
+                else:
+                    # For sub-day ranges (like 7 days / 6h), show time range
+                    rank_time_lbl = sel_dt.strftime("%d/%m %H:%M") + f" - {dt_end.strftime('%H:%M')}"
+
+        st.markdown(f'''<div style="font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;">Top 10 Ô nhiễm ({rank_time_lbl})</div>''', unsafe_allow_html=True)
         
         top_list_html = f'''<div style="display:flex; font-size:12px; font-weight:600; color:#64748b; padding-bottom: 10px; border-bottom: 2px solid rgba(148,163,184,0.1); margin-bottom: 12px; text-transform:uppercase;">
             <div style="flex:4;">Địa điểm</div>
@@ -1013,20 +1380,27 @@ def render(global_df):
             <div style="flex:2; text-align:right;">{poll_lbl}</div>
         </div>'''
         
-        # calculate Top 10 locations
+        # Calculate Top Locations by reading each individual unit file
         top_locations = []
         for loc_name, f_name in file_map.items():
+            # Skip overall summary file
             if "Tổng quan" in loc_name or loc_name == tong_quan_lbl: continue
             
             try:
-                loc_df = load_tier2_data(folder_name, f_name)
+                # Load raw data for this specific location
+                if time_range == "1 năm":
+                    loc_df = load_tier2_year_data(folder_name, f_name)
+                else:
+                    loc_df = load_tier2_data(folder_name, f_name)
                 if loc_df.empty or selected_poll_key not in loc_df.columns:
                     continue
                 
-                loc_df_sub = loc_df[loc_df["timestamp"] >= min_d]
+                # Filter strictly within the time window [dt_start, dt_end)
+                # This works for both individual hours (24h view) and resampled blocks (7d, 30d, 3m)
+                loc_df_sub = loc_df[(loc_df["timestamp"] >= dt_start) & (loc_df["timestamp"] < dt_end)]
                 if loc_df_sub.empty: continue
                 
-                # Use mean value over the selected time range
+                # Calculate mean (for hourly, it's just the one value; for ranges, it's the average)
                 metric_val = loc_df_sub[selected_poll_key].mean()
                 top_locations.append({
                     "loc": loc_name,
@@ -1036,7 +1410,7 @@ def render(global_df):
                 continue
             
         if top_locations:
-            top_df = pd.DataFrame(top_locations).sort_values(by="val", ascending=False).head(8)
+            top_df = pd.DataFrame(top_locations).sort_values(by="val", ascending=False).head(10)
             for _, row in top_df.iterrows():
                 v = row["val"]
                 loc_name_full = row["loc"]
@@ -1090,15 +1464,18 @@ def render(global_df):
         # ── ADVANCED ANALYSIS SECTION ──
         st.markdown('<hr style="margin: 1.5rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
         st.markdown(f'''<div style="margin-bottom: 1.5rem;">
-            <div style="font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Phân tích Nâng cao</div>
-            <div style="font-size: 14px; color: #64748b;">Phát hiện các đặc tính ô nhiễm tại <span style="font-weight: 600;">{location_str}</span> qua chuỗi thời gian</div>
+            <div style="font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Phân tích Tương quan & So sánh</div>
         </div>''', unsafe_allow_html=True)
-        
+
         col_comp, col_heat = st.columns([1.25, 1.25], gap="large")
         with col_comp:
             render_comparison_bar_chart(df, selected_poll_key, time_range, poll_lbl)
         with col_heat:
             render_correlation_heatmap(df_analysis, time_range)
+
+        # ── REGIONAL COMPARISON SECTION (Moved to bottom) ──
+        st.markdown('<hr style="margin: 1.5rem 0; border-color: rgba(148,163,184,0.15);">', unsafe_allow_html=True)
+        render_regional_comparison(global_df, selected_poll_key, poll_lbl, time_range)
     else:
         st.info("Hiện chưa có dữ liệu dự báo cho khu vực này.")
         

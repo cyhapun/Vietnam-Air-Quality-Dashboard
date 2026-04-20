@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 
 
 def render_header(state, logo_html):
@@ -30,16 +30,8 @@ def render_header(state, logo_html):
           <div class="hdr-stat-lbl">Khu vực</div>
         </div>
         <div class="hdr-stat">
-          <div class="hdr-stat-val">{len(df):,}</div>
-          <div class="hdr-stat-lbl">Bản ghi</div>
-        </div>
-        <div class="hdr-stat">
-          <div class="hdr-stat-val">{s_d.strftime('%d/%m/%y')} → {e_d.strftime('%d/%m/%y')}</div>
+          <div class="hdr-stat-val">Từ {s_d.strftime('%d/%m/%y')} đến {e_d.strftime('%d/%m/%y')}</div>
           <div class="hdr-stat-lbl">Thời gian</div>
-        </div>
-        <div class="hdr-badge">
-          <div class="hdr-badge-val" style="color:{_col}">{avg_aqi}</div>
-          <div class="hdr-badge-lbl">AQI · {_lbl}</div>
         </div>
       </div>
     </div>
