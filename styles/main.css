@@ -36,18 +36,27 @@ footer {
   display: none !important;
 }
 
-.block-container,
+/* 1. Reset padding/margin cho các khung hệ thống của Streamlit */
 [data-testid="stAppViewContainer"] > .main,
 [data-testid="stAppViewBlockContainer"],
 [data-testid="stMainBlockContainer"],
-.main .block-container,
 .stMainBlockContainer,
 [data-testid="stApp"],
 [data-testid="stHeader"] {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   margin-top: -1.5rem !important; /* Dịch chuyển toàn bộ nội dung lên trên */
-  max-width: 100% !important;
+}
+
+/* 2. Ép nội dung chính khớp chính xác giới hạn 1400px và căn giữa giống Header */
+.block-container,
+.main .block-container {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  max-width: 1400px !important; /* Đổi từ 100% thành 1400px */
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
 /* stHeader đã display:none/height:0 → không cần bù -1.5rem nữa, reset về 0 */
@@ -428,6 +437,7 @@ div[data-testid="stVerticalBlock"] > div:has(> [data-testid="stHorizontalBlock"]
   align-items: center;
   gap: 16px;
   max-width: 1400px;
+  width: 100%;
   margin-left: auto;
   margin-right: auto;
   border-radius: 0 0 15px 15px; /* Chỉ bo góc ở dưới, phẳng ở trên */
