@@ -57,7 +57,7 @@ footer {
 [data-testid="stVerticalBlock"] > div:has(.hdr) {
   position: sticky;
   top: 0rem;
-  z-index: 999;
+  z-index: 5000;
   margin-bottom: 1rem;
 }
 
@@ -281,7 +281,7 @@ footer {
 div[data-testid="stVerticalBlock"] > div:has(.hdr) {
   position: sticky;
   top: 0;
-  z-index: 999;
+  z-index: 5000;
 }
 
 .hdr {
@@ -2563,7 +2563,7 @@ section[data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
 .hdr {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 5001;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.5);
   background: linear-gradient(
@@ -3097,7 +3097,7 @@ section.main [role="option"] * {
   width: 100vw;
   height: 100vh;
   transform: translateX(-50%);
-  z-index: 998;
+  z-index: 6000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3633,7 +3633,7 @@ section[data-testid="stSidebar"],
   gap: 0 !important;
   overflow: visible !important;
   position: relative !important;
-  z-index: 2147483000 !important;
+  z-index: 4100 !important;
 }
 
 /* Keep default spacing for all other horizontal blocks */
@@ -3648,15 +3648,16 @@ section[data-testid="stSidebar"],
   max-width: 74px !important;
   overflow: visible !important;
   position: relative !important;
-  z-index: 2147483001 !important;
+  z-index: 4101 !important;
   padding: 0 !important;
   isolation: isolate;
 }
 
-[data-testid="column"]:has(._az-nav-sentinel) [data-testid="element-container"] {
+[data-testid="column"]:has(._az-nav-sentinel)
+  [data-testid="element-container"] {
   position: relative !important;
   overflow: visible !important;
-  z-index: 2147483002 !important;
+  z-index: 4102 !important;
 }
 
 /* Keep content column below floating nav expansion */
@@ -3672,7 +3673,8 @@ section[data-testid="stSidebar"],
 [data-testid="column"]:has(._az-nav-sentinel)
   [data-testid="stVerticalBlockBorderWrapper"],
 [data-testid="column"]:has(._az-nav-sentinel)
-  [data-testid="stMarkdownContainer"] {
+  [data-testid="stMarkdownContainer"],
+[data-testid="column"]:has(._az-nav-sentinel) [data-testid="stHtml"] {
   padding: 0 !important;
   margin: 0 !important;
   overflow: visible !important;
@@ -3687,7 +3689,7 @@ section[data-testid="stSidebar"],
   width: 0 !important;
   height: 0 !important;
   overflow: visible !important;
-  z-index: 2147483003 !important;
+  z-index: 4103 !important;
   pointer-events: none !important;
 }
 
@@ -3700,7 +3702,7 @@ section[data-testid="stSidebar"],
   top: 0 !important;
   width: 252px !important;
   height: 380px !important;
-  z-index: 2147483004 !important;
+  z-index: 4104 !important;
   border: 0 !important;
   border-radius: 0 20px 20px 0 !important;
   overflow: visible !important;
