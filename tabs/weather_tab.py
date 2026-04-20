@@ -431,20 +431,155 @@ def _inject_weather_css():
             padding-left: 2px;
             letter-spacing: 0.2px;
         }
+
+        /* ── Info Section Card (Premium Title) ── */
+        .wx-info-card {
+            background: linear-gradient(to right, #ffffff, #f8fbff);
+            border: 1px solid #e2eaf3;
+            border-left: 5px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 1.3rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+            animation: fadeInUp 0.6s ease-out both;
+        }
+        .wx-info-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .wx-info-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            font-size: 0.85rem;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .wx-info-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+        .wx-info-sub {
+            font-size: 1rem;
+            color: #64748b;
+            line-height: 1.5;
+            font-weight: 500;
+        }
         
-        /* ── Glass Parameters ── */
-        .wx-glass-params {
-            background: rgba(255, 255, 255, 0.65);
+        /* ── ACTION BAR (Integrated Filter Bar) ── */
+        .wx-action-bar {
+            background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             border-radius: 16px;
-            padding: 14px 18px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+            padding: 12px 20px;
+            margin-bottom: -54px; /* Offset to overlap with Streamlit container */
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
             animation: fadeInUp 0.6s ease-out both;
-            animation-delay: 0.1s;
+            position: relative;
+            z-index: 10;
         }
+        .wx-action-title {
+            display: flex;
+            align-items: center;
+            padding-right: 24px;
+            border-right: 1px solid rgba(0, 0, 0, 0.08);
+            min-width: 180px;
+        }
+        .wx-action-main {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+        }
+        .wx-action-sub {
+            font-size: 0.65rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        /* Adjusting Streamlit internal spacing to align with our bar */
+        [data-testid="stVerticalBlock"] > div:has(div.wx-action-bar) + div {
+            margin-top: 0 !important;
+            position: relative;
+            z-index: 20;
+        }
+        
+        /* Make Streamlit widgets in action bar look integrated */
+        .wx-action-bar + div [data-testid="stForm"] { border: none !important; padding: 0 !important; }
+        
+        /* Target the selectbox and date input in the action bar */
+        [data-testid="column"]:has(div[data-testid="stSelectbox"]),
+        [data-testid="column"]:has(div[data-testid="stDateInput"]) {
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Reset everything within these components to prevent ghosting */
+        div[data-testid="stSelectbox"] *, 
+        div[data-testid="stDateInput"] * {
+            border: none !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+        
+        /* Apply single clean border only to the primary interaction layer */
+        div[data-testid="stSelectbox"] [data-baseweb="select"] > div,
+        div[data-testid="stDateInput"] [data-baseweb="input"] > div {
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            border: 1.5px solid rgba(15, 23, 42, 0.15) !important;
+            border-radius: 12px !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        /* Interaction states */
+        div[data-testid="stSelectbox"] [data-baseweb="select"] > div:hover,
+        div[data-testid="stDateInput"] [data-baseweb="input"] > div:hover {
+            border-color: #0ea5e9 !important;
+            background-color: #ffffff !important;
+        }
+
+        /* Specifically handle focus ring which is often the cause of ghost borders */
+        div[data-testid="stSelectbox"] [data-baseweb="select"]:focus-within > div,
+        div[data-testid="stDateInput"] [data-baseweb="input"]:focus-within > div {
+            border-color: #0ea5e9 !important;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.14) !important;
+        }
+
+        /* Styling the analysis button to be more prominent */
+        [data-testid="stButton"] button {
+            border-radius: 10px !important;
+            font-weight: 700 !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+        }
+        
+        [data-testid="stButton"] button[kind="primary"] {
+            background: linear-gradient(135deg, #0ea5e9, #2563eb) !important;
+            border: none !important;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25) !important;
+        }
+        
+        [data-testid="stButton"] button[kind="primary"]:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35) !important;
+        }
+        
         .wx-block-head {
             margin-bottom: 10px;
             border-left: 4px solid #38bdf8;
@@ -1225,6 +1360,19 @@ def _inject_weather_css():
     )
 
 
+def _info_card_html(badge: str, title: str, sub: str) -> str:
+    html = f"""
+    <div class='wx-info-card'>
+        <div class='wx-info-header'>
+            <span class='wx-info-badge'>{badge}</span>
+            <div class='wx-info-title'>{title}</div>
+        </div>
+        <div class='wx-info-sub'>{sub}</div>
+    </div>
+    """
+    return _html(html).replace("\n", "").replace("    ", "")
+
+
 # ─── Data helpers ─────────────────────────────────────────────────────────────
 
 def _build_hourly_frame(city_df):
@@ -1436,11 +1584,8 @@ def _forecast_hourly_switch_html(forecast_df, day_groups, anchor_day=None, switc
         ".wx-hourly-card-inline{margin:0;padding:10px 12px;border-radius:14px;}"
         + "".join(rules)
         + "</style>"
+        + _info_card_html("DỰ BÁO", "Dự báo 10 ngày", "Nhấn vào một ngày bất kỳ bên dưới để xem chi tiết dự báo theo giờ tương ứng.")
         + "<div class='wx-forecast-card wx-forecast-shell wx-month-tone'>"
-        + "<div class='wx-fc-header'>"
-        + "<div class='wx-fc-title'>Dự báo 10 ngày</div>"
-        + "<span class='wx-fc-link'>Chọn một ngày để xem chi tiết theo giờ</span>"
-        + "</div>"
         + "<div class='wx-switch-wrap'>"
         + "".join(radios)
         + "<div class='wx-fc-strip wx-switch-strip'>"
@@ -2204,7 +2349,7 @@ def _params_section_html(latest, scope_df):
         "<div class='wx-compass-wrap'>"
         f"<div class='wx-compass-svg'>{compass}</div>"
         "<div class='wx-compass-info'>"
-        "<div class='wx-pcard-label'>Hướng</div>"
+        f"<div class='wx-pcard-label'>Hướng</div>"
         f"<div class='wx-compass-deg'>{wind_deg_str}° {wind_dir_text}</div>"
         f"<div class='wx-compass-sub'>Tốc độ: <b style='color:#fff'>{_fmt_num(wind_now,1)} km/h</b></div>"
         "</div></div></div>"
@@ -2233,7 +2378,8 @@ def _params_section_html(latest, scope_df):
         "<div class='wx-pcard' style='padding:12px 14px;'>"
         "<div class='wx-rain-wrap'>"
         f"<div>{rain_art}</div>"
-        "<div><div class='wx-pcard-label'>Lượng Mưa</div>"
+        "<div>"
+        "<div class='wx-pcard-label'>Lượng Mưa</div>"
         f"<div class='wx-pcard-value'>{rain_str} <span class='wx-pcard-value-sm'>mm</span></div>"
         f"<div class='wx-pcard-sub'>Xác suất mưa hiện tại là {rain_str}mm.</div>"
         "</div></div></div>"
@@ -2260,9 +2406,9 @@ def _params_section_html(latest, scope_df):
     )
 
     return (
-        "<div class='wx-section-wrap'>"
-        "<div class='wx-section-title'>Các thông số thời tiết tại khu vực</div>"
-        "<div class='wx-params-grid'>"
+        _info_card_html("THÔNG SỐ", "Các thông số thời tiết tại khu vực", "Tổng hợp các yếu tố khí tượng quan trọng nhất tại thời điểm hiện tại.")
+        + "<div class='wx-section-wrap'>"
+        + "<div class='wx-params-grid'>"
         + "".join(cards)
         + "</div></div>"
     )
@@ -2626,13 +2772,23 @@ def _insight_html(content: str, color: str = "#3b82f6", bg_rgb: str = "59,130,24
 
 
 def _dash_section_header(title: str, subtitle: str):
+    # Extract icon from title if present (e.g., "🌧️ Lượng Mưa" -> badge="🌧️", title="Lượng Mưa")
+    badge = "PHÂN TÍCH"
+    clean_title = title
+    
+    # Check for common weather/map icons at the start
+    icons = ["🌧️", "🗺️", "🏅", "🌡️", "🌪️", "🌊", "🍃", "📊", "📍", "🌤️", "🌤", "🌦", "🌬"]
+    for icon in icons:
+        if title.startswith(icon):
+            badge = icon
+            clean_title = title[len(icon):].strip()
+            break
+            
     st.markdown(
-        f"<div class='wx-analysis-card' style='margin-top:2.5rem; border-top:1.5px solid rgba(148,163,184,0.12); padding-top:2rem;'>"
-        f"<div style='font-size:34px;font-weight:800;color:#0f172a;line-height:1.0;'>{title}</div>"
-        f"<div style='margin-top:4px;color:#64748b;font-size:0.8rem;'>{subtitle}</div>"
-        f"</div>",
-        unsafe_allow_html=True,
+        f"<div style='margin-top:3.5rem; border-top:1px solid rgba(148,163,184,0.12); padding-top:1.5rem;'></div>",
+        unsafe_allow_html=True
     )
+    st.markdown(_info_card_html(badge, clean_title, subtitle), unsafe_allow_html=True)
 
 
 def _lv_temp(v: float):
@@ -3273,10 +3429,20 @@ def render_comparison(df: pd.DataFrame, comparison_items: list, level: str = "ci
 # ─── Main render ──────────────────────────────────────────────────────────────
 
 
-def render(df: pd.DataFrame):
+def render(df: pd.DataFrame, show_analysis_button: bool = False):
     ctx = st.session_state.get("dashboard_context", {})
     ml_fn, ax_fn = _get_plot_helpers(ctx)
     _inject_weather_css()
+    
+    # ── Tab Header Card (Description) ──
+    st.markdown(
+        _info_card_html(
+            "THỜI TIẾT", 
+            "Dự báo & Phân tích Khí tượng Chuyên sâu", 
+            "Theo dõi diễn biến nhiệt độ, lượng mưa và các chỉ số khí tượng thực tế từ hệ thống trạm quan trắc quốc gia."
+        ),
+        unsafe_allow_html=True
+    )
 
     if df is None or df.empty:
         st.warning("Không có dữ liệu thời tiết.")
@@ -3314,12 +3480,25 @@ def render(df: pd.DataFrame):
         st.session_state.weather_location_scope = ""
 
     # ── TOP CONTROLS ──
+    st.markdown(_html("""
+        <div class="wx-action-bar">
+            <div class="wx-action-title">
+                <div>
+                    <div class="wx-action-main">Phạm vi xem</div>
+                    <div class="wx-action-sub">Tùy chỉnh khu vực & thời gian</div>
+                </div>
+            </div>
+            <div id="wx-filter-container" class="wx-filter-container"></div>
+        </div>
+    """), unsafe_allow_html=True)
+
     with st.container():
-        st.markdown("<div class='wx-glass-params'>", unsafe_allow_html=True)
-        c_top1, c_top2, c_top3 = st.columns([1.5, 1.5, 2], gap="small")
+        # Adjusting spacer to prevent overlap with the title text
+        c_fill, c_top1, c_top2, c_btn = st.columns([1.4, 1.2, 1.2, 1.2], gap="small")
+        
         with c_top1:
             selected_city = st.selectbox("Khu vực", options=cities, key="weather_city",
-                                         help="Chọn khu vực xem thời tiết.")
+                                         help="Chọn khu vực xem thời tiết.", label_visibility="collapsed")
 
         # We need city_df_all to get valid date range for the date picker
         city_df_all = weather_df[weather_df["city"] == selected_city].sort_values("timestamp").copy()
@@ -3339,9 +3518,17 @@ def render(df: pd.DataFrame):
                 min_value=min_day,
                 max_value=max_day,
                 key="weather_anchor_picker",
-                help="Chọn ngày khởi đầu để xem chi tiết và dự báo."
+                help="Chọn ngày khởi đầu để xem chi tiết và dự báo.",
+                label_visibility="collapsed"
             )
-        st.markdown("</div>", unsafe_allow_html=True)
+        
+        with c_btn:
+            if show_analysis_button:
+                if st.button("Xem Phân tích ➜", type="primary", use_container_width=True, key="wt_go_to_analysis"):
+                    st.session_state["wx_view_mode"] = "dashboard"
+                    st.rerun()
+            else:
+                st.button("Dữ liệu trực tuyến", type="secondary", use_container_width=True, disabled=True)
 
 
     # Variables for the lower controls (moved from above)
@@ -3562,10 +3749,6 @@ def render(df: pd.DataFrame):
         ),
         unsafe_allow_html=True,
     )
-    st.markdown(
-        f"<div class='wx-fc-note'>Dải dự báo: {anchor_day:%d/%m/%Y} → {end_day:%d/%m/%Y}. Nhấn vào card ngày để xem dữ liệu giờ tương ứng.</div>",
-        unsafe_allow_html=True,
-    )
 
     month_panel_html = _monthly_calendar_section_html(daily_df, anchor_day, selected_city)
     if month_panel_html:
@@ -3574,14 +3757,11 @@ def render(df: pd.DataFrame):
     detail_rows = _load_anchor_location_rows(selected_city, anchor_day)
     detail_summary = _build_location_day_summary(detail_rows)
 
-    st.markdown(_html(f"""
-    <div class='wx-analysis-card' style='background:#ffffff;border:1px solid #e2eaf3;'>
-            <div class='wx-block-head'>
-                <div class='wx-block-title'>Chi tiết theo địa điểm trong tỉnh</div>
-                <div class='wx-block-sub'>Ngày mốc {anchor_day:%d/%m/%Y} tại {selected_city}. Nguồn: dữ liệu chi tiết data/aqi.</div>
-            </div>
-    </div>
-    """), unsafe_allow_html=True)
+    st.markdown(_info_card_html(
+        "CHI TIẾT", 
+        "Chi tiết theo địa điểm trong tỉnh", 
+        f"Ngày mốc {anchor_day:%d/%m/%Y} tại {selected_city}. Nguồn: dữ liệu chi tiết Air Quality."
+    ), unsafe_allow_html=True)
 
     if detail_summary.empty:
         st.info(
@@ -3747,13 +3927,7 @@ def render(df: pd.DataFrame):
 
         with cT1:
             st.markdown(
-                f"""
-                <div>
-                    <div style="color:#64748b; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Dữ liệu thời tiết lịch sử</div>
-                    <div style="font-size:22px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:4px;">Biểu đồ {metric_label}</div>
-                    <div style="color:#334155; font-size:14px; font-weight:500;">{escape(str(selected_location))}</div>
-                </div>
-                """,
+                _info_card_html("LỊCH SỬ", f"Biểu đồ {metric_label}", f"Dữ liệu lịch sử tại {escape(str(selected_location))} theo khung thời gian đã chọn."),
                 unsafe_allow_html=True,
             )
 
@@ -3859,9 +4033,9 @@ def render(df: pd.DataFrame):
                     )
                 footer_html = f"<div style='margin-top:8px;color:#64748b;font-size:10px;font-style:italic;text-align:center;'>* Top 8 ({anchor_day:%d/%m/%Y})</div>" if use_detail_fallback else ""
                 st.markdown(
-                    f"<div class='wx-analysis-card' style='padding:20px 16px; height:100%; display:flex; flex-direction:column;'>"
-                    f"<div style='font-size:16px; font-weight:800; color:#0f172a; margin-bottom:16px;'>Top 8 {metric_label} ({scope_label})</div>"
-                    f"<div style='flex:1;'>{''.join(rank_rows)}</div>{footer_html}</div>", 
+                    _info_card_html("XẾP HẠNG", f"Top 8 {metric_label}", f"Xếp hạng theo {scope_label}")
+                    + f"<div class='wx-analysis-card' style='padding:20px 16px; height:100%; display:flex; flex-direction:column;'>"
+                    + f"<div style='flex:1;'>{''.join(rank_rows)}</div>{footer_html}</div>", 
                     unsafe_allow_html=True
                 )
             else:

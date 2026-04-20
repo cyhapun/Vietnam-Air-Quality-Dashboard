@@ -172,6 +172,55 @@ def _inject_weather_css():
         padding:8px 14px; font-size:.76rem; color:#166534; margin-top:8px;
         display:flex; align-items:flex-start; gap:6px;
     }
+    
+    /* ── Info Section Card (Premium Title) ── */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .wx-info-card {
+        background: linear-gradient(to right, #ffffff, #f8fbff);
+        border: 1px solid #e2eaf3;
+        border-left: 5px solid #0ea5e9;
+        border-radius: 8px;
+        padding: 1.3rem;
+        margin-bottom: 0.4rem;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        animation: fadeInUp 0.6s ease-out both;
+        text-align: left;
+    }
+    .wx-info-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+    .wx-info-badge {
+        background: #e0f2fe;
+        color: #0369a1;
+        font-size: 0.85rem;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .wx-info-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+    .wx-info-sub {
+        font-size: 1rem;
+        color: #64748b;
+        line-height: 1.5;
+        font-weight: 500;
+        text-align: left;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -362,9 +411,31 @@ def _kpi_row(cards: list[str]):
         + "".join(cards) + "</div>", unsafe_allow_html=True,
     )
 
-def _section(title: str):
-    """Renders a section header."""
-    st.markdown(f"<div class='wth-section'>{title}</div>", unsafe_allow_html=True)
+def _info_card_html(badge: str, title: str, sub: str) -> str:
+    html = f"""
+    <div class='wx-info-card'>
+        <div class='wx-info-header'>
+            <span class='wx-info-badge'>{badge}</span>
+            <div class='wx-info-title'>{title}</div>
+        </div>
+        <div class='wx-info-sub'>{sub}</div>
+    </div>
+    """
+    return html.strip().replace("\n", "").replace("    ", "")
+
+def _section(title: str, subtitle: str = ""):
+    """Renders a section header as a premium info card."""
+    badge = "PHÂN TÍCH"
+    # Basic icon extraction
+    icons = ["🌡️", "🌧️", "💨", "🧭", "🔵", "☁️", "📊", "📍", "🗺️", "🏅"]
+    clean_title = title
+    for icon in icons:
+        if icon in title:
+            badge = icon
+            clean_title = title.replace(icon, "").strip()
+            break
+            
+    st.markdown(_info_card_html(badge, clean_title, subtitle), unsafe_allow_html=True)
 
 def _insight_box(text: str):
     """Renders an insight text box."""
@@ -1066,7 +1137,7 @@ def _render_layer2(df: pd.DataFrame):
         _kpi_row(kpis)
 
     # ── Section 1: Timeline ──────────────────────────────────────────────────────
-    _section("DIỄN BIẾN THỜI GIAN")
+    _section("DIỄN BIẾN THỜI GIAN", "Theo dõi biến động nhiệt độ và lượng mưa qua các mốc thời gian")
     _card_open("Timeline", "Nhiệt độ & Lượng mưa hàng ngày",
                "Đường cam = nhiệt độ · Vùng mờ = biên độ min–max · Cột xanh = lượng mưa")
 
@@ -1151,7 +1222,7 @@ def _render_layer2(df: pd.DataFrame):
     _card_close()
 
     # ── Section 3: Bar chart nội tỉnh + Wind rose ────────────────────────────────
-    _section("PHÂN BỔ TRẠM QUAN TRẮC & HƯỚNG GIÓ")
+    _section("PHÂN BỔ TRẠM QUAN TRẮC & HƯỚNG GIÓ", "So sánh dữ liệu giữa các trạm địa phương và phân tích hướng gió chủ đạo")
     col_loc, col_wr = st.columns([1.1, 1], gap="large")
 
     with col_loc:
@@ -1255,7 +1326,7 @@ def _render_layer2(df: pd.DataFrame):
         _card_close()
 
     # ── Section 4: Extreme events ────────────────────────────────────────────────
-    _section("SỰ KIỆN CỰC ĐOAN")
+    _section("SỰ KIỆN CỰC ĐOAN", "Tổng hợp các giá trị kỷ lục được ghi nhận trong giai đoạn phân tích")
     _card_open("Extremes", "Ghi nhận cực trị trong giai đoạn phân tích",
                "Dữ liệu từ tất cả trạm quan trắc trong tỉnh")
 
@@ -1330,13 +1401,18 @@ def render(global_df: pd.DataFrame):
 
     # Chế độ Dự báo (Weather Tab)
     if st.session_state["wx_view_mode"] == "forecast":
-        st.markdown("<div style='margin-bottom:15px; display: flex; justify-content: flex-end;'>", unsafe_allow_html=True)
-        if st.button("Xem Phân tích & Dashboard ➜", type="primary", key="go_to_analysis"):
-            st.session_state["wx_view_mode"] = "dashboard"
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
-        wt.render(global_df)
+        wt.render(global_df, show_analysis_button=True)
         return
+
+    # ── Tab Header Card (Description) ──
+    st.markdown(
+        _info_card_html(
+            "PHÂN TÍCH", 
+            "Phân tích Chuỗi thời gian & Xu hướng Khí tượng", 
+            "Khám phá dữ liệu lịch sử, tương quan các chỉ số và nhận diện các kịch bản thời tiết cực đoan."
+        ),
+        unsafe_allow_html=True
+    )
 
     layer    = _get_state("wx_layer",    1)
     province = _get_state("wx_province", None)

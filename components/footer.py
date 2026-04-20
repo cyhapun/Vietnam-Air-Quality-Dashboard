@@ -8,8 +8,6 @@ def render_footer():
     Renders the dashboard footer, including project information, university details,
     the instructor's name, the current date, and a scrolling marquee of team members.
     """
-    st.markdown('</div>', unsafe_allow_html=True)
-
     # ── FOOTER ──
     members = [
             "23120283 · Phạm Quốc Khánh",
