@@ -50,6 +50,18 @@ def _get_active_tab():
 def render_sidebar(DF):
     active_tab = _get_active_tab()
 
+    refresh_html = f"""
+        <a class='sb-nav-item' href='?refresh=1&tab={active_tab}' target='_self'>
+            <span class='sb-nav-icon' style='display: flex; align-items: center; justify-content: center;'>
+                <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M21 3v6h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </span>
+            <span class='sb-nav-label'>Refresh Data</span>
+        </a>
+    """
+
     nav_items_html = "".join(
         (
             f"<a class='sb-nav-item{' is-active' if key == active_tab else ''}' href='?tab={key}' target='_self'>"
@@ -60,11 +72,10 @@ def render_sidebar(DF):
         for key, icon, label in TAB_ITEMS
     )
     st.sidebar.markdown(
-        f"<div class='sb-nav-wrap'>{nav_items_html}</div>",
+        f"<div class='sb-nav-wrap' style='border-bottom: none;'>{nav_items_html}{refresh_html}</div>",
         unsafe_allow_html=True,
     )
 
-    # Keep rendering/theme behavior stable without showing old sidebar controls.
     if "ui_mode" not in st.session_state:
         st.session_state["ui_mode"] = UI_MODES[0]
     if "reduce_motion" not in st.session_state:
@@ -78,6 +89,8 @@ def render_sidebar(DF):
         ui_mode_css(st.session_state["ui_mode"], st.session_state["reduce_motion"]),
         unsafe_allow_html=True,
     )
+
+    # Keep rendering/theme behavior stable without showing old sidebar controls.
 
     # Minimal "global filter" defaults now that sidebar only acts as navigation.
     df = DF.copy()

@@ -44,8 +44,12 @@ def start_crawler_thread():
             # Bước 1: Cào dữ liệu mới cho từng trạm (Batch API)
             run_hourly_update()
 
+            time.sleep(15)
+
             # Bước 2: Tính toán lại giá trị đại diện (Mean/Mode) cho từng tỉnh thành
             run_province_aggregation()
+
+            time.sleep(15)
 
             # 3. Cập nhật dữ liệu Dự báo (Forecast tương lai)
             run_forecast_update()
@@ -134,9 +138,22 @@ def _consume_header_actions():
 
     if use_modern_qp:
         action = st.query_params.get("cb")
+        refresh_action = st.query_params.get("refresh")
     else:
         qp = st.experimental_get_query_params()
         action = qp.get("cb", [None])[0]
+        refresh_action = qp.get("refresh", [None])[0]
+
+    # Handle Refresh
+    if refresh_action == "1":
+        st.cache_data.clear()
+        if use_modern_qp:
+            del st.query_params["refresh"]
+        else:
+            qp = st.experimental_get_query_params()
+            if "refresh" in qp: del qp["refresh"]
+            st.experimental_set_query_params(**qp)
+        st.rerun()
 
     if action != "toggle":
         return
