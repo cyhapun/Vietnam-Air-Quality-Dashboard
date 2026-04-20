@@ -40,13 +40,13 @@ REGION_COLORS_RGBA = {"Bắc": "rgba(37,99,235,0.12)", "Trung": "rgba(245,158,11
 REGION_BG          = {"Bắc": "#eff6ff",               "Trung": "#fffbeb",               "Nam": "#f0fdf4"}
 
 VAR_META = {
-    "temp":       {"label": "Nhiệt độ",    "unit": "°C",  "agg": "mean", "cs": "RdYlBu_r", "color": "#ea580c", "accent": "accent-red",   "icon": "🌡️"},
-    "humidity":   {"label": "Độ ẩm",       "unit": "%",   "agg": "mean", "cs": "Blues",     "color": "#0ea5e9", "accent": "accent-slate", "icon": "💧"},
-    "rain":       {"label": "Lượng mưa",   "unit": "mm",  "agg": "sum",  "cs": "YlGnBu",   "color": "#2563eb", "accent": "accent-blue",  "icon": "🌧️"},
-    "wind_speed": {"label": "Tốc độ gió",  "unit": "m/s", "agg": "mean", "cs": "Greens",    "color": "#16a34a", "accent": "accent-green", "icon": "💨"},
-    "wind_dir":   {"label": "Hướng gió",   "unit": "°",   "agg": "none", "cs": None,        "color": "#64748b", "accent": "accent-slate", "icon": "🧭"},
-    "pressure":   {"label": "Áp suất",     "unit": "hPa", "agg": "mean", "cs": "Purples",   "color": "#7c3aed", "accent": "accent-blue",  "icon": "🔵"},
-    "cloud":      {"label": "Mây che phủ", "unit": "%",   "agg": "mean", "cs": "Greys",     "color": "#64748b", "accent": "accent-slate", "icon": "☁️"},
+    "temp":       {"label": "Nhiệt độ",    "unit": "°C",  "agg": "mean", "cs": "RdYlBu_r", "color": "#ea580c", "accent": "accent-red",   "icon": ""},
+    "humidity":   {"label": "Độ ẩm",       "unit": "%",   "agg": "mean", "cs": "Blues",     "color": "#0ea5e9", "accent": "accent-slate", "icon": ""},
+    "rain":       {"label": "Lượng mưa",   "unit": "mm",  "agg": "sum",  "cs": "YlGnBu",   "color": "#2563eb", "accent": "accent-blue",  "icon": ""},
+    "wind_speed": {"label": "Tốc độ gió",  "unit": "m/s", "agg": "mean", "cs": "Greens",    "color": "#16a34a", "accent": "accent-green", "icon": ""},
+    "wind_dir":   {"label": "Hướng gió",   "unit": "°",   "agg": "none", "cs": None,        "color": "#64748b", "accent": "accent-slate", "icon": ""},
+    "pressure":   {"label": "Áp suất",     "unit": "hPa", "agg": "mean", "cs": "Purples",   "color": "#7c3aed", "accent": "accent-blue",  "icon": ""},
+    "cloud":      {"label": "Mây che phủ", "unit": "%",   "agg": "mean", "cs": "Greys",     "color": "#64748b", "accent": "accent-slate", "icon": ""},
 }
 
 SLOPE_METRICS       = ["temp", "rain", "wind_speed", "humidity"]
@@ -283,9 +283,9 @@ def _go_layer2(province: str):
 
 def _season_selector(key_prefix: str) -> tuple[str, int | None]:
     categories = {
-        "📊 Tổng quát": ["Cả năm", "Mùa khô", "Mùa mưa"],
-        "🕒 Theo Quý":  ["Q1", "Q2", "Q3", "Q4"],
-        "📅 Theo Tháng": MONTH_NAMES,
+        "Tổng quát": ["Cả năm", "Mùa khô", "Mùa mưa"],
+        "Theo Quý":  ["Q1", "Q2", "Q3", "Q4"],
+        "Theo Tháng": MONTH_NAMES,
     }
     current_preset = _get_state(f"{key_prefix}_season", "Cả năm")
     current_cat_idx = 0
@@ -781,7 +781,7 @@ def _render_layer1(df: pd.DataFrame):
         if cur_var not in var_opts: cur_var = var_opts[0]
         cur_var = st.segmented_control(
             "Chỉ số", var_opts,
-            format_func=lambda x: f"{VAR_META[x]['icon']} {VAR_META[x]['label']}",
+            format_func=lambda x: VAR_META[x]["label"],
             selection_mode="single", default=cur_var, key="l1_var_sg",
         ) or cur_var
         _set_state(l1_var=cur_var)
