@@ -48,15 +48,23 @@ footer {
   margin-top: -1.5rem !important; /* Dịch chuyển toàn bộ nội dung lên trên */
 }
 
-/* 2. Ép nội dung chính khớp chính xác giới hạn 1400px và căn giữa giống Header */
 .block-container,
 .main .block-container {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  max-width: 1400px !important; /* Đổi từ 100% thành 1400px */
+  max-width: 100% !important; 
   width: 100% !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
   margin-left: auto !important;
   margin-right: auto !important;
+}
+
+/* Limit content width to prevent eye fatigue on Ultra-wide screens */
+.main-limit {
+  max-width: 100%; /* Mở rộng toàn phần */
+  margin: -1.2rem auto 0;
+  width: 100%;
 }
 
 /* stHeader đã display:none/height:0 → không cần bù -1.5rem nữa, reset về 0 */
@@ -436,7 +444,7 @@ div[data-testid="stVerticalBlock"] > div:has(> [data-testid="stHorizontalBlock"]
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 16px;
-  max-width: 1400px;
+  max-width: 100%;
   width: 100%;
   margin-left: auto;
   margin-right: auto;
@@ -3946,7 +3954,7 @@ button[title="Expand sidebar"],
 }
 
 .pro-ftr-container {
-    max-width: 1400px;
+    max-width: 100%;
     width: 100%;
     background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
     border: 1px solid rgba(255, 255, 255, 0.1);
