@@ -509,9 +509,10 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
         df_sub["comp_label"] = df_sub["province"].astype(str)
 
     # 4. Section Header
+    date_range_str = f"{min_d.strftime('%d/%m')} - {max_d.strftime('%d/%m/%Y')}"
     st.markdown(f'''<div style="margin-top: 2rem; margin-bottom: 20px;">
         <div style="font-size: 20px; font-weight: 700; color: #0f172a;">Phân tích Đối chiếu</div>
-        <div style="font-size: 13px; color: #64748b;">So sánh trực tiếp nồng độ {poll_label} giữa hai khu vực tự chọn</div>
+        <div style="font-size: 13px; color: #64748b;">So sánh trực tiếp nồng độ {poll_label} - Giai đoạn: {date_range_str}</div>
     </div>''', unsafe_allow_html=True)
 
     # 5. Layout Setup
@@ -576,8 +577,8 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
 
             fig.update_layout(
                 height=320, margin=dict(l=10, r=10, t=10, b=10),
-                xaxis={**ax(), "showline": False, "tickfont": dict(size=13, color="#0f172a")},
-                yaxis={**ax(f"Trung bình {poll_label}"), "showgrid": True},
+                xaxis={**ax("Khu vực Đối chiếu"), "showline": False, "tickfont": dict(size=13, color="#0f172a")},
+                yaxis={**ax(f"Trung bình {poll_label} ({time_range})"), "showgrid": True},
                 paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", bargap=0.4
             )
             st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=f"regional_comp_chart_{poll_key}")
