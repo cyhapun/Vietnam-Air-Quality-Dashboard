@@ -305,9 +305,15 @@ def _inject_weather_css():
         .wx-hero-grid {
             display: grid;
             grid-template-columns: 1.4fr 1fr;
-            gap: 18px;
+            gap: 20px;
             align-items: start;
             padding-bottom: 8px;
+        }
+
+        /* Main layout: vertical stack for current info and hourly strip */
+        .wx-current-wrap {
+            margin-bottom: 24px;
+            animation: fadeInUp 0.6s ease-out both;
         }
 
         /* Big temperature display */
@@ -1090,14 +1096,14 @@ def _inject_weather_css():
 
         /* ── Leaderboard & Analysis Cards ── */
         .wx-analysis-card {
-            background: rgba(255, 255, 255, 0.75);
+            background-color: rgba(255, 255, 255, 0.88);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 20px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px;
             padding: 24px;
             margin-bottom: 24px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
             transition: transform 0.3s ease;
             animation: fadeInUp 0.7s ease-out both;
         }
@@ -1106,16 +1112,21 @@ def _inject_weather_css():
         .wx-leader-item {
             display: flex;
             align-items: center;
-            background: rgba(255, 255, 255, 0.5);
-            padding: 12px 14px;
-            border-radius: 14px;
-            margin-bottom: 10px;
-            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+            background-color: rgba(248, 250, 252, 0.6);
+            padding: 10px 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.15);
             transition: all 0.2s ease;
         }
-        .wx-leader-item:hover { background: rgba(255, 255, 255, 0.85); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-        .wx-medal { font-size: 1.2rem; width: 28px; text-align: center; margin-right: 10px; }
-        .wx-rank-num { font-size: 0.8rem; font-weight: 800; color: #94a3b8; width: 28px; text-align: center; margin-right: 10px; }
+        .wx-leader-item:hover { 
+            background-color: rgba(248, 250, 252, 0.95);
+            border-color: rgba(148, 163, 184, 0.3);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+            transform: translateX(4px);
+        }
+        .wx-medal { font-size: 1.1rem; width: 26px; text-align: center; margin-right: 12px; }
+        .wx-rank-num { font-size: 0.8rem; font-weight: 800; color: #94a3b8; width: 26px; text-align: center; margin-right: 12px; }
 
         .wx-mini-bar-wrap {
             flex: 1;
@@ -1182,6 +1193,16 @@ def _inject_weather_css():
             .wx-cal-temp { font-size: 1rem; }
             .wx-cal-temp-min { font-size: 0.74rem; }
             .wx-kpi-strip { grid-template-columns: 1fr; }
+        }
+        /* Streamlit Column Equal Height Hack */
+        [data-testid="stHorizontalBlock"] {
+            align-items: stretch;
+        }
+        [data-testid="stHorizontalBlock"] > div {
+            display: flex;
+        }
+        [data-testid="stHorizontalBlock"] > div > div > div {
+            height: 100%;
         }
         </style>
         """),
@@ -1273,7 +1294,7 @@ def _hourly_strip_html(hourly_df, count=6):
         parts.append(
             f"<div class='{cls}'>"
             f"<div class='wx-hour-time'>{time_str}</div>"
-            f"<div class='wx-hour-temp' style='background:{chip_clr}18;color:{chip_clr};font-size:14px;font-weight:700;border-radius:8px;padding:2px 6px;'>{temp}°</div>"
+            f"<div class='wx-hour-temp' style='color:{chip_clr}; font-size:17px; font-weight:900; margin:6px 0;'>{temp}°</div>"
             f"<div class='wx-hour-rain'>{rain_txt}</div>"
             "</div>"
         )
@@ -3407,13 +3428,11 @@ def render(df: pd.DataFrame):
 
     big_icon = _condition_img(cond_now, size=64)
 
-    # ── HERO CARD ──────────────────────────────────────────────────────────────
+    # ── HERO CARD (Grid Layout Restored) ───────────────────────────────────────
     st.markdown(_html(f"""
     <div class='wx-hero'>
       <div class='wx-hero-inner'>
-        <div class='wx-breadcrumb'>
-          Thời tiết &gt; Việt Nam &gt; {selected_city}
-        </div>
+        <div class='wx-breadcrumb'>Thời tiết &gt; Việt Nam &gt; {selected_city}</div>
         <div class='wx-nav-pills'>
           <span class='wx-nav-pill'>AQI</span>
           <span class='wx-nav-pill active'>Thời tiết</span>
@@ -3421,7 +3440,7 @@ def render(df: pd.DataFrame):
         <div class='wx-hero-grid'>
           <!-- Left: Current conditions -->
           <div>
-                        <div class='wx-city-name'>{selected_city} – Điều kiện thời tiết ngày mốc {anchor_day:%d/%m/%Y}</div>
+            <div class='wx-city-name'>{selected_city} – Điều kiện thời tiết ngày {anchor_day:%d/%m/%Y}</div>
             <div class='wx-title-row'>
               {big_icon}
               <div>
@@ -3432,31 +3451,19 @@ def render(df: pd.DataFrame):
             <div class='wx-cond-text'>{cond_now}</div>
             <div class='wx-hilow'>Cao {_fmt_num(day_high,0)}° / Thấp {_fmt_num(day_low,0)}°</div>
             <div class='wx-stat-row'>
-              <span class='wx-stat-pill'>
-                <svg width='12' height='12' viewBox='0 0 20 20' fill='none'><path d='M10 3C10 3 4 9 4 13a6 6 0 0 0 12 0c0-4-6-10-6-10Z' stroke='#93c5fd' stroke-width='2'/></svg>
-                Ẩm {_fmt_num(latest.get("humidity",np.nan),0)}%
-              </span>
-              <span class='wx-stat-pill'>
-                <svg width='12' height='12' viewBox='0 0 20 20' fill='none'><circle cx='10' cy='10' r='6' stroke='#fca5a5' stroke-width='2'/><path d='M10 10V6' stroke='#fca5a5' stroke-width='2' stroke-linecap='round'/></svg>
-                Cảm giác {_fmt_num(feels_like,1)}°C
-              </span>
-              <span class='wx-stat-pill'>
-                <svg width='12' height='12' viewBox='0 0 20 20' fill='none'><path d='M3 10h14M13 6l4 4-4 4' stroke='#86efac' stroke-width='2' stroke-linecap='round'/></svg>
-                Mưa {_fmt_num(rain_chance,0)}%
-              </span>
-              <span class='wx-stat-pill'>
-                🕐 {latest_ts:%H:%M, %d/%m/%Y}
-              </span>
+              <span class='wx-stat-pill'><svg width='12' height='12' viewBox='0 0 20 20' fill='none'><path d='M10 3C10 3 4 9 4 13a6 6 0 0 0 12 0c0-4-6-10-6-10Z' stroke='#93c5fd' stroke-width='2'/></svg> Ẩm {_fmt_num(latest.get("humidity",np.nan),0)}%</span>
+              <span class='wx-stat-pill'><svg width='12' height='12' viewBox='0 0 20 20' fill='none'><circle cx='10' cy='10' r='6' stroke='#fca5a5' stroke-width='2'/><path d='M10 10V6' stroke='#fca5a5' stroke-width='2' stroke-linecap='round'/></svg> Cảm giác {_fmt_num(feels_like,1)}°C</span>
+              <span class='wx-stat-pill'><svg width='12' height='12' viewBox='0 0 20 20' fill='none'><path d='M3 10h14M13 6l4 4-4 4' stroke='#86efac' stroke-width='2' stroke-linecap='round'/></svg> Mưa {_fmt_num(rain_chance,0)}%</span>
+              <span class='wx-stat-pill'>🕐 {latest_ts:%H:%M, %d/%m/%Y}</span>
             </div>
           </div>
           <!-- Right: Hourly strip -->
           <div class='wx-hour-panel'>
             <div class='wx-hour-tabs'>
               <span class='wx-hour-tab active'>Hàng giờ</span>
-              <span class='wx-hour-tab'>Hàng ngày</span>
             </div>
             <div class='wx-hour-strip'>
-                            {_hourly_strip_html(base_day_df, 6)}
+              {_hourly_strip_html(base_day_df, 6)}
             </div>
             <div class='wx-hour-note'>Xu hướng theo khu vực đang chọn.</div>
           </div>
@@ -3668,41 +3675,41 @@ def render(df: pd.DataFrame):
     def _weather_level(value: float) -> tuple[str, str, str, str]:
         if metric_key == "temp":
             if value >= 35:
-                return ("Nắng nóng", "#ef4444", "#fff1f2", "Nhiệt độ cao, nên hạn chế ra ngoài vào khung giờ nắng gắt.")
+                return ("Nắng nóng", "#ef4444", "#fff1f2", "Chỉ số nhiệt độ ở mức rất cao. Bạn nên hạn chế tối đa các hoạt động ngoài trời trong khung giờ từ 11h đến 16h. Nếu bắt buộc phải ra ngoài, hãy sử dụng kem chống nắng, mặc quần áo bảo hộ và bổ sung nước liên tục để tránh sốc nhiệt.")
             if value >= 30:
-                return ("Nóng", "#fb923c", "#fff7ed", "Trời khá nóng, cần bổ sung nước và theo dõi thể trạng.")
+                return ("Nóng", "#fb923c", "#fff7ed", "Thời tiết tương đối nóng bức. Cơ thể sẽ mất nước nhanh hơn bình thường, do đó bạn cần chú ý bổ sung nước đều đặn. Hãy ưu tiên các không gian có máy lạnh hoặc quạt mát và hạn chế vận động mạnh dưới ánh nắng mặt trời.")
             if value >= 20:
-                return ("Dễ chịu", "#22c55e", "#f0fdf4", "Mức nhiệt độ tương đối dễ chịu cho phần lớn hoạt động ngoài trời.")
-            return ("Mát", "#38bdf8", "#ecfeff", "Nhiệt độ thấp, nên giữ ấm nếu hoạt động ngoài trời kéo dài.")
+                return ("Dễ chịu", "#22c55e", "#f0fdf4", "Điều kiện nhiệt độ lý tưởng và rất dễ chịu cho hầu hết các hoạt động. Đây là thời điểm tuyệt vời để tham gia các hoạt động thể thao ngoài trời, dã ngoại hoặc làm việc. Không cần các biện pháp bảo hộ đặc biệt về nhiệt độ.")
+            return ("Mát", "#38bdf8", "#ecfeff", "Nhiệt độ đang ở mức thấp và có cảm giác se lạnh. Bạn nên mang theo áo khoác nhẹ khi ra ngoài, đặc biệt là vào sáng sớm hoặc chiều tối. Chú ý giữ ấm vùng cổ và ngực để bảo vệ hệ hô hấp trong điều kiện thời tiết này.")
         if metric_key == "humidity":
             if value >= 85:
-                return ("Ẩm cao", "#0ea5e9", "#eff6ff", "Độ ẩm cao có thể gây oi bức, cần không gian thông thoáng.")
+                return ("Ẩm cao", "#0ea5e9", "#eff6ff", "Độ ẩm trong không khí rất cao có thể gây cảm giác oi bức, khó chịu và là điều kiện thuận lợi cho nấm mốc phát triển. Nên sử dụng máy hút ẩm hoặc chế độ 'Dry' của điều hòa để duy trì không gian khô thoáng.")
             if value >= 40:
-                return ("Ổn định", "#22c55e", "#f0fdf4", "Độ ẩm nằm trong vùng tương đối dễ chịu.")
-            return ("Khô", "#f59e0b", "#fffbeb", "Không khí khô, nên bổ sung nước và dưỡng ẩm.")
+                return ("Ổn định", "#22c55e", "#f0fdf4", "Độ ẩm đang ở ngưỡng rất tốt cho sức khỏe và làn da. Không khí không quá khô cũng không quá ẩm, giúp cơ thể cảm thấy thoải mái và hệ hô hấp hoạt động ổn định.")
+            return ("Khô", "#f59e0b", "#fffbeb", "Độ ẩm thấp có thể khiến da bị khô nẻ và gây kích ứng niêm mạc mũi. Bạn nên sử dụng máy phun sương làm ẩm không khí, uống nhiều nước và sử dụng kem dưỡng ẩm để bảo vệ làn da.")
         if metric_key == "rain":
             if value >= 10:
-                return ("Mưa lớn", "#1d4ed8", "#eff6ff", "Có khả năng mưa mạnh, chú ý an toàn khi di chuyển.")
+                return ("Mưa lớn", "#1d4ed8", "#eff6ff", "Dự báo có mưa lớn kèm theo nguy cơ ngập úng tại các vùng thấp trũng. Bạn nên hạn chế di chuyển nếu không cần thiết, chú ý quan sát khi lái xe và chuẩn bị các phương án bảo vệ tài sản khỏi nước mưa.")
             if value > 0:
-                return ("Có mưa", "#0ea5e9", "#ecfeff", "Có mưa rải rác, nên chuẩn bị áo mưa/ô.")
-            return ("Khô ráo", "#22c55e", "#f0fdf4", "Thời tiết khô ráo, thuận lợi cho hoạt động ngoài trời.")
+                return ("Có mưa", "#0ea5e9", "#ecfeff", "Thời tiết có mưa rải rác. Hãy luôn mang theo ô hoặc áo mưa khi đi ra ngoài để tránh bị ướt. Chú ý mặt đường có thể trơn trượt, cần giảm tốc độ khi tham gia giao thông.")
+            return ("Khô ráo", "#22c55e", "#f0fdf4", "Thời tiết hoàn toàn khô ráo và không có dấu hiệu của mưa. Rất thuận lợi cho các hoạt động di chuyển, phơi phóng đồ đạc hoặc tổ chức các sự kiện ngoài trời.")
         if metric_key == "wind_speed":
             if value >= 30:
-                return ("Gió mạnh", "#0f766e", "#f0fdfa", "Gió mạnh, cần thận trọng với hoạt động ngoài trời.")
+                return ("Gió mạnh", "#0f766e", "#f0fdfa", "Gió thổi mạnh có thể gây nguy hiểm cho các phương tiện giao thông hai bánh và làm đổ gãy cây cối. Hãy thận trọng khi di chuyển gần các tòa nhà cao tầng hoặc dưới các tán cây lớn.")
             if value >= 15:
-                return ("Có gió", "#14b8a6", "#f0fdfa", "Điều kiện gió trung bình, tương đối ổn định.")
-            return ("Gió nhẹ", "#22c55e", "#f0fdf4", "Gió nhẹ, điều kiện thời tiết ổn định.")
+                return ("Có gió", "#14b8a6", "#f0fdfa", "Điều kiện gió ở mức trung bình, có thể cảm nhận rõ rệt khi ở ngoài trời. Thời tiết này khá thoáng mát nhưng cần chú ý cố định các vật dụng nhẹ để tránh bị gió thổi bay.")
+            return ("Gió nhẹ", "#22c55e", "#f0fdf4", "Gió thổi nhẹ nhàng, mang lại cảm giác thư thái và không gây trở ngại cho các hoạt động. Đây là điều kiện thời tiết ổn định, phù hợp cho mọi kế hoạch di chuyển.")
         if metric_key == "pressure":
             if value < 1000:
-                return ("Áp thấp", "#f97316", "#fff7ed", "Áp suất thấp, thời tiết có thể biến động.")
+                return ("Áp thấp", "#f97316", "#fff7ed", "Áp suất khí quyển thấp thường đi kèm với những biến động bất ngờ của thời tiết như mưa hoặc dông. Những người nhạy cảm với thời tiết có thể cảm thấy mệt mỏi hoặc đau đầu nhẹ.")
             if value > 1020:
-                return ("Áp cao", "#22c55e", "#f0fdf4", "Áp suất cao, xu hướng thời tiết khá ổn định.")
-            return ("Ổn định", "#0ea5e9", "#eff6ff", "Áp suất trong ngưỡng ổn định.")
+                return ("Áp cao", "#22c55e", "#f0fdf4", "Áp suất cao thường mang lại bầu trời quang đãng và thời tiết ổn định kéo dài. Đây là dấu hiệu của một ngày nắng đẹp, rất phù hợp cho các kế hoạch dài hơi ngoài trời.")
+            return ("Ổn định", "#0ea5e9", "#eff6ff", "Chỉ số áp suất nằm trong ngưỡng bình thường. Thời tiết không có nhiều biến động cực đoan, giúp cơ thể duy trì trạng thái cân bằng và thoải mái.")
         if value >= 80:
-            return ("Nhiều mây", "#64748b", "#f8fafc", "Mây che phủ cao, khả năng nắng giảm đáng kể.")
+            return ("Nhiều mây", "#64748b", "#f8fafc", "Bầu trời bị bao phủ bởi lớp mây dày, làm giảm cường độ ánh sáng mặt trời. Thời tiết này khá mát mẻ nhưng có thể gây cảm giác âm u, không phù hợp cho các công việc cần nhiều ánh sáng tự nhiên.")
         if value >= 40:
-            return ("Có mây", "#94a3b8", "#f8fafc", "Mây che phủ trung bình.")
-        return ("Ít mây", "#22c55e", "#f0fdf4", "Trời khá quang, thuận lợi cho hoạt động ngoài trời.")
+            return ("Có mây", "#94a3b8", "#f8fafc", "Lượng mây che phủ ở mức vừa phải, thỉnh thoảng có những khoảng nắng xen kẽ. Đây là kiểu thời tiết biến chuyển nhẹ nhàng, mang lại cảm giác dễ chịu và không quá gắt.")
+        return ("Ít mây", "#22c55e", "#f0fdf4", "Trời quang đãng với rất ít mây. Ánh nắng mặt trời sẽ chiếu trực tiếp, do đó bạn nên chú ý bảo vệ mắt và da nếu phải hoạt động ngoài trời trong thời gian dài.")
 
     if is_radar:
         hist_source = scope_df.dropna(subset=["timestamp"]).copy()
@@ -3823,25 +3830,23 @@ def render(df: pd.DataFrame):
                     rank_rows.append(
                         f"<div class='wx-leader-item'>"
                         f"  {rank_indicator}"
-                        f"  <div style='flex:1; overflow:hidden;'>"
-                        f"    <div style='display:flex; justify-content:space-between; margin-bottom:4px;'>"
-                        f"      <span style='font-weight:700; color:#1e293b; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:8px;' title='{escape(loc_name)}'>{escape(loc_name)}</span>"
-                        f"      <span style='font-weight:800; color:#0f172a; font-size:0.85rem;'>{val:.1f}{metric_unit}</span>"
-                        f"    </div>"
-                        f"    <div style='display:flex; align-items:center; gap:8px;'>"
-                        f"      <div class='wx-mini-bar-wrap' style='margin-left:0;'>"
-                        f"        <div class='wx-mini-bar-fill' style='width:{pct}%; background:{clr};'></div>"
-                        f"      </div>"
-                        f"      <span class='wx-pill-lvl' style='background:{clr}15; color:{clr}; border: 0.5px solid {clr}30;'>{lbl}</span>"
-                        f"    </div>"
+                        f"  <div style='flex: 4; min-width: 0;'>"
+                        f"    <div style='font-weight: 700; color: #1e293b; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' title='{escape(loc_name)}'>{escape(loc_name)}</div>"
+                        f"  </div>"
+                        f"  <div style='flex: 3; display: flex; justify-content: center;'>"
+                        f"    <span class='wx-pill-lvl' style='background:{clr}15; color:{clr}; border: 0.5px solid {clr}30; font-size: 10px; padding: 3px 8px;'>{lbl}</span>"
+                        f"  </div>"
+                        f"  <div style='flex: 2; text-align: right;'>"
+                        f"    <span style='font-weight: 800; color: #0f172a; font-size: 0.95rem;'>{val:.1f}</span>"
+                        f"    <span style='font-size: 0.7rem; color: #64748b; font-weight: 600; margin-left: 1px;'>{metric_unit}</span>"
                         f"  </div>"
                         f"</div>"
                     )
                 footer_html = f"<div style='margin-top:8px;color:#64748b;font-size:10px;font-style:italic;text-align:center;'>* Top 8 ({anchor_day:%d/%m/%Y})</div>" if use_detail_fallback else ""
                 st.markdown(
-                    f"<div class='wx-analysis-card' style='padding:20px 16px;'>"
+                    f"<div class='wx-analysis-card' style='padding:20px 16px; height:100%; display:flex; flex-direction:column;'>"
                     f"<div style='font-size:16px; font-weight:800; color:#0f172a; margin-bottom:16px;'>Top 8 {metric_label} ({scope_label})</div>"
-                    f"{''.join(rank_rows)}{footer_html}</div>", 
+                    f"<div style='flex:1;'>{''.join(rank_rows)}</div>{footer_html}</div>", 
                     unsafe_allow_html=True
                 )
             else:
@@ -3877,7 +3882,7 @@ def render(df: pd.DataFrame):
                     f"<div class='wx-forecast-tile'>"
                     f"  <div style='font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;'>{day_label}</div>"
                     f"  <div style='font-size:13px; color:#334155; font-weight:700; margin:4px 0 10px;'>{hour_label}</div>"
-                    f"  <div style='background:{col_bg}; color:{col_fg}; padding:6px 0; border-radius:10px; font-size:16px; font-weight:900;'>{val:.0f}{metric_unit}</div>"
+                    f"  <div style='color:{col_bg}; font-size:18px; font-weight:900;'>{val:.0f}{metric_unit}</div>"
                     f"  <div style='margin-top:8px;'><span class='wx-pill-lvl' style='background:{col_bg}15; color:{col_bg};'>{level}</span></div>"
                     f"</div>"
                 )
@@ -3903,31 +3908,33 @@ def render(df: pd.DataFrame):
                     rows.append(
                         f"<div class='wx-daily-row'>"
                         f"  <div style='width:100px; font-weight:800; color:#334155; font-size:0.95rem;'>{day_nm}</div>"
-                        f"  <div style='width:90px;'><span style='display:inline-block; background:{c_bg}; color:{c_fg}; padding:4px 14px; border-radius:10px; font-weight:900; font-size:1.05rem;'>{v:.0f}{metric_unit}</span></div>"
+                        f"  <div style='width:90px;'><span style='display:inline-block; color:{c_bg}; font-weight:900; font-size:1.1rem;'>{v:.0f}{metric_unit}</span></div>"
                         f"  <div style='flex:1; color:#1e293b; font-weight:700; margin-left:10px;'>{lbl}</div>"
                         f"  <div style='width:100px; text-align:right; color:#94a3b8; font-size:11px; font-weight:600;'>{d.strftime('%d/%m/%Y')}</div>"
                         f"</div>"
                     )
                 st.markdown(
-                    f"<div class='wx-analysis-card' style='padding:0; overflow:hidden;'>"
+                    f"<div class='wx-analysis-card' style='padding:0; overflow:hidden; height:100%; display:flex; flex-direction:column;'>"
                     f"  <div style='padding:22px 20px 14px; border-bottom:1px solid rgba(148,163,184,0.12);'>"
                     f"    <div style='font-size:30px; font-weight:800; color:#0f172a; line-height:1.0;'>Dự báo hằng ngày</div>"
                     f"    <div style='margin-top:6px; color:#64748b; font-size:14px;'>Xu hướng tại <b>{escape(str(scope_name))}</b></div>"
-                    f"  </div>{''.join(rows)}</div>", unsafe_allow_html=True
+                    f"  </div><div style='flex:1;'>{''.join(rows)}</div></div>", unsafe_allow_html=True
                 )
 
             with c_advice:
                 av_v = float(daily_view["value"].mean())
                 adv_l, adv_bg, adv_fg, adv_d = _weather_level(av_v)
                 st.markdown(
-                    f"<div class='wx-analysis-card' style='border:1.5px solid {adv_bg}40; background: {adv_bg}08; backdrop-filter:blur(10px);'>"
-                    f"  <div style='font-size:12px; font-weight:800; color:{adv_bg}; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;'>Khuyến cáo thông minh</div>"
-                    f"  <div style='display:flex; align-items:center; gap:16px; margin-bottom:20px;'>"
-                    f"    <div style='width:48px; height:48px; border-radius:14px; background:{adv_bg}; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 16px {adv_bg}40;'><svg width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/><line x1='12' y1='9' x2='12' y2='13'/><line x1='12' y1='17' x2='12.01' y2='17'/></svg></div>"
-                    f"    <div style='font-size:32px; font-weight:900; color:#0f172a; line-height:1.0;'>{adv_l}</div>"
+                    f"<div class='wx-analysis-card' style='border:1.5px solid {adv_bg}40; background: {adv_bg}08; backdrop-filter:blur(10px); height:100%; display:flex; flex-direction:column; padding: 22px 24px; margin-bottom:0;'>"
+                    f"  <div style='display:flex; align-items:center; margin-bottom:12px; gap:10px;'>"
+                    f"    <div style='width:32px; height:32px; border-radius:8px; background:{adv_bg}; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px {adv_bg}40;'><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/><line x1='12' y1='9' x2='12' y2='13'/><line x1='12' y1='17' x2='12.01' y2='17'/></svg></div>"
+                    f"    <span style='font-size:13px; font-weight:800; color:{adv_bg}; text-transform:uppercase; letter-spacing:0.5px;'>Khuyến cáo thông minh</span>"
                     f"  </div>"
-                    f"  <div style='padding:18px; background:rgba(255,255,255,0.4); border-radius:14px; color:#334155; font-size:15px; border: 1px solid rgba(255,255,255,0.2); line-height:1.6;'>{adv_d}</div>"
-                    f"  <div style='margin-top:16px; font-size:11px; color:#64748b; font-style:italic; padding-left:4px;'>* Dựa trên phân tích xu hướng trung bình {len(daily_view)} ngày tới.</div>"
+                    f"  <div style='font-size:24px; font-weight:800; color:#0f172a; margin-bottom:12px; display:flex; align-items:center;'>"
+                    f"    <div style='width:10px; height:10px; background:{adv_bg}; border-radius:50%; margin-right:10px;'></div>{adv_l}"
+                    f"  </div>"
+                    f"  <div style='padding:18px; background:rgba(255,255,255,0.4); border-radius:14px; color:#334155; font-size:15px; border: 1px solid rgba(255,255,255,0.2); line-height:1.6; flex:1; display:flex; align-items:center;'>{adv_d}</div>"
+                    f"  <div style='margin-top:16px; font-size:11px; color:#64748b; font-style:italic; padding-left:4px; opacity:0.8;'>* Dựa trên phân tích xu hướng trung bình {len(daily_view)} ngày tới.</div>"
                     f"</div>", unsafe_allow_html=True
                 )
 
@@ -4057,11 +4064,3 @@ def render(df: pd.DataFrame):
             "</div>"
         )
         st.markdown(table_html, unsafe_allow_html=True)
-        st.caption("🏆 Vàng = địa điểm tốt nhất. Comfort Score đã tích hợp AQI penalty — AQI cao làm giảm đáng kể điểm tổng.")
-
-    # Data coverage footer
-    coverage_cols = [c for c in WEATHER_FEATURES if c in city_df.columns]
-    if coverage_cols:
-        coverage = (city_df[coverage_cols].notna().mean() * 100).sort_values(ascending=False)
-        coverage_text = " | ".join([f"{k}: {v:.1f}%" for k, v in coverage.items()])
-        st.caption(f"Độ phủ dữ liệu: {coverage_text}")
