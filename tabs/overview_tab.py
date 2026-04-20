@@ -41,6 +41,7 @@ STANDARD_LEVEL_LABELS = [
 
 
 def _safe_pm25_mean(df):
+    """Safely calculates the mean of the PM2.5 column, returning 0.0 if missing or NaN."""
     if "pm2_5" not in df.columns:
         return 0.0
     val = df["pm2_5"].mean()
@@ -48,6 +49,7 @@ def _safe_pm25_mean(df):
 
 
 def _get_timeframe_selector():
+    """Retrieves the active timeframe selection from the session state, defaulting to '24h'."""
     if "ov_time_range" not in st.session_state:
         st.session_state["ov_time_range"] = "24h"
     if st.session_state["ov_time_range"] not in OV_TIMEFRAME_DELTAS:
@@ -56,6 +58,7 @@ def _get_timeframe_selector():
 
 
 def _filter_df_by_time_range(df, selected_range):
+    """Filters a DataFrame to only include records within the selected trailing time range."""
     if df.empty or "timestamp" not in df.columns:
         return df.copy()
     max_ts = df["timestamp"].max()
@@ -67,6 +70,10 @@ def _filter_df_by_time_range(df, selected_range):
 
 
 def _compute_hero_insights(df: pd.DataFrame, avg_aqi: int, current_label: str) -> dict:
+    """
+    Computes insights for the hero section based on the filtered data.
+    This includes health advice, risks for sensitive groups, and identifying the best/worst time slots.
+    """
     slot_focus = "Không đủ dữ liệu"
     slot_focus_sub = "Chưa xác định được khung giờ có rủi ro nổi bật."
     if "time_slot" in df.columns and "aqi" in df.columns:
@@ -124,6 +131,10 @@ def _compute_hero_insights(df: pd.DataFrame, avg_aqi: int, current_label: str) -
 
 
 def _build_scope_metrics(df, state, selected_range):
+    """
+    Computes aggregated metrics and trends (1d/7d comparisons) for the selected timeframe.
+    Returns a derived state dictionary for rendering the overview dashboard.
+    """
     _aqi_meta = state["aqi_meta"]
     _aqi_health_guidance = state["aqi_health_guidance"]
     _fmt_delta = state["fmt_delta"]
@@ -283,6 +294,10 @@ def _build_scope_metrics(df, state, selected_range):
 
 
 def _render_kpi_strip(_col, avg_aqi, _lbl, avg_pm25, cig_n, exposure_label, worst, dangerp):
+    """
+    Renders the KPI strip containing core metrics like average AQI, PM2.5,
+    cigarette equivalents, and danger hours.
+    """
     st.markdown(
         f"""
     <div class="kpi-strip">
@@ -326,6 +341,10 @@ def _render_trend_grid(
     rank_up_line,
     rank_down_line,
 ):
+    """
+    Renders the trend grid comparing short-term and long-term changes,
+    as well as ranking shifts.
+    """
     st.markdown(
         f"""
     <div class="trend-grid">
@@ -351,6 +370,11 @@ def _render_trend_grid(
 
 
 def _render_pollutant_cards(df):
+    """
+    Renders individual cards for each secondary pollutant (PM10, O3, NO2, SO2, CO),
+    showing their average values and health status based on predefined bands.
+    """
+    if df.empty: return
     pollutant_meta = {
         "pm2_5": {
             "title": "Vật chất hạt mịn",
@@ -583,6 +607,10 @@ def _render_pollutant_cards(df):
 
 
 def render_overview(state, df_override=None, scope_label="Việt Nam"):
+    """
+    Renders the complete overview section, including the Hero UI, KPI strip,
+    trend grid, and pollutant breakdown cards.
+    """
     source_df = df_override if df_override is not None else state.get("df", pd.DataFrame())
     selected_range = _get_timeframe_selector()
     filtered_df = _filter_df_by_time_range(source_df, selected_range)
@@ -731,7 +759,11 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
 
 
 def render(df):
-    ctx = st.session_state.get("dashboard_context")
+    """
+    Main entry point for the Overview Tab.
+    Loads the global context and builds interactive timeline charts for AQI and PM2.5.
+    """
+    ctx = st.session_state.get("dashboard_context", {})
     if ctx is None:
         st.error("Thiếu ngữ cảnh dashboard.")
         st.stop()

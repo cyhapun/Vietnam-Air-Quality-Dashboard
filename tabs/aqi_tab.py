@@ -6,7 +6,7 @@ import streamlit as st
 
 from utils.helpers import AQI_DEF, POLLS, aqi_meta, ml, ax, chart_h, PT, GC, LC, TF, hex_rgba, POLL_BANDS, val_meta
 
-# Bảng map Tên thành phố giao diện -> tên thư mục thực tế
+# Map UI City names -> actual folder names
 CITY_FOLDERS = {
     "An Giang": "an_giang", "Bắc Ninh": "bac_ninh", "Cà Mau": "ca_mau", "Cần Thơ": "can_tho",
     "Cao Bằng": "cao_bang", "Đà Nẵng": "da_nang", "Đắk Lắk": "dak_lak", "Điện Biên": "dien_bien",
@@ -27,6 +27,16 @@ REGIONS = {
 
 @st.cache_data(ttl=3600*24, show_spinner=False)
 def get_location_map(dir_path):
+    """
+    Scans a directory for parquet files and maps filenames to their location names.
+    Reads the first row of each file to extract the 'location' column.
+    
+    Args:
+        dir_path (str): The directory path to scan.
+        
+    Returns:
+        dict: A mapping of filename to location name.
+    """
     mapping = {}
     if not os.path.exists(dir_path):
         return mapping
@@ -50,6 +60,16 @@ def get_location_map(dir_path):
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_tier2_data(city_folder, filename):
+    """
+    Loads real-time AQI data for a specific station.
+    
+    Args:
+        city_folder (str): The folder name for the city.
+        filename (str): The parquet filename.
+        
+    Returns:
+        pd.DataFrame: Cleaned and sorted DataFrame, or empty DataFrame on failure.
+    """
     base_dir = os.path.dirname(__file__)
     file_path = os.path.join(base_dir, "..", "data", "aqi", city_folder, filename)
     if not os.path.exists(file_path):
@@ -66,6 +86,16 @@ def load_tier2_data(city_folder, filename):
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_tier2_year_data(city_folder, filename):
+    """
+    Loads historical daily AQI data for a specific station (Yearly scope).
+    
+    Args:
+        city_folder (str): The folder name for the city.
+        filename (str): The parquet filename.
+        
+    Returns:
+        pd.DataFrame: Cleaned and sorted DataFrame, or empty DataFrame on failure.
+    """
     base_dir = os.path.dirname(__file__)
     file_path = os.path.join(base_dir, "..", "data", "aqi_year_2025", city_folder, filename)
     if not os.path.exists(file_path):
@@ -82,6 +112,16 @@ def load_tier2_year_data(city_folder, filename):
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_forecast_data(city_folder, filename):
+    """
+    Loads forecast AQI data for a specific station, attempting filename normalization if an exact match fails.
+    
+    Args:
+        city_folder (str): The folder name for the city.
+        filename (str): The target parquet filename.
+        
+    Returns:
+        pd.DataFrame: Deduplicated and sorted forecast DataFrame, or empty DataFrame on failure.
+    """
     base_dir = os.path.dirname(__file__)
     # Try exact match first
     file_path = os.path.join(base_dir, "..", "data", "forecast", city_folder, filename)
@@ -120,6 +160,16 @@ def load_forecast_data(city_folder, filename):
         return pd.DataFrame()
 
 def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_name):
+    """
+    Renders a horizontally scrollable hourly forecast UI.
+    
+    Args:
+        df_forecast (pd.DataFrame): The forecast data.
+        poll_key (str): The key for the pollutant metric (e.g. 'aqi', 'pm2_5').
+        poll_label (str): Display label for the metric.
+        city_name (str): The city name.
+        unit_name (str): The specific station or unit name.
+    """
     if df_forecast.empty:
         return
     
@@ -170,6 +220,16 @@ def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_na
     st.markdown(scroll_html, unsafe_allow_html=True)
 
 def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_name):
+    """
+    Renders a vertical list showing the daily average forecast for the next 4 days.
+    
+    Args:
+        df_forecast (pd.DataFrame): The forecast data.
+        poll_key (str): The key for the pollutant metric.
+        poll_label (str): Display label for the metric.
+        city_name (str): The city name.
+        unit_name (str): The specific station or unit name.
+    """
     if df_forecast.empty:
         return
         
@@ -209,6 +269,13 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
     st.markdown(container_html, unsafe_allow_html=True)
 
 def render_health_advice_box(avg_val, poll_type):
+    """
+    Renders a health advice box based on the current average AQI or pollutant value.
+    
+    Args:
+        avg_val (float): The average value to evaluate.
+        poll_type (str): The type of pollutant (e.g., 'aqi', 'pm2_5').
+    """
     lbl, clr = val_meta(avg_val, poll_type)
     
     advice_content = {
@@ -258,6 +325,15 @@ def render_health_advice_box(avg_val, poll_type):
 </div>''', unsafe_allow_html=True)
 
 def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
+    """
+    Renders a point-to-point comparison delta badge to show changes in pollution levels.
+    
+    Args:
+        df (pd.DataFrame): The DataFrame containing historical data.
+        poll_key (str): The column name for the target pollutant.
+        time_range (str): The chosen time range for comparison (e.g. '24h', '7 ngày').
+        poll_label (str): The display label for the pollutant.
+    """
     if df.empty or poll_key not in df.columns:
         return
         
@@ -389,6 +465,13 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=f"comp_chart_{poll_key}")
 
 def render_correlation_heatmap(df_sub, time_range):
+    """
+    Renders a triangular heatmap showing the Pearson correlation between different pollutants.
+    
+    Args:
+        df_sub (pd.DataFrame): The filtered dataset containing pollutant columns.
+        time_range (str): The time range being analyzed, used for display labels.
+    """
     # Select only pollutant columns
     cols = ["aqi", "pm2_5", "pm10", "o3", "no2", "co", "so2"]
     available_cols = [c for c in cols if c in df_sub.columns]
@@ -504,6 +587,15 @@ def render_correlation_heatmap(df_sub, time_range):
 
 
 def render_regional_comparison(global_df, poll_key, poll_label, time_range):
+    """
+    Renders a comparative boxplot and insights panel to compare pollution distribution between two regions or cities.
+    
+    Args:
+        global_df (pd.DataFrame): The main dataset containing city and region information.
+        poll_key (str): The pollutant key to compare.
+        poll_label (str): The display label for the pollutant.
+        time_range (str): The selected time range for filtering data.
+    """
     if time_range == "1 năm":
         from services.data_loader import load_weather_data, _apply_aqi_labels
         with st.spinner("Đang tải dữ liệu tổng quan 1 năm..."):
@@ -623,8 +715,8 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
                         y=df_sel[poll_key],
                         name=sel,
                         marker_color=color,
-                        boxmean=True, # Hiển thị đường nét đứt giá trị Trung bình
-                        boxpoints='outliers', # Chỉ hiển thị các điểm đột biến (outliers)
+                        boxmean=True, # Show dashed line for Mean value
+                        boxpoints='outliers', # Only show outliers
                         marker=dict(size=4, opacity=0.8),
                         line=dict(width=2),
                         hovertemplate=f"{sel}<br>{poll_label}: <b>%{{y:.1f}}</b><extra></extra>"
@@ -709,6 +801,14 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
             st.markdown(html_insight, unsafe_allow_html=True)
 
 def render(global_df):
+    """
+    Main entry point to render the AQI Tab.
+    Handles the UI logic for selecting city, station, and timeframe, and orchestrates the
+    rendering of the main charts, top rankings, forecasts, and comparative analyses.
+    
+    Args:
+        global_df (pd.DataFrame): The global context dataframe containing data for all cities.
+    """
     ctx = st.session_state.get("dashboard_context", {})
     if ctx: globals().update(ctx)
     
@@ -1006,7 +1106,7 @@ def render(global_df):
     </div>
 </div>''', unsafe_allow_html=True)
     has_envelope = False
-    # Tối giản số điểm dữ liệu cho view lớn để tránh bị chèn ép biểu đồ
+    # Simplify data points for large views to avoid squished charts
     if len(df_sub) > 50:
         rule_map = {
             "7 ngày": "6h",
@@ -1017,22 +1117,22 @@ def render(global_df):
         rule = rule_map.get(time_range)
         if rule:
             if chart_type == "Đường (Spline)":
-                # Nhóm dữ liệu để vẽ Band bao phủ (Envelope) Min/Max và đường trung tâm (Mean)
+                # Group data to draw the Min/Max Envelope band and the center Mean line
                 grouped = df_sub.set_index("timestamp").resample(rule)[y_col]
                 
                 df_mean = grouped.mean().dropna().reset_index()
                 df_max_env = grouped.max().dropna().reset_index()
                 df_min_env = grouped.min().dropna().reset_index()
                 
-                # Biến df_sub thành bảng chứa điểm trung bình để vẽ line chính
+                # Convert df_sub to a table containing mean points to draw the main line
                 df_sub = df_mean
                 # Add columns for envelope hover tooltips
                 df_sub["env_max"] = df_max_env[y_col].values
                 df_sub["env_min"] = df_min_env[y_col].values
                 has_envelope = True
             else:
-                # Bar Chart vần trục thời gian chia khoảng Đều (Uniform) để các cột được tính toán chiều ngang to rõ ràng
-                # Ta vẫn dùng .max() để nhặt ra mốc ô nhiễm nặng nhất, không lo bị chà phẳng
+                # Bar Chart needs a Uniform time axis so columns have clear widths
+                # We still use .max() to pick out the worst pollution points, without flattening them
                 df_sub = df_sub.set_index("timestamp").resample(rule)[[y_col]].max().dropna().reset_index()
 
     # --- Interaction Logic: Filter by selected bar ---
@@ -1146,7 +1246,7 @@ def render(global_df):
             c_curr = base_colors[idx]
             
             # Boundary Smoothing: Only interpolate when very close to the next/prev threshold
-            # This ensures colors within the band match the legend, but the transition is still "mượt"
+            # This ensures colors within the band match the legend, but the transition is still smooth
             trans_zone = 5 # AQI points for transition zone
             
             # Check for next threshold transition
@@ -1186,7 +1286,7 @@ def render(global_df):
                 x_num = df_unique["timestamp"].astype('int64').values
                 y_arr = df_unique[y_col].values
                 
-                # Biểu đồ PCHIP mượt mà, kẹp chặt đỉnh và đáy để không miss tín hiệu
+                # Smooth PCHIP chart, tightly clamping peaks and valleys to not miss signals
                 base_grid = np.linspace(x_num.min(), x_num.max(), max(1000, len(x_num)))
                 x_interp_num = np.union1d(base_grid, x_num)
                 y_interp = pchip_interpolate(x_num, y_arr, x_interp_num)
@@ -1348,7 +1448,7 @@ def render(global_df):
                 b_lo, b_hi = bands[i]
                 val_str = f"{b_lo}-{b_hi}" if i < 5 else f"{b_lo}+"
                 
-                # Format số thực cho CO vì đơn vị rất nhỏ
+                # Format as float for CO since the unit is very small
                 if y_col == "co":
                     val_str = f"{float(b_lo):.1f}-{float(b_hi):.1f}" if i < 5 else f"{float(b_lo):.1f}+"
                     

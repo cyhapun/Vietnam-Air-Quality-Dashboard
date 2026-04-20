@@ -35,37 +35,45 @@ from utils.helpers import (
 )
 
 
-# Hàm chạy ngầm để lập lịch
 def start_crawler_thread():
+    """
+    Background thread function to schedule data crawling.
+    Executes a continuous loop that updates historical AQI, calculates province aggregations,
+    and updates weather forecasts, sleeping for roughly one hour between iterations.
+    """
     time.sleep(20)
     while True:
         try:
             print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler đang chạy ngầm...")
-            # Bước 1: Cào dữ liệu mới cho từng trạm (Batch API)
+            # Step 1: Crawl new data for each station (Batch API)
             run_hourly_update()
 
             time.sleep(15)
 
-            # Bước 2: Tính toán lại giá trị đại diện (Mean/Mode) cho từng tỉnh thành
+            # Step 2: Recalculate representative values (Mean/Mode) for each province/city
             run_province_aggregation()
 
             time.sleep(15)
 
-            # 3. Cập nhật dữ liệu Dự báo (Forecast tương lai)
+            # Step 3: Update Forecast data for the future
             run_forecast_update()
 
             print("Đã hoàn tất cập nhật dữ liệu!")
         except Exception as e:
             print(f"❌ Lỗi crawler: {e}")
 
-        # Ngủ 1 tiếng (3610 giây) rồi chạy tiếp (chừa 10s để API cập nhật dữ liệu tránh lỗi)
+        # Sleep for 1 hour (3610 seconds) then run again (allow 10s for API data update to avoid errors)
         time.sleep(3610)
 
 
-# Sử dụng decorator cache để đảm bảo thread này CHỈ KHỞI TẠO 1 LẦN
-# ngay cả khi Streamlit rerun (do user thao tác trên web)
+# Use the cache decorator to ensure this thread is INITIALIZED ONLY ONCE
+# even when Streamlit reruns (due to user interactions on the web)
 @st.cache_resource
 def initialize_background_tasks():
+    """
+    Initializes and starts the background crawler thread.
+    Cached by Streamlit to prevent multiple thread spawns across app reruns.
+    """
     thread = threading.Thread(target=start_crawler_thread, daemon=True)
     thread.start()
     return "Crawler started"
@@ -79,7 +87,7 @@ parser.add_argument(
     help="Bật tính năng chạy ngầm crawler để cập nhật dữ liệu real-time",
 )
 
-# Sử dụng parse_known_args để bỏ qua các tham số mặc định của lệnh `streamlit run`
+# Use parse_known_args to ignore default parameters of the 'streamlit run' command
 args, unknown = parser.parse_known_args()
 
 if args.mode == "realtime":
@@ -133,7 +141,10 @@ else:
 
 
 def _consume_header_actions():
-    """Consume one-shot header actions from query params."""
+    """
+    Consume one-shot header actions from query parameters.
+    Handles 'refresh' to clear cache and 'cb' to toggle colorblind mode.
+    """
     action = None
     use_modern_qp = hasattr(st, "query_params")
 
@@ -177,12 +188,23 @@ _consume_header_actions()
 
 
 def render_tab_or_blank(tab_module, df):
+    """
+    Safely render a tab module if it has a 'render' function.
+    
+    Args:
+        tab_module: The module representing the tab content.
+        df: The main dataframe to pass to the render function.
+    """
     render_fn = getattr(tab_module, "render", None)
     if callable(render_fn):
         render_fn(df)
 
 
 def render_dashboard():
+    """
+    Main function to render the entire dashboard layout, including the sidebar,
+    header, and the currently active tab content. Handles scope and timeframe filtering.
+    """
     DF = load_data()
 
     state = render_sidebar(DF)
@@ -384,11 +406,15 @@ def render_dashboard():
     else:
         render_tab_or_blank(overview_tab, state["df"])
 
-    st.markdown("</div>", unsafe_allow_html=True)  # Closing main-limit
+    st.markdown("</div>", unsafe_allow_html=True)  # Close main-limit
     render_footer()
 
 
 def main():
+    """
+    Application entry point when run within Streamlit.
+    Handles the initial loading screen and mode toggles before rendering the dashboard.
+    """
     is_first_boot = not st.session_state.get("_dashboard_boot_ready", False)
     show_toggle_loader = bool(st.session_state.pop("_header_toggle_loading", False))
 
@@ -421,7 +447,7 @@ elif __name__ == "__main__":
     from streamlit.web import cli as stcli
 
     if len(sys.argv) > 1:
-        # Tự động chèn dấu '--' của Streamlit để hỗ trợ lệnh: python app.py realtime
+        # Automatically insert Streamlit's '--' to support the command: python app.py realtime
         sys.argv = ["streamlit", "run", sys.argv[0], "--", *sys.argv[1:]]
     else:
         sys.argv = ["streamlit", "run", sys.argv[0]]

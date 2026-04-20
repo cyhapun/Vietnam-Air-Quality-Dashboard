@@ -213,26 +213,33 @@ def _colorbar(title=""):
     )
 
 def _get_state(key, default):
+    """Safely retrieves a value from the Streamlit session state, returning a default if missing."""
     if key not in st.session_state:
         st.session_state[key] = default
     return st.session_state[key]
 
 def _set_state(**kwargs):
+    """Updates one or more values in the Streamlit session state."""
     for k, v in kwargs.items():
         st.session_state[k] = v
 
 def _go_layer1():
-    _set_state(wx_layer=1, wx_province=None)
+    """Triggers navigation to the Layer 1 (National Overview) view."""
+    _set_state(wx_layer=1, wx_layer2_city=None)
     st.rerun()
 
 def _go_layer2(province: str):
-    _set_state(wx_layer=2, wx_province=province)
+    """Triggers navigation to the Layer 2 (Province Detail) view for a specific province."""
+    _set_state(wx_layer=2, wx_layer2_city=province)
     st.rerun()
 
 
 # ─── Season selector ────────────────────────────────────────────────────────────
 
 def _season_selector(key_prefix: str) -> tuple[str, int | None]:
+    """
+    Renders a season/month selector UI and returns the selected preset and specific month (if applicable).
+    """
     categories = {
         "📊 Tổng quát": ["Cả năm", "Mùa khô", "Mùa mưa"],
         "🕒 Theo Quý":  ["Q1", "Q2", "Q3", "Q4"],
@@ -267,7 +274,8 @@ def _season_selector(key_prefix: str) -> tuple[str, int | None]:
     return preset, month
 
 def _filter_by_season(df: pd.DataFrame, preset: str, month: int | None = None) -> pd.DataFrame:
-    if "month" not in df.columns:
+    """Filters a DataFrame based on the selected season or month preset."""
+    if "timestamp" not in df.columns:
         df = df.copy(); df["month"] = pd.to_datetime(df["timestamp"]).dt.month
     if "day" not in df.columns:
         df = df.copy(); df["day"] = pd.to_datetime(df["timestamp"]).dt.day
@@ -285,7 +293,8 @@ def _filter_by_season(df: pd.DataFrame, preset: str, month: int | None = None) -
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def _agg_monthly(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty or "city" not in df.columns:
+    """Aggregates weather data to a monthly resolution."""
+    if df.empty or "timestamp" not in df.columns:
         return pd.DataFrame()
     src = df.copy()
     src["month"] = pd.to_datetime(src["timestamp"]).dt.month
@@ -296,6 +305,7 @@ def _agg_monthly(df: pd.DataFrame) -> pd.DataFrame:
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def _agg_annual(df: pd.DataFrame) -> pd.DataFrame:
+    """Aggregates weather data to an annual resolution, grouped by region and province."""
     if df.empty or "city" not in df.columns:
         return pd.DataFrame()
     src = df.copy()
@@ -323,6 +333,7 @@ def _agg_annual(df: pd.DataFrame) -> pd.DataFrame:
 # ─── Card / KPI helpers ──────────────────────────────────────────────────────────
 
 def _card_open(tag: str, title: str, sub: str = ""):
+    """Renders the opening HTML tags and header for a dashboard card."""
     sub_html = f"<div class='card-sub'>{escape(sub)}</div>" if sub else ""
     st.markdown(
         f"<div class='card'>"
@@ -331,9 +342,11 @@ def _card_open(tag: str, title: str, sub: str = ""):
     )
 
 def _card_close():
+    """Renders the closing HTML tags for a dashboard card."""
     st.markdown("</div>", unsafe_allow_html=True)
 
 def _kpi_html(label, value, unit, accent, sub="") -> str:
+    """Generates the HTML markup for a KPI metric box."""
     sub_html = f"<div class='kpi-sub'>{sub}</div>" if sub else ""
     return (
         f"<div class='kpi-box {accent}'>"
@@ -343,15 +356,18 @@ def _kpi_html(label, value, unit, accent, sub="") -> str:
     )
 
 def _kpi_row(cards: list[str]):
+    """Renders a responsive row of KPI cards using CSS flexbox."""
     st.markdown(
         f"<div class='kpi-strip' style='grid-template-columns:repeat({len(cards)},1fr)'>"
         + "".join(cards) + "</div>", unsafe_allow_html=True,
     )
 
 def _section(title: str):
+    """Renders a section header."""
     st.markdown(f"<div class='wth-section'>{title}</div>", unsafe_allow_html=True)
 
 def _insight_box(text: str):
+    """Renders an insight text box."""
     st.markdown(
         f"<div class='wth-insight-box'>💡 {text}</div>",
         unsafe_allow_html=True,
@@ -360,16 +376,11 @@ def _insight_box(text: str):
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CHART: SLOPE CHART — tỉnh nào khắc nghiệt toàn diện?
-# Câu hỏi: Tỉnh nào nhất quán xuất hiện top đầu trên nhiều chỉ số?
-# Task: Identify recurring top items across multiple attributes
-# Mark: Line + Point  |  Channel: Position Y (rank), Position X (metric)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _render_slope_chart(annual: pd.DataFrame):
     """
-    Slope chart — mỗi đường = 1 tỉnh, trục X = 4 chỉ số, trục Y = thứ hạng (1=cao nhất).
-    Tỉnh có đường nằm trên cao xuyên suốt = khắc nghiệt toàn diện.
-    Đường lên xuống mạnh = chỉ nổi bật ở một vài chỉ số.
+    Renders a custom slope/bump chart comparing the rank of top provinces across different meteorological metrics.
     """
     avail_metrics = [m for m in SLOPE_METRICS if m in annual.columns]
     avail_labels  = [SLOPE_METRIC_LABELS[SLOPE_METRICS.index(m)] for m in avail_metrics]
@@ -380,13 +391,13 @@ def _render_slope_chart(annual: pd.DataFrame):
     annual = annual.copy()
     annual["region"] = annual["city"].map(PROVINCE_REGION).fillna("Khác")
 
-    # Tính rank từng chỉ số (rank 1 = giá trị cao nhất)
+    # Calculate rank for each metric (rank 1 = highest value)
     for m in avail_metrics:
         annual[f"{m}_rank"] = annual[m].rank(ascending=False, method="min").astype("Int64")
 
     n_total = len(annual)
 
-    # Lấy top N tỉnh: chỉ lấy top 5 (giảm từ 8 xuống 5 để đỡ rối)
+    # Get top N provinces: only top 5 to reduce clutter
     TOP_K = 5
     top_candidates: set[str] = set()
     for m in avail_metrics:
@@ -400,13 +411,13 @@ def _render_slope_chart(annual: pd.DataFrame):
         reg    = str(row["region"])
         color  = REGION_COLORS.get(reg, "#94a3b8")
         ranks  = [int(row[f"{m}_rank"]) for m in avail_metrics]
-        # Tô đậm tỉnh có tổng rank thấp nhất (khắc nghiệt nhất)
+        # Highlight the province with the lowest total rank (most extreme)
         total_rank = sum(ranks)
         is_top     = total_rank == min(
             sum(int(r[f"{m}_rank"]) for m in avail_metrics)
             for _, r in top_df.iterrows()
         )
-        # Vẽ một đường "bóng mờ" (glow) phía dưới nếu là tỉnh top để tạo hiệu ứng nổi bật
+        # Draw a glow line underneath if it is a top province to make it stand out
         if is_top:
             fig.add_trace(go.Scatter(
                 x=avail_labels, y=ranks, mode="lines",
@@ -420,7 +431,7 @@ def _render_slope_chart(annual: pd.DataFrame):
             line=dict(color=color, width=5 if is_top else 1.5, shape="spline"),
             marker=dict(size=10 if is_top else 5, color=color,
                         line=dict(width=1.5, color="#ffffff")),
-            opacity=1.0 if is_top else 0.35, # Tăng từ 0.2 lên 0.35 cho rõ màu hơn
+            opacity=1.0 if is_top else 0.35, # Increased from 0.2 to 0.35 for better visibility
             customdata=[[city, reg, ranks[i], n_total] for i in range(len(avail_metrics))],
             hovertemplate=(
                 "<b>%{customdata[0]}</b> (%{customdata[1]})<br>"
@@ -429,7 +440,7 @@ def _render_slope_chart(annual: pd.DataFrame):
             ),
         ))
 
-    # Annotation cho tỉnh khắc nghiệt nhất (ví dụ: Quảng Trị) để làm điểm nhấn
+    # Annotation for the most extreme province (e.g. Quang Tri) as a focal point
     best_city_row = top_df.loc[
         top_df[[f"{m}_rank" for m in avail_metrics]].sum(axis=1).idxmin()
     ]
@@ -455,7 +466,7 @@ def _render_slope_chart(annual: pd.DataFrame):
         hovermode="closest",
     )
 
-    # Legend vùng miền
+    # Region Legend
     for reg, clr in REGION_COLORS.items():
         fig.add_trace(go.Scatter(
             x=[None], y=[None], mode="markers",
@@ -463,7 +474,7 @@ def _render_slope_chart(annual: pd.DataFrame):
             name=reg, showlegend=True,
         ))
     fig.update_layout(
-        showlegend=False, # Ẩn legend tên tỉnh cho đỡ rối
+        showlegend=False, # Hide province legend to reduce clutter
     )
 
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
@@ -484,16 +495,11 @@ def _render_slope_chart(annual: pd.DataFrame):
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CHART: DOT PLOT — chỉ số nào phân hóa mạnh nhất giữa các tỉnh?
-# Câu hỏi: Chỉ số nào tạo ra bất bình đẳng cao nhất?
-# Task: Compare dispersion across attributes; identify outliers within group
-# Mark: Point  |  Channel: Position X (chuẩn hóa), Position Y (chỉ số), Color (vùng)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _render_dot_plot(annual: pd.DataFrame, reg_filter: str = "Tất cả"):
     """
-    Dot plot — mỗi hàng = 1 chỉ số, mỗi chấm = 1 tỉnh.
-    Giá trị chuẩn hóa 0→100 trong nhóm hiển thị.
-    Hàng rộng = chỉ số phân hóa mạnh. Chấm xa trung tâm = outlier.
+    Renders a dot plot to show the dispersion and outliers of meteorological metrics across provinces.
     """
     avail_metrics = [m for m in SLOPE_METRICS if m in annual.columns]
     avail_labels  = [SLOPE_METRIC_LABELS[SLOPE_METRICS.index(m)] for m in avail_metrics]
@@ -533,7 +539,7 @@ def _render_dot_plot(annual: pd.DataFrame, reg_filter: str = "Tất cả"):
             nv  = (row[m] - mn) / span * 100
             reg = str(row["region"])
             clr = REGION_COLORS.get(reg, "#94a3b8")
-            # Xác định outlier: nằm ngoài 1.5 IQR
+            # Determine outlier: outside 1.5 IQR
             q1, q3  = vals.quantile(0.25), vals.quantile(0.75)
             iqr     = q3 - q1
             is_out  = row[m] < q1 - 1.5*iqr or row[m] > q3 + 1.5*iqr
@@ -558,7 +564,7 @@ def _render_dot_plot(annual: pd.DataFrame, reg_filter: str = "Tất cả"):
                 ),
             ))
 
-        # Mean marker (hình thoi đen)
+        # Mean marker (black diamond)
         fig.add_trace(go.Scatter(
             x=[norm_mean], y=[yi],
             mode="markers",
@@ -569,7 +575,7 @@ def _render_dot_plot(annual: pd.DataFrame, reg_filter: str = "Tất cả"):
             hovertemplate=f"Trung bình {lbl}: {mean:.1f} {VAR_META.get(m,{}).get('unit','')}<extra></extra>",
         ))
 
-        # CV annotation bên phải
+        # CV annotation on the right
         fig.add_annotation(
             x=105, y=yi,
             text=f"CV={cv:.0f}%",
@@ -596,7 +602,7 @@ def _render_dot_plot(annual: pd.DataFrame, reg_filter: str = "Tất cả"):
 
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # Auto insight: chỉ số có CV cao nhất = phân hóa mạnh nhất
+    # Auto insight: highest CV metric = strongest dispersion
     if coeff_of_var:
         most_unequal = max(coeff_of_var, key=coeff_of_var.get)
         _insight_box(
@@ -608,14 +614,11 @@ def _render_dot_plot(annual: pd.DataFrame, reg_filter: str = "Tất cả"):
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CHART: MULTIVARIATE — Nhiệt độ, Độ ẩm có kéo theo mưa không?
-# Câu hỏi: Khi nhiệt độ & độ ẩm tăng cao, lượng mưa có tăng theo không?
-# Mark: Point (Bubble) | Channel: X (Temp), Y (Humidity), Size (Rain), Color (Region)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _render_multivariate_rain_analysis(annual: pd.DataFrame):
     """
-    Biểu đồ bong bóng: X=Nhiệt độ, Y=Độ ẩm, Size=Lượng mưa.
-    Giúp trả lời câu hỏi về mối liên hệ giữa 3 yếu tố quan trọng nhất.
+    Renders a multivariate bubble chart and correlation heatmap to analyze the relationship between temperature, humidity, and rainfall.
     """
     cols = ["temp", "humidity", "rain"]
     if not all(c in annual.columns for c in cols):
@@ -625,7 +628,7 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
     df = annual.dropna(subset=cols).copy()
     if df.empty: return
 
-    # 1. Tính toán tương quan Pearson
+    # 1. Calculate Pearson correlation
     corr = df[cols].corr()
     r_tr = corr.loc["temp", "rain"]
     r_hr = corr.loc["humidity", "rain"]
@@ -635,7 +638,7 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
     with c1:
         # Bubble Chart
         fig = go.Figure()
-        # Tính sizeref để bong bóng không quá to
+        # Calculate sizeref so bubbles are not too large
         max_rain = df["rain"].max()
         sizeref = 2.0 * max_rain / (40**2) if max_rain > 0 else 1
 
@@ -647,7 +650,7 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
                 name=reg,
                 marker=dict(
                     size=sub["rain"], sizemode='area', sizeref=sizeref, sizemin=4,
-                    color=REGION_COLORS.get(reg, "#94a3b8"), opacity=0.85, # Tăng từ 0.7 lên 0.85
+                    color=REGION_COLORS.get(reg, "#94a3b8"), opacity=0.85, # Increased from 0.7 to 0.85
                     line=dict(width=1, color="#ffffff")
                 ),
                 customdata=list(zip(sub["city"], sub["rain"])),
@@ -669,7 +672,7 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
     with c2:
-        # Heatmap mini cho thấy hệ số tương quan
+        # Mini heatmap showing correlation coefficients
         st.markdown("<div style='font-size:0.62rem; font-weight:700; color:#94a3b8; text-align:center; margin-bottom:8px'>HỆ SỐ TƯƠNG QUAN (r)</div>", unsafe_allow_html=True)
         
         fig_corr = go.Figure(data=go.Heatmap(
@@ -687,7 +690,7 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
         )
         st.plotly_chart(fig_corr, use_container_width=True, config={"displayModeBar": False})
 
-        # Giải thích ngắn gọn về r
+        # Brief explanation of r
         st.markdown(
             f"<div style='font-size:0.68rem; color:#64748b; line-height:1.4'>"
             f"• r &gt; 0: Đồng biến (cùng tăng)<br>"
@@ -696,7 +699,7 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
             f"</div>", unsafe_allow_html=True
         )
 
-    # 3. Trả lời trực tiếp câu hỏi của User bằng Auto-Insight
+    # 3. Answer User's question directly with Auto-Insight
     def get_relation(r):
         if r > 0.3: return "tăng rõ rệt"
         if r > 0.1: return "có xu hướng tăng nhẹ"
@@ -719,7 +722,11 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _render_layer1(df: pd.DataFrame):
-    # Header với nút chuyển đổi sang chế độ Dự báo ở góc phải
+    """
+    Renders Layer 1 of the weather dashboard: the National Overview.
+    Includes high-level KPIs, spatial maps, and macro-level analysis charts.
+    """
+    # Header with switch to Forecast mode button on the right
     c_head, c_nav = st.columns([4, 1.2], gap="small")
     with c_head:
         st.markdown(
@@ -957,10 +964,14 @@ def _render_layer1(df: pd.DataFrame):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# LAYER 2 – CHI TIẾT TỈNH  (giữ nguyên cấu trúc, bỏ map trạm → bar chart)
+# LAYER 2 – CHI TIẾT TỈNH
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _render_layer2(df: pd.DataFrame):
+    """
+    Renders Layer 2 of the weather dashboard: Province Detail View.
+    Displays localized weather KPIs, 24-hour trends, and seasonal distribution for a specific province.
+    """
     province = _get_state("wx_province", None)
     if not province:
         _go_layer1(); return
@@ -1289,6 +1300,10 @@ def _render_layer2(df: pd.DataFrame):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def render(global_df: pd.DataFrame):
+    """
+    Main entry point for the Weather Dashboard Tab.
+    Initializes CSS, reads global context, and routes to either Layer 1 (National) or Layer 2 (Province Detail).
+    """
     _inject_weather_css()
 
     with st.spinner("Đang tải dữ liệu thời tiết..."):

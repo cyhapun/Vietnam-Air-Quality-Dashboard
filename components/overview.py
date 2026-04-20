@@ -1,9 +1,13 @@
-﻿import streamlit as st
+import streamlit as st
 import textwrap
 import pandas as pd
 
 
 def _safe_pm25_mean(df):
+    """
+    Safely calculates the mean of the PM2.5 column in a DataFrame.
+    Returns 0.0 if the column is missing or if the calculated mean is NaN.
+    """
     if "pm2_5" not in df.columns:
         return 0.0
     val = df["pm2_5"].mean()
@@ -11,6 +15,16 @@ def _safe_pm25_mean(df):
 
 
 def _build_scope_metrics(df, state):
+    """
+    Calculates dynamic metrics (AQI, PM2.5, rank changes, extreme values) based on the current scope DataFrame.
+    
+    Args:
+        df (pd.DataFrame): The filtered dataset for the current scope.
+        state (dict): The global dashboard state dictionary.
+        
+    Returns:
+        dict: A new dictionary containing updated scope-specific metrics mixed with the global state.
+    """
     _aqi_meta = state["aqi_meta"]
     _aqi_health_guidance = state["aqi_health_guidance"]
     _fmt_delta = state["fmt_delta"]
@@ -125,6 +139,14 @@ def _build_scope_metrics(df, state):
 
 
 def render_overview(state, df_override=None, scope_label="Việt Nam"):
+    """
+    Renders the KPI strip, trend grids, and Hero section for the overview tab.
+    
+    Args:
+        state (dict): The global context state.
+        df_override (pd.DataFrame, optional): Custom DataFrame for a specific scope (e.g. one province).
+        scope_label (str, optional): The display name of the current scope.
+    """
     if df_override is not None and not df_override.empty:
         local_state = _build_scope_metrics(df_override, state)
     else:

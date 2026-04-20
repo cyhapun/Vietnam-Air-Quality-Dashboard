@@ -2,6 +2,15 @@ import streamlit as st
 
 
 def render_header(state, logo_html):
+    """
+    Renders the custom HTML header for the dashboard, including the university logo,
+    dashboard title, and global metrics (selected locations, date range).
+    Also provides a toggle switch for colorblind mode.
+    
+    Args:
+        state (dict): The dashboard context state containing variables like 'sel', 's_d', 'e_d'.
+        logo_html (str): The HTML string for the application logo.
+    """
     globals().update(state)
     colorblind_on = bool(st.session_state.get("colorblind_mode", False))
     header_class = "hdr hdr-cb" if colorblind_on else "hdr"
