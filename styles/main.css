@@ -3932,3 +3932,234 @@ button[title="Expand sidebar"],
   display: none !important;
   visibility: hidden !important;
 }
+
+/* =========================================
+   SaaS MEGA-FOOTER STYLES
+========================================= */
+.pro-ftr-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 3rem;
+    padding-bottom: 2rem;
+    font-family: "Be Vietnam Pro", sans-serif;
+}
+
+.pro-ftr-container {
+    max-width: 1400px;
+    width: 100%;
+    background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 32px 32px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* ── TOP SECTION: FEATURES GRID ── */
+.pro-ftr-features-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    margin-bottom: 24px;
+}
+
+.pro-ftr-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.pro-ftr-col-title {
+    color: #f8fafc;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pro-ftr-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pro-ftr-list li {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.pro-ftr-list li span {
+    color: #cbd5e1;
+    font-weight: 600;
+}
+
+/* Đường kẻ ngang ngăn cách Features và Credit */
+.pro-ftr-divider-main {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.02) 100%);
+    margin: 10px 0 24px 0;
+}
+
+/* ── BOTTOM SECTION ── */
+.pro-ftr-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.pro-ftr-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pro-ftr-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f8fafc;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.pro-ftr-brand svg {
+    color: #38bdf8;
+}
+
+.pro-ftr-divider {
+    width: 4px;
+    height: 4px;
+    background-color: #475569;
+    border-radius: 50%;
+}
+
+.pro-ftr-text {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.date-badge {
+    background: rgba(56, 189, 248, 0.1);
+    color: #38bdf8;
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+/* ── TEAM MARQUEE ── */
+.pro-ftr-team-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    max-width: 650px;
+    width: 100%;
+}
+
+.pro-ftr-team-label {
+    color: #64748b;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+}
+
+.pro-ftr-marquee {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+
+.pro-ftr-track {
+    display: inline-flex;
+    gap: 12px;
+    white-space: nowrap;
+    animation: pro-marquee-scroll 35s linear infinite;
+}
+
+.pro-ftr-track:hover {
+    animation-play-state: paused;
+}
+
+.pro-ftr-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 6px 14px;
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: default;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.pro-ftr-chip:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.pro-ftr-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #38bdf8;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+}
+
+@keyframes pro-marquee-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1200px) {
+    .pro-ftr-features-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 980px) {
+    .pro-ftr-bottom {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .pro-ftr-team-box {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .pro-ftr-features-grid {
+        grid-template-columns: 1fr;
+    }
+    .pro-ftr-container {
+        padding: 24px 20px;
+    }
+}
