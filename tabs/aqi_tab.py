@@ -155,7 +155,7 @@ def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_na
         day_label = ""
         is_boundary = False
         if i == 0 or ts.hour == 0:
-            day_label = ts.strftime("Th %w") if ts.weekday() != 6 else "CN"
+            day_label = f"Th {ts.weekday() + 2}" if ts.weekday() != 6 else "CN"
             if i != 0: is_boundary = True # Start of a new day
 
         border_style = "border-left: 1px dashed #cbd5e1; padding-left: 12px;" if is_boundary else ""
@@ -324,7 +324,7 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
         subtitle_lbl = "So sánh dữ liệu cuối chu kỳ với đầu chu kỳ"
         curr_lbl = "Cuối chu kỳ"
     else:
-        subtitle_lbl = f"So sánh dữ liệu hiện tại với {period_lbl.lower()}"
+        subtitle_lbl = f"So sánh dữ liệu hiện tại ({last_ts.strftime('%H:%M %d/%m')}) với {period_lbl.lower()}"
         curr_lbl = "Hiện tại"
         
     st.markdown(f'''<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
@@ -601,7 +601,10 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
             sel2 = st.selectbox("Khu vực 2", options2, key=f"comp_sel2_{poll_key}", label_visibility="collapsed")
 
         # 6. Process Plot Data
-        df_plot = df_sub[df_sub["comp_label"].isin([sel1, sel2])].groupby("comp_label", observed=False)[poll_key].mean().reset_index()
+        df_raw = df_sub[df_sub["comp_label"].isin([sel1, sel2])].copy()
+        
+        # Calculate mean for Insights
+        df_plot = df_raw.groupby("comp_label", observed=False)[poll_key].mean().reset_index()
         df_plot = df_plot.rename(columns={"comp_label": "label"})
         df_plot["label"] = df_plot["label"].astype(str)
         df_plot["sort_idx"] = df_plot["label"].apply(lambda x: 0 if x == sel1 else 1)
@@ -610,75 +613,81 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
         if len(df_plot) < 2:
             st.info("Không có đủ dữ liệu cho cặp so sánh này.")
         else:
-            # Colors and labels
-            df_plot["clr"] = df_plot[poll_key].apply(lambda x: val_meta(x, poll_key)[1])
-            df_plot["lbl_aqi"] = df_plot[poll_key].apply(lambda x: val_meta(x, poll_key)[0])
-
             fig = go.Figure()
-            fig.add_trace(go.Bar(
-                x=df_plot["label"],
-                y=df_plot[poll_key],
-                marker_color=df_plot["clr"],
-                marker_line=dict(width=2, color="#fff"),
-                text=df_plot[poll_key].apply(lambda x: f"<b>{x:.1f}</b>"),
-                textposition='auto',
-                hovertemplate="<b>%{x}</b><br>" + f"{poll_label}: <b>%{{y:.1f}}</b><br>" + "Trạng thái: <b>%{customdata}</b><extra></extra>",
-                customdata=df_plot["lbl_aqi"]
-            ))
+            for sel in [sel1, sel2]:
+                df_sel = df_raw[df_raw["comp_label"] == sel]
+                if not df_sel.empty:
+                    mean_val = df_sel[poll_key].mean()
+                    _, color = val_meta(mean_val, poll_key)
+                    fig.add_trace(go.Box(
+                        y=df_sel[poll_key],
+                        name=sel,
+                        marker_color=color,
+                        boxmean=True, # Hiển thị đường nét đứt giá trị Trung bình
+                        boxpoints='outliers', # Chỉ hiển thị các điểm đột biến (outliers)
+                        marker=dict(size=4, opacity=0.8),
+                        line=dict(width=2),
+                        hovertemplate=f"{sel}<br>{poll_label}: <b>%{{y:.1f}}</b><extra></extra>"
+                    ))
 
             fig.update_layout(
                 height=320, margin=dict(l=10, r=10, t=10, b=10),
                 xaxis={**ax("Khu vực Đối chiếu"), "showline": False, "tickfont": dict(size=13, color="#0f172a")},
-                yaxis={**ax(f"Trung bình {poll_label} ({time_range})"), "showgrid": True},
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", bargap=0.4
+                yaxis={**ax(f"Phân bố {poll_label} ({time_range})"), "showgrid": True},
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                showlegend=False
             )
             st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=f"regional_comp_chart_{poll_key}")
 
     # 7. Insights (Right Column)
     with col_right:
         if len(df_plot) >= 2:
-            val1 = df_plot[df_plot["label"] == sel1][poll_key].values[0]
-            val2 = df_plot[df_plot["label"] == sel2][poll_key].values[0]
+            med1 = df_raw[df_raw["comp_label"] == sel1][poll_key].median()
+            med2 = df_raw[df_raw["comp_label"] == sel2][poll_key].median()
+            max1 = df_raw[df_raw["comp_label"] == sel1][poll_key].max()
+            max2 = df_raw[df_raw["comp_label"] == sel2][poll_key].max()
             
-            diff = abs(val1 - val2)
-            ratio = (diff / val2 * 100) if val2 > 0 else 0
-            status1, color1 = val_meta(val1, poll_key)
-            status2, color2 = val_meta(val2, poll_key)
+            diff = abs(med1 - med2)
+            ratio = (diff / med2 * 100) if med2 > 0 else 0
+            status1, color1 = val_meta(med1, poll_key)
+            status2, color2 = val_meta(med2, poll_key)
             
             if diff < 0.1:
-                eval_text = "Chất lượng không khí giữa hai khu vực đạt mức <b>tương đồng</b> tuyệt đối."
-                detail_text = "Cả hai đều đang ghi nhận các chỉ số ô nhiễm ở mức gần như bằng nhau, cho thấy điều kiện khí tượng và nguồn phát thải tương đương."
+                eval_text = "Mặt bằng chung chất lượng không khí giữa hai khu vực là <b>tương đồng</b>."
+                detail_text = "Cả hai đều có mức trung vị gần như bằng nhau. Bạn có thể quan sát thêm độ trải dài của hộp để xem nơi nào có nhiều biến động hơn."
                 b_color = "#94a3b8"
             elif ratio < 1:
-                eval_text = f"Chênh lệch giữa hai khu vực là <b>không đáng kể</b> (chỉ khoảng {ratio:.2f}%)."
-                detail_text = "Mặc dù có sự khác biệt nhẹ, nhưng về cơ bản trải nghiệm hít thở và rủi ro sức khỏe tại hai nơi này là như nhau."
+                eval_text = f"Chênh lệch trung vị giữa hai khu vực là <b>không đáng kể</b> (khoảng {ratio:.2f}%)."
+                detail_text = "Mặt bằng chung khá giống nhau, sự khác biệt chủ yếu nằm ở các đợt ô nhiễm cực đoan (chấm nhỏ phía trên hộp)."
                 b_color = "#94a3b8"
             else:
-                cleaner = sel1 if val1 < val2 else sel2
-                polluted = sel2 if val1 < val2 else sel1
-                eval_text = f"<b>{cleaner}</b> sạch hơn <b>{polluted}</b> khoảng <b>{ratio:.1f}%</b>."
+                cleaner = sel1 if med1 < med2 else sel2
+                polluted = sel2 if med1 < med2 else sel1
+                eval_text = f"Về mặt bằng chung, <b>{cleaner}</b> sạch hơn <b>{polluted}</b> khoảng <b>{ratio:.1f}%</b>."
                 
-                if val2 > 150 or val1 > 150:
-                    detail_text = f"Đáng chú ý, nồng độ {poll_label} đang ở mức cảnh báo cao. Sự chênh lệch {diff:.1f} đơn vị cho thấy <b>{cleaner}</b> đang kiểm soát ô nhiễm tốt hơn."
+                max_diff_text = f" Đặc biệt, mức ô nhiễm đỉnh điểm tại <b>{sel1}</b> lên tới {max1:.0f}, trong khi <b>{sel2}</b> là {max2:.0f}."
+                if med2 > 100 or med1 > 100:
+                    detail_text = f"Nồng độ trung vị {poll_label} đang ở mức cao. Boxplot cho thấy <b>{cleaner}</b> có sự phân bố ổn định và an toàn hơn.{max_diff_text}"
                 else:
-                    detail_text = f"Dựa trên dữ liệu {time_range} qua, <b>{cleaner}</b> duy trì nồng độ {poll_label} ổn định và thấp hơn so với <b>{polluted}</b>."
-                b_color = color1 if val1 < val2 else color2
+                    detail_text = f"Dựa trên dải phân bố, <b>{cleaner}</b> duy trì chất lượng không khí ở dải an toàn tốt hơn.{max_diff_text}"
+                b_color = color1 if med1 < med2 else color2
 
-            # Health Advice based on the worse area
-            max_val = max(val1, val2)
+            # Health Advice based on the worse area's maximum values
+            max_val = max(max1, max2)
             if max_val <= 50:
-                advice = "Điều kiện lý tưởng cho mọi hoạt động ngoài trời tại cả hai khu vực."
+                advice = "Điều kiện lý tưởng cho mọi hoạt động ngoài trời tại cả hai khu vực. Hầu như không có rủi ro đột biến."
             elif max_val <= 100:
-                advice = "Nhóm nhạy cảm nên hạn chế thời gian vận động mạnh ngoài trời tại khu vực có chỉ số cao hơn."
+                advice = "Chất lượng không khí khá an toàn. Tuy nhiên, nhóm nhạy cảm vẫn nên lưu ý vào các ngày xuất hiện mốc đột biến (outliers)."
             else:
-                advice = f"Cần chú ý bảo vệ hô hấp, đặc biệt tại <b>{sel1 if val1 > val2 else sel2}</b> nơi ô nhiễm đang ở mức báo động."
+                worse_peak = sel1 if max1 > max2 else sel2
+                advice = f"Cảnh báo: Đã ghi nhận các đỉnh ô nhiễm nguy hiểm tại <b>{worse_peak}</b>. Cần chú ý bảo vệ hô hấp trong các đợt bùng phát này."
 
             # Ensure no leading whitespace for the f-string to prevent markdown code block rendering
             html_insight = f'''<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
 <div>
-    <div style="font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 1.25rem; text-transform: uppercase; letter-spacing: 0.5px;">Phân tích Đối chiếu</div>
+    <div style="font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 1.25rem; letter-spacing: 0.5px;">Phân tích phân bố</div>
     <div style="margin-bottom: 1.25rem;">
-        <div style="font-size: 13px; color: #64748b;">Chênh lệch trung bình</div>
+        <div style="font-size: 13px; color: #64748b;">Chênh lệch Trung vị (Median)</div>
         <div style="font-size: 28px; font-weight: 800; color: #0f172a;">{diff:.1f} <span style="font-size: 14px; font-weight: 500; color: #64748b;">đơn vị</span></div>
     </div>
     <div style="padding: 14px; background: white; border-radius: 8px; border-left: 4px solid {b_color}; margin-bottom: 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
@@ -688,11 +697,11 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
 </div>
 <div>
     <div style="font-size: 13px; color: #64748b; line-height: 1.8; margin-bottom: 1rem;">
-        • <b>{sel1}</b>: <span style="color: {color1}; font-weight: 700;">{status1}</span><br>
-        • <b>{sel2}</b>: <span style="color: {color2}; font-weight: 700;">{status2}</span>
+        • <b>{sel1}</b>: Trạng thái Trung vị <span style="color: {color1}; font-weight: 700;">{status1}</span><br>
+        • <b>{sel2}</b>: Trạng thái Trung vị <span style="color: {color2}; font-weight: 700;">{status2}</span>
     </div>
     <div style="padding-top: 12px; border-top: 1px dashed #e2e8f0;">
-        <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase;">Khuyến nghị</div>
+        <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase;">Khuyến nghị từ Outliers</div>
         <div style="font-size: 13px; color: #1e293b; line-height: 1.5;">{advice}</div>
     </div>
 </div>
