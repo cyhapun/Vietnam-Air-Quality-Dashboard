@@ -33,14 +33,7 @@ def render_header(state, logo_html):
         </div>
       </div>
       <div class="hdr-right" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-        <div class="hdr-stat">
-          <div class="hdr-stat-val">Từ {s_d.strftime('%d/%m/%y')} đến {e_d.strftime('%d/%m/%y')}</div>
-        </div>
         <div style="display: flex; align-items: center; gap: 20px;">
-          <div class="hdr-stat" style="text-align: center;">
-            <div class="hdr-stat-val">{len(sel)}</div>
-            <div class="hdr-stat-lbl">Khu vực</div>
-          </div>
           {colorblind_badge}
         </div>
       </div>
