@@ -238,7 +238,7 @@ def render_dashboard():
     active_tab = state.get("active_tab", "overview")
     previous_active_tab = st.session_state.get("_last_active_tab")
     if active_tab == "interaction" and previous_active_tab != "interaction":
-        st.session_state["interaction_time_range"] = "2025"
+        st.session_state["interaction_time_range"] = "Năm 2025"
     st.session_state["_last_active_tab"] = active_tab
 
     if active_tab == "overview":

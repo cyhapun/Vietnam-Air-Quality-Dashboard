@@ -346,19 +346,19 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
         "3 tháng": pd.Timedelta(days=90),
-        "1 năm": pd.Timedelta(days=365)
+        "Năm 2025": pd.Timedelta(days=365)
     }
     label_map = {
         "24h": "Hôm qua",
         "7 ngày": "7 ngày trước",
         "30 ngày": "30 ngày trước",
         "3 tháng": "3 tháng trước",
-        "1 năm": "1 năm trước"
+        "Năm 2025": "Năm 2025"
     }
     
     delta = delta_map.get(time_range, pd.Timedelta(days=1))
     
-    if time_range == "1 năm":
+    if time_range == "Năm 2025":
         prev_ts = df["timestamp"].min()
         period_lbl = "Đầu chu kỳ"
     else:
@@ -371,7 +371,7 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     if not prev_rows.empty:
         # Check if the closest record is reasonably close (within 3 hours) to be valid "same hour"
         closest_row = prev_rows.iloc[-1]
-        if time_range == "1 năm":
+        if time_range == "Năm 2025":
             prev_val = closest_row[poll_key]
         else:
             time_diff = abs((closest_row["timestamp"] - prev_ts).total_seconds()) / 3600
@@ -396,7 +396,7 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     arrow = "↓" if diff <= 0 else "↑"
     
     # Header with integrated Delta Badge
-    if time_range == "1 năm":
+    if time_range == "Năm 2025":
         subtitle_lbl = "So sánh dữ liệu cuối chu kỳ với đầu chu kỳ"
         curr_lbl = "Cuối chu kỳ"
     else:
@@ -596,9 +596,9 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
         poll_label (str): The display label for the pollutant.
         time_range (str): The selected time range for filtering data.
     """
-    if time_range == "1 năm":
+    if time_range == "Năm 2025":
         from services.data_loader import load_weather_data, _apply_aqi_labels
-        with st.spinner("Đang tải dữ liệu tổng quan 1 năm..."):
+        with st.spinner("Đang tải dữ liệu tổng quan 2025..."):
             df_to_use = load_weather_data()
             if not df_to_use.empty:
                 df_to_use = _apply_aqi_labels(df_to_use)
@@ -620,7 +620,7 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
         "3 tháng": pd.Timedelta(days=90),
-        "1 năm": pd.Timedelta(days=365)
+        "Năm 2025": pd.Timedelta(days=365)
     }
     min_d = max_d - delta_map.get(time_range, pd.Timedelta(hours=24))
     df_sub = df_to_use[df_to_use["timestamp"] >= min_d].copy()
@@ -644,7 +644,7 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
         df_sub["comp_label"] = df_sub["province"].astype(str)
 
     # 4. Section Header
-    if time_range == "1 năm":
+    if time_range == "Năm 2025":
         actual_min = df_sub["timestamp"].min()
         actual_max = df_sub["timestamp"].max()
         if pd.notna(actual_min) and pd.notna(actual_max):
@@ -900,7 +900,7 @@ def render(global_df):
     # Locate Tier 2 units dynamically
     folder_name = CITY_FOLDERS.get(selected_city, "ho_chi_minh")
     base_dir = os.path.dirname(__file__)
-    if st.session_state.get("aqi_time_range") == "1 năm":
+    if st.session_state.get("aqi_time_range") == "Năm 2025":
         dir_path = os.path.join(base_dir, "..", "data", "aqi_year_2025", folder_name)
     else:
         dir_path = os.path.join(base_dir, "..", "data", "aqi", folder_name)
@@ -973,7 +973,7 @@ def render(global_df):
             st.rerun()
 
     with c4:
-        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng", "1 năm"]
+        tr_opts = ["24h", "7 ngày", "30 ngày", "3 tháng", "Năm 2025"]
         idx_tr = tr_opts.index(st.session_state["aqi_time_range"]) if st.session_state["aqi_time_range"] in tr_opts else 1
         time_range = st.selectbox("Thời gian", tr_opts, index=idx_tr, key="aqi_time_select")
         if time_range != st.session_state["aqi_time_range"]:
@@ -1010,7 +1010,7 @@ def render(global_df):
 
     # Load and process data
     target_file = file_map.get(selected_tier2, "all.parquet")
-    if time_range == "1 năm":
+    if time_range == "Năm 2025":
         df = load_tier2_year_data(folder_name, target_file)
     else:
         df = load_tier2_data(folder_name, target_file)
@@ -1035,7 +1035,7 @@ def render(global_df):
         "7 ngày": pd.Timedelta(days=7),
         "30 ngày": pd.Timedelta(days=30),
         "3 tháng": pd.Timedelta(days=90),
-        "1 năm": pd.Timedelta(days=365)
+        "Năm 2025": pd.Timedelta(days=365)
     }
     
     min_d = max_d - delta_map[time_range]
@@ -1112,7 +1112,7 @@ def render(global_df):
             "7 ngày": "6h",
             "30 ngày": "1D",
             "3 tháng": "3D",
-            "1 năm": "7D"
+            "Năm 2025": "7D"
         }
         rule = rule_map.get(time_range)
         if rule:
@@ -1156,7 +1156,7 @@ def render(global_df):
                         "7 ngày": pd.Timedelta(hours=6),
                         "30 ngày": pd.Timedelta(days=1),
                         "3 tháng": pd.Timedelta(days=3),
-                        "1 năm": pd.Timedelta(days=7)
+                        "Năm 2025": pd.Timedelta(days=7)
                     }
                     dt_end = dt_start + rule_delta.get(time_range, pd.Timedelta(hours=1))
                     
@@ -1488,7 +1488,7 @@ def render(global_df):
             
             try:
                 # Load raw data for this specific location
-                if time_range == "1 năm":
+                if time_range == "Năm 2025":
                     loc_df = load_tier2_year_data(folder_name, f_name)
                 else:
                     loc_df = load_tier2_data(folder_name, f_name)

@@ -952,16 +952,16 @@ def render(df: pd.DataFrame):
     if "interaction_province_select" not in st.session_state:
         st.session_state["interaction_province_select"] = "Tất cả"
     if "interaction_time_range" not in st.session_state:
-        st.session_state["interaction_time_range"] = "2025"
+        st.session_state["interaction_time_range"] = "Năm 2025"
     if "interaction_rank_focus" not in st.session_state:
         st.session_state["interaction_rank_focus"] = "AQI"
 
-    time_options = ["2025", "24h", "7 ngày", "30 ngày", "3 tháng"]
+    time_options = ["Năm 2025", "24h", "7 ngày", "30 ngày", "3 tháng"]
     if st.session_state.get("interaction_time_range") not in time_options:
-        st.session_state["interaction_time_range"] = "2025"
+        st.session_state["interaction_time_range"] = "Năm 2025"
 
     current_time_range = st.session_state["interaction_time_range"]
-    if current_time_range == "2025":
+    if current_time_range == "Năm 2025":
         year_2025_df = load_weather_data()
         work = _prepare_interaction_source(year_2025_df)
         if work.empty:
@@ -1034,7 +1034,7 @@ def render(df: pd.DataFrame):
         if time_range != current_time_range:
             st.rerun()
 
-        if time_range == "2025":
+        if time_range == "Năm 2025":
             start_ts = work["timestamp"].min()
             end_ts = work["timestamp"].max()
         else:
