@@ -754,7 +754,7 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
 
     if is_city_trimmed:
         st.caption(
-            f"Hiển thị Top {plot_city_limit}/{len(city_priority)} khu vực theo AQI trung bình cho các biểu đồ theo thành phố để giữ bố cục gọn."
+            f"Hiển thị Top {plot_city_limit}/{len(city_priority)} khu vực theo AQI trung bình cho các biểu đồ theo Tỉnh/thành để giữ bố cục gọn."
         )
 
 
@@ -1023,10 +1023,10 @@ def render(df):
         st.markdown(
             f"""
             <div class="ov-live-card">
-                <div class="ov-live-head">Xếp hạng trực tiếp thành phố ô nhiễm nhất</div>
-                <div class="ov-live-sub">Xếp hạng thành phố ô nhiễm nhất tại Việt Nam theo thời gian thực</div>
+                <div class="ov-live-head">Xếp hạng trực tiếp các tỉnh/thành ô nhiễm nhất</div>
+                <div class="ov-live-sub">Xếp hạng các Tỉnh/thành ô nhiễm nhất tại Việt Nam theo thời gian thực</div>
                 <div class="ov-live-table-head">
-                    <div>#</div><div>Thành phố</div><div>AQI Mỹ</div>
+                    <div>#</div><div>Tỉnh/thành</div><div>AQI Mỹ</div>
                 </div>
                 {_rows_html(rank_now)}
             </div>
@@ -1038,10 +1038,10 @@ def render(df):
         st.markdown(
             f"""
             <div class="ov-live-card">
-                <div class="ov-live-head">Xếp hạng trực tiếp thành phố sạch nhất</div>
-                <div class="ov-live-sub">Xếp hạng thành phố sạch nhất tại Việt Nam theo thời gian thực</div>
+                <div class="ov-live-head">Xếp hạng trực tiếp các tỉnh/thành trong lành nhất</div>
+                <div class="ov-live-sub">Xếp hạng các tỉnh/thành trong lành nhất tại Việt Nam theo thời gian thực</div>
                 <div class="ov-live-table-head">
-                    <div>#</div><div>Thành phố</div><div>AQI Mỹ</div>
+                    <div>#</div><div>Tỉnh/thành</div><div>AQI Mỹ</div>
                 </div>
                 {_rows_html(rank_clean)}
             </div>
