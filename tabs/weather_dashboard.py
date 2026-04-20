@@ -179,14 +179,15 @@ def _inject_weather_css():
         to { opacity: 1; transform: translateY(0); }
     }
     .wx-info-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f9fcff 100%);
+        background: linear-gradient(to right, #ffffff, #f8fbff);
         border: 1px solid #e2eaf3;
-        border-radius: 14px;
-        padding: 14px 18px;
-        margin-bottom: 18px;
+        border-left: 5px solid #0ea5e9;
+        border-radius: 8px;
+        padding: 1.3rem;
+        margin-bottom: 0.4rem;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
         animation: fadeInUp 0.6s ease-out both;
         text-align: left;
@@ -194,28 +195,29 @@ def _inject_weather_css():
     .wx-info-header {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        margin-bottom: 8px;
     }
     .wx-info-badge {
         background: #e0f2fe;
         color: #0369a1;
-        font-size: 0.62rem;
+        font-size: 0.85rem;
         font-weight: 800;
-        padding: 3px 8px;
+        padding: 4px 10px;
         border-radius: 6px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
     .wx-info-title {
-        font-size: 0.98rem;
-        font-weight: 800;
-        color: #0f172a;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #1e293b;
         margin: 0;
     }
     .wx-info-sub {
-        font-size: 0.74rem;
+        font-size: 1rem;
         color: #64748b;
-        line-height: 1.4;
+        line-height: 1.5;
         font-weight: 500;
         text-align: left;
     }

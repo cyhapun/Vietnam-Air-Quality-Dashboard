@@ -81,7 +81,7 @@ footer {
 /* Limit content width to prevent eye fatigue on Ultra-wide screens */
 .main-limit {
   max-width: 1400px;
-  margin: 0 auto;
+  margin: -1.2rem auto 0; /* Đẩy nội dung chính lên trên để khít với header */
   width: 100%;
 }
 
@@ -89,7 +89,7 @@ footer {
   position: sticky;
   top: 0;
   z-index: 5000;
-  margin-bottom: 1rem;
+  margin-bottom: -0.5rem !important; /* Giảm khoảng cách dưới header */
 }
 
 ::-webkit-scrollbar {
@@ -3130,6 +3130,31 @@ div[data-testid="stSelectbox"] [data-baseweb="select"]:focus-within {
 div[data-testid="stSelectbox"] [data-baseweb="select"] > div {
   background: transparent !important;
   border: none !important;
+}
+
+/* DateInput main content — match selectbox border style */
+section.main div[data-testid="stDateInput"] [data-baseweb="input"] {
+  border-radius: 8px !important;
+  border: 1px solid rgba(148, 163, 184, 0.6) !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05) !important;
+  min-height: 40px !important;
+  transition: all 0.2s ease !important;
+}
+
+section.main div[data-testid="stDateInput"] [data-baseweb="input"]:hover {
+  border-color: #0ea5e9 !important;
+}
+
+section.main div[data-testid="stDateInput"] [data-baseweb="input"]:focus-within {
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2) !important;
+}
+
+section.main div[data-testid="stDateInput"] [data-baseweb="input"] > div,
+section.main div[data-testid="stDateInput"] [data-baseweb="base-input"] {
+  border: none !important;
+  background: transparent !important;
 }
 
 /* Overview filters: unify typography between buttons/selects */
