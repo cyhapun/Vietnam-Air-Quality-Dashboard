@@ -530,35 +530,40 @@ def _inject_weather_css():
             align-items: center;
         }
         
-        /* Reset everything within these components to prevent ghosting */
-        div[data-testid="stSelectbox"] *, 
-        div[data-testid="stDateInput"] * {
+        /* Force identical styling for both Selectbox and DateInput */
+        div[data-testid="stSelectbox"] [data-baseweb="select"],
+        div[data-testid="stDateInput"] [data-baseweb="input"],
+        div[data-testid="stSelectbox"] [data-baseweb="select"] > div,
+        div[data-testid="stDateInput"] [data-baseweb="input"] > div {
+            background-color: #ffffff !important;
+            border: 1.5px solid rgba(15, 23, 42, 0.15) !important;
+            border-radius: 12px !important;
+            min-height: 42px !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        /* Neutralize all internal layers that might hold the default gray background */
+        div[data-testid="stSelectbox"] [data-baseweb="select"] div,
+        div[data-testid="stDateInput"] [data-baseweb="input"] div,
+        div[data-testid="stDateInput"] input {
+            background-color: transparent !important;
             border: none !important;
             box-shadow: none !important;
             outline: none !important;
         }
         
-        /* Apply single clean border only to the primary interaction layer */
-        div[data-testid="stSelectbox"] [data-baseweb="select"] > div,
-        div[data-testid="stDateInput"] [data-baseweb="input"] > div {
-            background-color: rgba(255, 255, 255, 0.8) !important;
-            border: 1.5px solid rgba(15, 23, 42, 0.15) !important;
-            border-radius: 12px !important;
-            transition: all 0.2s ease !important;
-        }
-        
-        /* Interaction states */
+        /* Interaction states for both */
+        div[data-testid="stSelectbox"] [data-baseweb="select"]:hover,
+        div[data-testid="stDateInput"] [data-baseweb="input"]:hover,
         div[data-testid="stSelectbox"] [data-baseweb="select"] > div:hover,
         div[data-testid="stDateInput"] [data-baseweb="input"] > div:hover {
             border-color: #0ea5e9 !important;
-            background-color: #ffffff !important;
         }
 
-        /* Specifically handle focus ring which is often the cause of ghost borders */
-        div[data-testid="stSelectbox"] [data-baseweb="select"]:focus-within > div,
-        div[data-testid="stDateInput"] [data-baseweb="input"]:focus-within > div {
+        div[data-testid="stSelectbox"] [data-baseweb="select"]:focus-within,
+        div[data-testid="stDateInput"] [data-baseweb="input"]:focus-within {
             border-color: #0ea5e9 !important;
-            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.14) !important;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
         }
 
         /* Styling the analysis button to be more prominent */
@@ -3026,7 +3031,12 @@ def render_rain_season(df: pd.DataFrame, city_name: str = "", scope_label: str =
         ))
         fig.update_layout(**_dash_layout(
             height=380,
-            xaxis=dict(title=x_title, gridcolor="rgba(0,0,0,0)"),
+            xaxis=dict(
+                title=x_title, 
+                gridcolor="rgba(0,0,0,0)",
+                nticks=12 if scope_label in ["24h", "72h"] else 12,
+                tickangle=0
+            ),
             yaxis=dict(gridcolor="rgba(0,0,0,0)", tickfont=dict(size=10)),
         ))
         st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
@@ -3056,7 +3066,12 @@ def render_rain_season(df: pd.DataFrame, city_name: str = "", scope_label: str =
             ))
         fig2.update_layout(**_dash_layout(
             height=220,
-            xaxis=dict(title=x_title, gridcolor="rgba(0,0,0,0.04)"),
+            xaxis=dict(
+                title=x_title, 
+                gridcolor="rgba(0,0,0,0.04)",
+                nticks=8 if scope_label in ["24h", "72h"] else 12,
+                tickangle=0
+            ),
             yaxis=dict(title="Mưa (mm)", gridcolor="rgba(0,0,0,0.04)"),
             yaxis2=dict(overlaying="y", side="right", title="Độ ẩm (%)", showgrid=False, range=[0, 110]),
             legend=dict(orientation="h", x=0, y=1.15, font=dict(size=10)),
