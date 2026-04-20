@@ -9,7 +9,8 @@ import argparse
 
 from components.footer import render_footer
 from components.header import render_header
-from components.sidebar import render_sidebar
+from components.sidebar import build_state
+from components.navigation import render_navigation
 from services.data_loader import load_data
 from tabs import overview_tab, aqi_tab, weather_dashboard, interaction_tab
 from utils.css import inject_css
@@ -94,13 +95,15 @@ if args.mode == "realtime":
     initialize_background_tasks()
     print("Đang bật chế độ Real-time.")
 else:
-    print("Không sử dụng chế độ Real-time. Thêm 'realtime' sau tên file khi chạy để bật.")
+    print(
+        "Không sử dụng chế độ Real-time. Thêm 'realtime' sau tên file khi chạy để bật."
+    )
 
 st.set_page_config(
     layout="wide",
     page_title="Vietnam AQI Dashboard",
     page_icon="data/hcmus_logo.png",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 inject_css("styles/main.css")
@@ -163,7 +166,8 @@ def _consume_header_actions():
             del st.query_params["refresh"]
         else:
             qp = st.experimental_get_query_params()
-            if "refresh" in qp: del qp["refresh"]
+            if "refresh" in qp:
+                del qp["refresh"]
             st.experimental_set_query_params(**qp)
         st.rerun()
 
@@ -190,7 +194,7 @@ _consume_header_actions()
 def render_tab_or_blank(tab_module, df):
     """
     Safely render a tab module if it has a 'render' function.
-    
+
     Args:
         tab_module: The module representing the tab content.
         df: The main dataframe to pass to the render function.
@@ -202,12 +206,13 @@ def render_tab_or_blank(tab_module, df):
 
 def render_dashboard():
     """
-    Main function to render the entire dashboard layout, including the sidebar,
-    header, and the currently active tab content. Handles scope and timeframe filtering.
+    Main function to render the entire dashboard layout using three
+    st.columns([1, 15]) rows (header / main / footer). The left column of the
+    main row hosts the hover navigation rail; tab content renders on the right.
     """
     DF = load_data()
 
-    state = render_sidebar(DF)
+    state = build_state(DF)
     state.update(
         {
             "AQI_DEF": AQI_DEF,
@@ -232,10 +237,30 @@ def render_dashboard():
 
     st.session_state["dashboard_context"] = state
 
-    render_header(state, logo_html)
-
-    st.markdown('<div class="main-limit">', unsafe_allow_html=True)
     active_tab = state.get("active_tab", "overview")
+
+    # ── Row 1: Header ───────────────────────────
+    hdr_left, hdr_right = st.columns([1, 15], gap="small")
+    with hdr_right:
+        render_header(state, logo_html)
+
+    # ── Row 2: Navigation rail + tab content ────
+    nav_col, content_col = st.columns([1, 15], gap="small")
+    with nav_col:
+        render_navigation(active_tab)
+
+    with content_col:
+        _render_tab_content(state, active_tab)
+
+    # ── Row 3: Footer ───────────────────────────
+    ftr_left, ftr_right = st.columns([1, 15], gap="small")
+    with ftr_right:
+        render_footer()
+
+
+def _render_tab_content(state, active_tab):
+    """Renders the currently active tab inside the main content column."""
+    st.markdown('<div class="main-limit">', unsafe_allow_html=True)
     previous_active_tab = st.session_state.get("_last_active_tab")
     if active_tab == "interaction" and previous_active_tab != "interaction":
         st.session_state["interaction_time_range"] = "Năm 2025"
@@ -407,7 +432,6 @@ def render_dashboard():
         render_tab_or_blank(overview_tab, state["df"])
 
     st.markdown("</div>", unsafe_allow_html=True)  # Close main-limit
-    render_footer()
 
 
 def main():
