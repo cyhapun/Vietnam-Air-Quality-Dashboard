@@ -167,10 +167,6 @@ def _inject_weather_css():
     .wth-compare-card .cc-label { font-size:.62rem; text-transform:uppercase; letter-spacing:.6px; color:#94a3b8; font-weight:700; }
     .wth-compare-card .cc-val   { font-size:1.1rem; font-weight:800; color:#1e293b; margin-top:2px; }
     .card-sub { font-size:.72rem; color:#94a3b8; margin:2px 0 12px; }
-    .wth-insight-box {
-        background:#f0fdf4; border:1px solid #bbf7d0; border-radius:9px;
-        padding:8px 14px; font-size:.76rem; color:#166534; margin-top:8px;
-        display:flex; align-items:flex-start; gap:6px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -351,11 +347,6 @@ def _kpi_row(cards: list[str]):
 def _section(title: str):
     st.markdown(f"<div class='wth-section'>{title}</div>", unsafe_allow_html=True)
 
-def _insight_box(text: str):
-    st.markdown(
-        f"<div class='wth-insight-box'>💡 {text}</div>",
-        unsafe_allow_html=True,
-    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -468,18 +459,6 @@ def _render_slope_chart(annual: pd.DataFrame):
 
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # Auto insight
-    total_ranks = top_df[[f"{m}_rank" for m in avail_metrics]].sum(axis=1)
-    best_idx    = total_ranks.idxmin()
-    best_row    = top_df.loc[best_idx]
-    ranks_str   = " · ".join(
-        f"{lbl} #{int(best_row[f'{m}_rank'])}"
-        for m, lbl in zip(avail_metrics, avail_labels)
-    )
-    _insight_box(
-        f"<b>{escape(str(best_row['city']))}</b> ({escape(str(best_row['region']))}) "
-        f"khắc nghiệt toàn diện nhất — {ranks_str}"
-    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -596,14 +575,6 @@ def _render_dot_plot(annual: pd.DataFrame, reg_filter: str = "Tất cả"):
 
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # Auto insight: chỉ số có CV cao nhất = phân hóa mạnh nhất
-    if coeff_of_var:
-        most_unequal = max(coeff_of_var, key=coeff_of_var.get)
-        _insight_box(
-            f"<b>{most_unequal}</b> phân hóa mạnh nhất giữa các tỉnh "
-            f"(CV={coeff_of_var[most_unequal]:.0f}%) — "
-            f"chỉ số này tạo ra bất bình đẳng khí hậu lớn nhất."
-        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -696,22 +667,6 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
             f"</div>", unsafe_allow_html=True
         )
 
-    # 3. Trả lời trực tiếp câu hỏi của User bằng Auto-Insight
-    def get_relation(r):
-        if r > 0.3: return "tăng rõ rệt"
-        if r > 0.1: return "có xu hướng tăng nhẹ"
-        if r < -0.3: return "giảm rõ rệt"
-        return "không có liên hệ rõ ràng"
-
-    msg = (f"Câu trả lời: Khi <b>Nhiệt độ</b> tăng, lượng mưa {get_relation(r_tr)} (r={r_tr:.2f}). "
-           f"Khi <b>Độ ẩm</b> tăng, lượng mưa {get_relation(r_hr)} (r={r_hr:.2f}).")
-    
-    if r_tr > 0.2 and r_hr > 0.2:
-        msg += " <br>=> <b>Kết luận:</b> Nhiệt độ và Độ ẩm cao thường là 'ngòi nổ' kéo theo lượng mưa lớn tại Việt Nam."
-    else:
-        msg += " <br>=> <b>Kết luận:</b> Mưa phụ thuộc vào nhiều yếu tố khác (như gió/áp suất) chứ không chỉ riêng nhiệt độ/độ ẩm."
-
-    _insight_box(msg)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -903,19 +858,6 @@ def _render_layer1(df: pd.DataFrame):
             )
             st.plotly_chart(fig_box, use_container_width=True, config={"displayModeBar": False})
 
-            # Auto insight: vùng có độ phân tán lớn nhất
-            region_iqr = {}
-            for reg in REGION_ORDER:
-                d = annual_box[annual_box["region"] == reg][cur_var].dropna()
-                if len(d) >= 3:
-                    region_iqr[reg] = float(d.quantile(0.75) - d.quantile(0.25))
-            if region_iqr:
-                most_varied = max(region_iqr, key=region_iqr.get)
-                _insight_box(
-                    f"Miền <b>{most_varied}</b> có {meta.get('label','')} phân tán nhất nội vùng "
-                    f"(IQR = {region_iqr[most_varied]:.1f} {meta.get('unit','')}) — "
-                    f"các tỉnh trong vùng rất khác nhau."
-                )
         _card_close()
 
         # Nút Dự báo đã được chuyển lên Header
@@ -1176,18 +1118,6 @@ def _render_layer2(df: pd.DataFrame):
                 )
                 st.plotly_chart(fig_lb, use_container_width=True, config={"displayModeBar": False})
 
-                # Auto insight: trạm outlier
-                if len(ls) >= 3:
-                    top_station = ls.iloc[-1]
-                    bot_station = ls.iloc[0]
-                    diff = top_station[map_v] - bot_station[map_v]
-                    _insight_box(
-                        f"Chênh lệch giữa trạm cao nhất "
-                        f"(<b>{escape(str(top_station['location']))}</b>) và thấp nhất "
-                        f"(<b>{escape(str(bot_station['location']))}</b>): "
-                        f"<b>{diff:.1f} {mv['unit']}</b> — "
-                        f"{'đáng kể, địa hình ảnh hưởng lớn.' if diff > mv.get('threshold', diff) else 'khá đồng đều.'}"
-                    )
         else:
             st.info("Tỉnh này chỉ có một trạm quan trắc.")
         _card_close()
@@ -1230,13 +1160,6 @@ def _render_layer2(df: pd.DataFrame):
                 )
                 st.plotly_chart(fig_wr, use_container_width=True, config={"displayModeBar": False})
 
-                # Auto insight: hướng gió thống trị
-                dominant_sector = piv_wr.sum(axis=1).idxmax()
-                dominant_speed  = piv_wr.loc[dominant_sector].idxmax()
-                _insight_box(
-                    f"Hướng gió thống trị: <b>{dominant_sector}</b> · "
-                    f"Tốc độ phổ biến nhất: <b>{dominant_speed} m/s</b>"
-                )
             else:
                 st.info("Không đủ dữ liệu hướng gió.")
         else:
