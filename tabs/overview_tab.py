@@ -776,7 +776,6 @@ def render(df):
         '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">TỔNG QUAN</span>'
         'Chỉ số Chất lượng Không khí Việt Nam'
         '</div>'
-        '<div style="font-size: 1rem; color: #64748b; line-height: 1.5;">Bản đồ nhiệt và phân tích chất lượng không khí toàn diện trên 63 tỉnh thành Việt Nam.</div>'
         '</div>',
         unsafe_allow_html=True,
     )
