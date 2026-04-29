@@ -105,7 +105,7 @@ def _inject_weather_css():
         display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end;
     }
     .wth-filter-label {
-        font-size:.62rem; font-weight:700; text-transform:uppercase;
+        font-size:.62rem; font-weight:700;
         letter-spacing:.7px; color:#94a3b8; margin-bottom:6px;
     }
     .wth-page-header { display:flex; align-items:center; gap:14px; padding:18px 0 6px; }
@@ -126,7 +126,7 @@ def _inject_weather_css():
         font-weight:600; display:inline-flex; align-items:center; gap:4px;
     }
     .wth-section {
-        font-size:.62rem; font-weight:700; text-transform:uppercase;
+        font-size:.62rem; font-weight:700;
         letter-spacing:.8px; color:#94a3b8; margin:26px 0 14px;
         display:flex; align-items:center; gap:10px;
     }
@@ -159,12 +159,12 @@ def _inject_weather_css():
     .wth-extreme-card.rain::before { background:#0284c7; }
     .wth-extreme-card.wind::before { background:#16a34a; }
     .wth-extreme-card .ec-icon  { font-size:1.4rem; margin-bottom:6px; }
-    .wth-extreme-card .ec-label { font-size:.62rem; text-transform:uppercase; letter-spacing:.6px; color:#94a3b8; font-weight:700; }
+    .wth-extreme-card .ec-label { font-size:.62rem; letter-spacing:.6px; color:#94a3b8; font-weight:700; }
     .wth-extreme-card .ec-val   { font-size:1.3rem; font-weight:800; color:#1e293b; margin:2px 0; line-height:1; }
     .wth-extreme-card .ec-meta  { font-size:.72rem; color:#64748b; }
     .wth-compare-row { display:flex; gap:10px; margin-top:10px; }
     .wth-compare-card { flex:1; padding:10px 14px; border-radius:10px; border:1px solid #e2e8f0; text-align:center; }
-    .wth-compare-card .cc-label { font-size:.62rem; text-transform:uppercase; letter-spacing:.6px; color:#94a3b8; font-weight:700; }
+    .wth-compare-card .cc-label { font-size:.62rem; letter-spacing:.6px; color:#94a3b8; font-weight:700; }
     .wth-compare-card .cc-val   { font-size:1.1rem; font-weight:800; color:#1e293b; margin-top:2px; }
     .card-sub { font-size:.72rem; color:#94a3b8; margin:2px 0 12px; }
     .wth-insight-box {
@@ -205,7 +205,6 @@ def _inject_weather_css():
         font-weight: 800;
         padding: 4px 10px;
         border-radius: 6px;
-        text-transform: uppercase;
         letter-spacing: 0.5px;
     }
     .wx-info-title {
@@ -411,7 +410,7 @@ def _info_card_html(badge: str, title: str, sub: str) -> str:
 
 def _section(title: str, subtitle: str = ""):
     """Renders a section header as a premium info card."""
-    badge = "PHÂN TÍCH"
+    badge = "Phân tích"
     # Basic icon extraction
     icons = ["🌡️", "🌧️", "💨", "🧭", "🔵", "☁️", "📊", "📍", "🗺️", "🏅"]
     clean_title = title
@@ -750,26 +749,8 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _render_layer1(df: pd.DataFrame):
-    # Header với nút chuyển đổi sang chế độ Dự báo ở góc phải
-    c_head, c_nav = st.columns([4, 1.2], gap="small")
-    with c_head:
-        st.markdown(
-            "<div class='wth-page-header'>"
-            "<div class='wth-page-icon'>🌤</div>"
-            "<div>"
-            "<div class='wth-page-title'>Thời tiết Toàn quốc</div>"
-            "<div class='wth-page-sub'>Dữ liệu quan trắc khí tượng Việt Nam · Phân tích theo giai đoạn và vùng miền</div>"
-            "</div></div>", unsafe_allow_html=True,
-        )
-    with c_nav:
-        st.markdown("<div style='margin-top:16px'>", unsafe_allow_html=True)
-        if st.button("← Quay lại Dự báo", type="secondary", key="back_to_forecast_head", use_container_width=True):
-            st.session_state["wx_view_mode"] = "forecast"
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
-
     # ── Filter bar ───────────────────────────────────────────────────────────────
-    fc1, fc2, fc3 = st.columns([1.8, 1.2, 1.0], gap="small")
+    fc1, fc2 = st.columns([2, 1.5], gap="large")
     with fc1:
         st.markdown("<div class='wth-filter-label'>Giai đoạn phân tích</div>", unsafe_allow_html=True)
         preset, month = _season_selector("l1")
@@ -782,19 +763,8 @@ def _render_layer1(df: pd.DataFrame):
             "Chỉ số", var_opts,
             format_func=lambda x: VAR_META[x]["label"],
             selection_mode="single", default=cur_var, key="l1_var_sg",
-        ) or cur_var
+        ) or var_opts[0]
         _set_state(l1_var=cur_var)
-    with fc3:
-        st.markdown("<div class='wth-filter-label'>Trạng thái dữ liệu</div>", unsafe_allow_html=True)
-        n_cities  = df["city"].nunique() if "city" in df.columns else 0
-        n_records = len(df)
-        st.markdown(
-            f"<div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;padding:8px 12px;margin-top:2px'>"
-            f"<div style='font-size:.68rem;color:#16a34a;font-weight:700'>● LIVE DATA</div>"
-            f"<div style='font-size:.72rem;color:#166534;margin-top:2px'>"
-            f"{n_cities} tỉnh · {n_records:,} bản ghi</div></div>",
-            unsafe_allow_html=True,
-        )
 
     filtered = _filter_by_season(df, preset, month)
     annual   = _agg_annual(filtered)
@@ -827,7 +797,7 @@ def _render_layer1(df: pd.DataFrame):
         _kpi_row(kpis)
 
     # ── Section A: Xu hướng + Boxplot ───────────────────────────────────────────
-    _section("CHU KỲ KHÍ HẬU & PHÂN BỐ VÙNG MIỀN")
+    _section("Chu kỳ khí hậu & Phân bổ vùng miền")
     col_trend, col_box = st.columns([1.35, 1], gap="large")
 
     with col_trend:
@@ -936,33 +906,8 @@ def _render_layer1(df: pd.DataFrame):
 
         # Nút Dự báo đã được chuyển lên Header
 
-    # ── Section B: Slope chart + Dot plot ───────────────────────────────────────
-    _section("XẾP HẠNG & PHÂN HÓA TỈNH THÀNH")
-
-    col_slope, col_dot = st.columns([1.2, 1], gap="large")
-
-    with col_slope:
-        _card_open(
-            "Slope chart", "Tỉnh nào khắc nghiệt toàn diện?",
-            "Đường nằm cao xuyên suốt = khắc nghiệt nhiều chỉ số · Hover xem thứ hạng",
-        )
-        if not annual.empty:
-            _render_slope_chart(annual)
-        _card_close()
-
-    with col_dot:
-        _card_open(
-            "Dot plot", "Chỉ số nào phân hóa mạnh nhất?",
-            "Khoảng trải rộng = phân hóa lớn · Hình thoi = trung bình · ◆ = outlier",
-        )
-        if not annual.empty:
-            reg_opts = ["Tất cả"] + REGION_ORDER
-            reg_dot  = st.radio("Lọc vùng:", reg_opts, horizontal=True, key="l1_dot_reg")
-            _render_dot_plot(annual, reg_filter=reg_dot)
-        _card_close()
-
     # ── Section C: Phân tích đa biến (Nhiệt độ + Độ ẩm -> Mưa) ───────────────────
-    _section("TƯƠNG QUAN NHIỆT ĐỘ, ĐỘ ẨM & LƯỢNG MƯA")
+    _section("Tương quan nhiệt độ, độ ẩm & lượng mưa")
     _card_open(
         "Multivariate Analysis", "Nhiệt độ & Độ ẩm tăng có kéo theo mưa không?",
         "Bong bóng lớn = mưa nhiều · X: Nhiệt độ · Y: Độ ẩm · Màu: Vùng miền",
@@ -1006,11 +951,8 @@ def _render_layer2(df: pd.DataFrame):
             f"Vùng {escape(region)}</span>"
         )
     st.markdown(
-        f"<div class='wth-page-header'>"
-        f"<div class='wth-page-icon'>📍</div>"
-        f"<div><div class='wth-page-title'>{escape(province)}{region_badge}</div>"
-        f"<div class='wth-page-sub'>Phân tích khí tượng chi tiết từ trạm quan trắc địa phương</div>"
-        f"</div></div>", unsafe_allow_html=True,
+        _info_card_html("Chi tiết tỉnh", f"{escape(province)} {region_badge}", "Phân tích khí tượng chi tiết từ trạm quan trắc địa phương"),
+        unsafe_allow_html=True,
     )
 
     # Filter bar
@@ -1069,7 +1011,7 @@ def _render_layer2(df: pd.DataFrame):
         _kpi_row(kpis)
 
     # ── Section 1: Timeline ──────────────────────────────────────────────────────
-    _section("DIỄN BIẾN THỜI GIAN", "Theo dõi biến động nhiệt độ và lượng mưa qua các mốc thời gian")
+    _section("Diễn biến thời gian", "Theo dõi biến động nhiệt độ và lượng mưa qua các mốc thời gian")
     _card_open("Timeline", "Nhiệt độ & Lượng mưa hàng ngày",
                "Đường cam = nhiệt độ · Vùng mờ = biên độ min–max · Cột xanh = lượng mưa")
 
@@ -1154,7 +1096,7 @@ def _render_layer2(df: pd.DataFrame):
     _card_close()
 
     # ── Section 3: Bar chart nội tỉnh + Wind rose ────────────────────────────────
-    _section("PHÂN BỔ TRẠM QUAN TRẮC & HƯỚNG GIÓ", "So sánh dữ liệu giữa các trạm địa phương và phân tích hướng gió chủ đạo")
+    _section("Phân bổ trạm quan trắc & Hướng gió", "So sánh dữ liệu giữa các trạm địa phương và phân tích hướng gió chủ đạo")
     col_loc, col_wr = st.columns([1.1, 1], gap="large")
 
     with col_loc:
@@ -1239,7 +1181,7 @@ def _render_layer2(df: pd.DataFrame):
         _card_close()
 
     # ── Section 4: Extreme events ────────────────────────────────────────────────
-    _section("SỰ KIỆN CỰC ĐOAN", "Tổng hợp các giá trị kỷ lục được ghi nhận trong giai đoạn phân tích")
+    _section("Sự kiện cực đoan", "Tổng hợp các giá trị kỷ lục được ghi nhận trong giai đoạn phân tích")
     _card_open("Extremes", "Ghi nhận cực trị trong giai đoạn phân tích",
                "Dữ liệu từ tất cả trạm quan trắc trong tỉnh")
 
@@ -1250,17 +1192,17 @@ def _render_layer2(df: pd.DataFrame):
     extreme_cards = []
     if "temp" in prov_cp.columns and not prov_cp["temp"].isna().all():
         r = prov_cp.loc[prov_cp["temp"].idxmax()]
-        extreme_cards.append({"type":"hot",  "icon":"🌡️", "label":"NÓNG NHẤT",     "val":f"{_fmt(r['temp'],1)}°C",         "meta":f"{r['_loc']} · {r['_date']}"})
+        extreme_cards.append({"type":"hot",  "icon":"🌡️", "label":"Nóng nhất",     "val":f"{_fmt(r['temp'],1)}°C",         "meta":f"{r['_loc']} · {r['_date']}"})
         r = prov_cp.loc[prov_cp["temp"].idxmin()]
-        extreme_cards.append({"type":"cold", "icon":"❄️",  "label":"LẠNH NHẤT",     "val":f"{_fmt(r['temp'],1)}°C",         "meta":f"{r['_loc']} · {r['_date']}"})
+        extreme_cards.append({"type":"cold", "icon":"❄️",  "label":"Lạnh nhất",     "val":f"{_fmt(r['temp'],1)}°C",         "meta":f"{r['_loc']} · {r['_date']}"})
     if "rain" in prov_cp.columns and not prov_cp["rain"].isna().all():
         dr = prov_cp.groupby(["_date","_loc"], observed=True)["rain"].sum().reset_index()
         if not dr.empty:
             r = dr.loc[dr["rain"].idxmax()]
-            extreme_cards.append({"type":"rain", "icon":"🌧️", "label":"MƯA LỚN NHẤT",  "val":f"{_fmt(r['rain'],0)} mm",        "meta":f"{r['_loc']} · {r['_date']}"})
+            extreme_cards.append({"type":"rain", "icon":"🌧️", "label":"Mưa lớn nhất",  "val":f"{_fmt(r['rain'],0)} mm",        "meta":f"{r['_loc']} · {r['_date']}"})
     if "wind_speed" in prov_cp.columns and not prov_cp["wind_speed"].isna().all():
         r = prov_cp.loc[prov_cp["wind_speed"].idxmax()]
-        extreme_cards.append({"type":"wind", "icon":"💨", "label":"GIÓ MẠNH NHẤT",  "val":f"{_fmt(r['wind_speed'],1)} m/s", "meta":f"{r['_loc']} · {r['_date']}"})
+        extreme_cards.append({"type":"wind", "icon":"💨", "label":"Gió mạnh nhất",  "val":f"{_fmt(r['wind_speed'],1)} m/s", "meta":f"{r['_loc']} · {r['_date']}"})
 
     if extreme_cards:
         cards_html = "".join(
@@ -1314,14 +1256,22 @@ def render(global_df: pd.DataFrame):
         return
 
     # ── Tab Header Card (Description) ──
-    st.markdown(
-        _info_card_html(
-            "PHÂN TÍCH", 
-            "Phân tích Chuỗi thời gian & Xu hướng Khí tượng", 
-            "Khám phá dữ liệu lịch sử, tương quan các chỉ số và nhận diện các kịch bản thời tiết cực đoan."
-        ),
-        unsafe_allow_html=True
-    )
+    c_title, c_back = st.columns([4, 1], gap="small")
+    with c_title:
+        st.markdown(
+            _info_card_html(
+                "Phân tích", 
+                "Phân tích Chuỗi thời gian & Xu hướng Khí tượng", 
+                "Khám phá dữ liệu lịch sử, tương quan các chỉ số và nhận diện các kịch bản thời tiết cực đoan."
+            ),
+            unsafe_allow_html=True
+        )
+    with c_back:
+        st.markdown("<div style='margin-top:20px'>", unsafe_allow_html=True)
+        if st.button("← Quay lại Dự báo", type="primary", key="back_to_forecast_top", use_container_width=True):
+            st.session_state["wx_view_mode"] = "forecast"
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
     layer    = _get_state("wx_layer",    1)
     province = _get_state("wx_province", None)
