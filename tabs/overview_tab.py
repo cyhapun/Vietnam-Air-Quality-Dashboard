@@ -293,40 +293,6 @@ def _build_scope_metrics(df, state, selected_range):
     return derived_state
 
 
-def _render_kpi_strip(_col, avg_aqi, _lbl, avg_pm25, cig_n, exposure_label, worst, dangerp):
-    """
-    Renders the KPI strip containing core metrics like average AQI, PM2.5,
-    cigarette equivalents, and danger hours.
-    """
-    st.markdown(
-        f"""
-    <div class="kpi-strip">
-      <div class="kpi-box accent-amber">
-        <div class="kpi-lbl">PM2.5 trung bình</div>
-        <div class="kpi-val">{avg_pm25} <span class="u">µg/m³</span></div>
-        <div class="kpi-sub">Vượt ngưỡng WHO ({round(avg_pm25/15*100-100,0):.0f}% so với 15 µg)</div>
-      </div>
-      <div class="kpi-box accent-red">
-        <div class="kpi-lbl">Tương đương thuốc lá</div>
-        <div class="kpi-val">{cig_n} <span class="u">điếu</span></div>
-        <div class="kpi-sub">trong {exposure_label} · 22 µg/m³ = 1 điếu</div>
-      </div>
-      <div class="kpi-box accent-slate">
-        <div class="kpi-lbl">Khu vực ô nhiễm nhất</div>
-        <div class="kpi-val" style="font-size:1.1rem;padding-top:4px">{worst}</div>
-        <div class="kpi-sub">AQI trung bình cao nhất</div>
-      </div>
-      <div class="kpi-box accent-red">
-        <div class="kpi-lbl">Giờ AQI nguy hiểm</div>
-        <div class="kpi-val">{dangerp} <span class="u">%</span></div>
-        <div class="kpi-sub">AQI > 150 (Kém → Nguy hại)</div>
-      </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
-
 def _render_trend_grid(
     trend_primary_kicker,
     aqi_1d_color,
@@ -338,12 +304,12 @@ def _render_trend_grid(
     aqi_7d_text,
     pm_7d_color,
     pm_7d_text,
-    rank_up_line,
-    rank_down_line,
+    cig_n,
+    exposure_label,
 ):
     """
     Renders the trend grid comparing short-term and long-term changes,
-    as well as ranking shifts.
+    and cigarette equivalents.
     """
     st.markdown(
         f"""
@@ -359,9 +325,9 @@ def _render_trend_grid(
             <div class="trend-sub" style="color:{pm_7d_color}">PM2.5: {pm_7d_text}</div>
         </div>
         <div class="trend-card">
-            <div class="trend-kicker">Thay đổi thứ hạng ô nhiễm (so với ngày trước)</div>
-            <div class="trend-rank-line"><strong>Leo hạng:</strong> {rank_up_line}</div>
-            <div class="trend-rank-line"><strong>Hạ hạng:</strong> {rank_down_line if rank_down_line else "Không có biến động giảm rõ rệt."}</div>
+            <div class="trend-kicker">Tương đương thuốc lá</div>
+            <div class="trend-main" style="color:#ef4444">{cig_n} <span style="font-size:1rem;color:#64748b;font-weight:600;">điếu</span></div>
+            <div class="trend-sub">trong {exposure_label} · 22 µg/m³ = 1 điếu</div>
         </div>
     </div>
     """,
@@ -597,7 +563,6 @@ def _render_pollutant_cards(df):
                 f"<div class='pollutant-mini-value'>{current_val:g}</div>"
                 f"<div class='pollutant-mini-unit'>{unit}</div>"
                 "</div>"
-                "<div class='pollutant-mini-arrow'>›</div>"
                 f"{tooltip_html}"
                 "</div>"
             )
@@ -687,11 +652,6 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     <div class="aqi-insight-wrap in-hero">
         <div class="aqi-insight-grid">
             <div class="aqi-insight-card">
-                <div class="aqi-insight-kicker">Khuyến nghị sức khỏe</div>
-                <div class="aqi-insight-main">{_lbl}</div>
-                <div class="aqi-insight-sub">{hero_insights['health_advice']}</div>
-            </div>
-            <div class="aqi-insight-card">
                 <div class="aqi-insight-kicker">Khung giờ đáng chú ý</div>
                 <div class="aqi-insight-main">{hero_insights['slot_focus']}</div>
                 <div class="aqi-insight-sub">{hero_insights['slot_focus_sub']}</div>
@@ -700,11 +660,6 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
                 <div class="aqi-insight-kicker">Mức độ rủi ro theo nhóm</div>
                 <div class="aqi-insight-main">Trẻ em · Người già</div>
                 <div class="aqi-insight-sub">Trẻ em: {hero_insights['risk_children']} Người già: {hero_insights['risk_elderly']}</div>
-            </div>
-            <div class="aqi-insight-card">
-                <div class="aqi-insight-kicker">Thời điểm an toàn nhất</div>
-                <div class="aqi-insight-main">{hero_insights['best_slot']}</div>
-                <div class="aqi-insight-sub">{hero_insights['best_slot_sub']}</div>
             </div>
         </div>
     </div>
@@ -735,7 +690,6 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     )
     st.markdown(iqair_hybrid_html, unsafe_allow_html=True)
 
-    _render_kpi_strip(_col, avg_aqi, _lbl, avg_pm25, cig_n, exposure_label, worst, dangerp)
     _render_trend_grid(
         trend_primary_kicker,
         aqi_1d_color,
@@ -747,8 +701,8 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
         aqi_7d_text,
         pm_7d_color,
         pm_7d_text,
-        rank_up_line,
-        rank_down_line,
+        cig_n,
+        exposure_label,
     )
     _render_pollutant_cards(df)
 

@@ -7,17 +7,20 @@ REFRESH_ICON_SVG = """<svg viewBox="0 0 24 24" fill="none"><path d="M21 12a9 9 0
 
 def render_navigation(active_tab: str):
     """Render hover sidebar directly in page DOM for reliable query-param nav."""
+    colorblind_on = st.session_state.get("colorblind_mode", False)
+    cb_param = "&cb=1" if colorblind_on else "&cb=0"
+
     items_html = []
     for key, icon_svg, label in TAB_ITEMS:
         active_cls = " is-active" if key == active_tab else ""
         items_html.append(
-            f"<a class='az-nav-item{active_cls}' href='?tab={key}' target='_self' title='{label}'>"
+            f"<a class='az-nav-item{active_cls}' href='?tab={key}{cb_param}' target='_self' title='{label}'>"
             f"<span class='az-nav-icon'>{icon_svg}</span>"
             f"<span class='az-nav-label'>{label}</span>"
             f"</a>"
         )
     items_html.append(
-        f"<a class='az-nav-item az-nav-refresh' href='?refresh=1&tab={active_tab}' target='_self' title='Refresh Data'>"
+        f"<a class='az-nav-item az-nav-refresh' href='?refresh=1&tab={active_tab}{cb_param}' target='_self' title='Refresh Data'>"
         f"<span class='az-nav-icon'>{REFRESH_ICON_SVG}</span>"
         f"<span class='az-nav-label'>Refresh Data</span>"
         f"</a>"
