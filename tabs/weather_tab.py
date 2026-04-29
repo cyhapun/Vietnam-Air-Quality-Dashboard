@@ -2946,7 +2946,7 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
     with c_f_btn:
         st.markdown("<div class='ov-filter-label'>&nbsp;</div>", unsafe_allow_html=True)
         if show_analysis_button:
-            if st.button("← Quay lại Phân tích", type="primary", use_container_width=True, key="wt_go_to_analysis"):
+            if st.button("← Xem Phân tích", type="primary", use_container_width=True, key="wt_go_to_analysis"):
                 st.session_state["wx_view_mode"] = "analysis"
                 st.rerun()
         else:

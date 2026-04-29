@@ -752,10 +752,10 @@ def _render_layer1(df: pd.DataFrame):
     # ── Filter bar ───────────────────────────────────────────────────────────────
     fc1, fc2 = st.columns([2, 1.5], gap="large")
     with fc1:
-        st.markdown("<div class='ov-filter-label'>Giai đoạn phân tích</div>", unsafe_allow_html=True)
+        st.markdown("<div class='wth-filter-label'>Giai đoạn phân tích</div>", unsafe_allow_html=True)
         preset, month = _season_selector("l1")
     with fc2:
-        st.markdown("<div class='ov-filter-label'>Chỉ số hiển thị</div>", unsafe_allow_html=True)
+        st.markdown("<div class='wth-filter-label'>Chỉ số hiển thị</div>", unsafe_allow_html=True)
         var_opts = [v for v in ["temp","humidity","rain","wind_speed"] if v in df.columns]
         cur_var  = _get_state("l1_var", var_opts[0] if var_opts else "temp")
         if cur_var not in var_opts: cur_var = var_opts[0]
@@ -763,7 +763,6 @@ def _render_layer1(df: pd.DataFrame):
             "Chỉ số", var_opts,
             format_func=lambda x: VAR_META[x]["label"],
             selection_mode="single", default=cur_var, key="l1_var_sg",
-            label_visibility="collapsed"
         ) or var_opts[0]
         _set_state(l1_var=cur_var)
 
@@ -937,7 +936,7 @@ def _render_layer2(df: pd.DataFrame):
             f"</div>", unsafe_allow_html=True,
         )
     with c_back:
-        if st.button("← Quay lại", key="l2_back", use_container_width=True):
+        if st.button("← Xem Phân tích Toàn quốc", key="l2_back", use_container_width=True):
             _go_layer1()
 
     region = PROVINCE_REGION.get(province, "")
@@ -951,32 +950,23 @@ def _render_layer2(df: pd.DataFrame):
             f"font-weight:700;padding:3px 10px;margin-left:10px;vertical-align:middle'>"
             f"Vùng {escape(region)}</span>"
         )
-    # Header layer2 (đồng bộ với card style chuẩn)
-    region_tag = f"<span style='background:{REGION_BG.get(region,'#f8fafc')};color:{REGION_COLORS.get(region,'#94a3b8')};border:1px solid {REGION_COLORS.get(region,'#94a3b8')}33;border-radius:99px;font-size:0.75rem;font-weight:700;padding:2px 10px;margin-left:8px;vertical-align:middle'>{escape(region)}</span>" if region else ""
     st.markdown(
-        f'<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
-        f'<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
-        f'<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">CHI TIẾT TỈNH</span>'
-        f'{escape(province)}{region_tag}'
-        f'</div>'
-        f'<div style="font-size: 0.9rem; color: #64748b; font-weight: 500;">Phân tích khí tượng chi tiết từ trạm quan trắc địa phương</div>'
-        f'</div>',
+        _info_card_html("Chi tiết tỉnh", f"{escape(province)} {region_badge}", "Phân tích khí tượng chi tiết từ trạm quan trắc địa phương"),
         unsafe_allow_html=True,
     )
 
     # Filter bar
     fc1, fc2 = st.columns([1.6, 1.4], gap="small")
     with fc1:
-        st.markdown("<div class='ov-filter-label'>Giai đoạn phân tích</div>", unsafe_allow_html=True)
+        st.markdown("<div class='wth-filter-label'>Giai đoạn phân tích</div>", unsafe_allow_html=True)
         preset, month = _season_selector("l2")
     with fc2:
-        st.markdown("<div class='ov-filter-label'>Chỉ số chính</div>", unsafe_allow_html=True)
+        st.markdown("<div class='wth-filter-label'>Chỉ số chính</div>", unsafe_allow_html=True)
         l2_vars = [v for v in ["temp","rain","humidity","wind_speed","pressure"] if v in df.columns]
         pv = st.segmented_control(
             "Chỉ số", l2_vars,
             format_func=lambda x: VAR_META[x]["label"],
             selection_mode="single", default=l2_vars[0], key="l2_pv_sg",
-            label_visibility="collapsed"
         ) or l2_vars[0]
 
     filtered = _filter_by_season(df, preset, month)
@@ -1121,7 +1111,7 @@ def _render_layer2(df: pd.DataFrame):
             if map_v_opts:
                 map_v = st.radio("Chỉ số:", map_v_opts,
                                  format_func=lambda x: f"{VAR_META[x]['icon']} {VAR_META[x]['label']}",
-                                 horizontal=True, key="l2_locbar_v", label_visibility="collapsed")
+                                 horizontal=True, key="l2_locbar_v")
                 mv  = VAR_META[map_v]
                 ls  = loc_sum.dropna(subset=[map_v]).sort_values(map_v, ascending=True)
                 clr = REGION_COLORS.get(region, mv["color"])
@@ -1265,22 +1255,20 @@ def render(global_df: pd.DataFrame):
         wt.render(global_df, show_analysis_button=True)
         return
 
-    # ── Tab Header Card (đồng bộ với overview/AQI/interaction style) ──
-    c_title, c_back = st.columns([5, 1], gap="small")
+    # ── Tab Header Card (Description) ──
+    c_title, c_back = st.columns([4, 1], gap="small")
     with c_title:
         st.markdown(
-            '<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
-            '<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
-            '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">PHÂN TÍCH</span>'
-            'Phân tích Chuỗi thời gian & Xu hướng Khí tượng'
-            '</div>'
-            '<div style="font-size: 0.9rem; color: #64748b; font-weight: 500;">Khám phá dữ liệu lịch sử, tương quan các chỉ số và nhận diện các kịch bản thời tiết cực đoan.</div>'
-            '</div>',
+            _info_card_html(
+                "Phân tích", 
+                "Phân tích Chuỗi thời gian & Xu hướng Khí tượng", 
+                "Khám phá dữ liệu lịch sử, tương quan các chỉ số và nhận diện các kịch bản thời tiết cực đoan."
+            ),
             unsafe_allow_html=True
         )
     with c_back:
         st.markdown("<div style='margin-top:20px'>", unsafe_allow_html=True)
-        if st.button("Xem Dự báo ➔", type="primary", key="back_to_forecast_top", use_container_width=True):
+        if st.button("← Xem Dự báo", type="primary", key="back_to_forecast_top", use_container_width=True):
             st.session_state["wx_view_mode"] = "forecast"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
