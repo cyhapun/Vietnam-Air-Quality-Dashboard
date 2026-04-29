@@ -11,12 +11,12 @@ def get_base64_image(image_path):
 
 
 AQI_DEF_NORMAL = [
-    (0,   50,  "Tốt",                                 "#0f9d6c"),
-    (51,  100, "Vừa phải",                            "#f2d22e"),
-    (101, 150, "Không lành mạnh cho nhóm nhạy cảm",  "#f79332"),
-    (151, 200, "Không khỏe mạnh",                     "#e40046"),
-    (201, 300, "Rất không tốt cho sức khỏe",          "#6f0ea8"),
-    (301, 500, "Nguy hiểm",                           "#97002e"),
+    (0,   50,  "Tốt",                                 "#22c55e"),
+    (51,  100, "Vừa phải",                            "#eab308"),
+    (101, 150, "Không lành mạnh cho nhóm nhạy cảm",  "#f97316"),
+    (151, 200, "Không khỏe mạnh",                     "#ef4444"),
+    (201, 300, "Rất không tốt cho sức khỏe",          "#a855f7"),
+    (301, 500, "Nguy hiểm",                           "#be123c"),
 ]
 
 AQI_DEF_CB = [
@@ -95,12 +95,14 @@ def aqi_health_guidance(v):
     if v <= 50:
         return "Không khí tốt", "Nhóm nhạy cảm có thể sinh hoạt ngoài trời bình thường.", "#22c55e"
     if v <= 100:
-        return "Mức trung bình", "Người có bệnh hô hấp nên giảm hoạt động kéo dài ngoài trời.", "#0ea5e9"
+        return "Mức trung bình", "Người có bệnh hô hấp nên giảm hoạt động kéo dài ngoài trời.", "#eab308"
     if v <= 150:
-        return "Bắt đầu ảnh hưởng", "Trẻ em, người già và người có bệnh nền nên hạn chế ra ngoài giờ cao điểm.", "#f59e0b"
+        return "Bắt đầu ảnh hưởng", "Trẻ em, người già và người có bệnh nền nên hạn chế ra ngoài giờ cao điểm.", "#f97316"
     if v <= 200:
-        return "Không tốt cho sức khỏe", "Nên đeo khẩu trang lọc bụi mịn và giảm vận động mạnh ngoài trời.", "#f97316"
-    return "Rất xấu", "Ưu tiên ở trong nhà, đóng cửa và dùng máy lọc nếu có.", "#ef4444"
+        return "Không tốt cho sức khỏe", "Nên đeo khẩu trang lọc bụi mịn và giảm vận động mạnh ngoài trời.", "#ef4444"
+    if v <= 300:
+        return "Rất xấu", "Ưu tiên ở trong nhà, đóng cửa và dùng máy lọc nếu có.", "#a855f7"
+    return "Nguy hiểm", "Ở trong nhà hoàn toàn, đóng kín cửa và bật máy lọc không khí.", "#be123c"
 
 def rank_rows_html(rank_df):
     rows = []
