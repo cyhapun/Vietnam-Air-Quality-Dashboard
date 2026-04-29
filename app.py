@@ -385,7 +385,7 @@ def _render_tab_content(state, active_tab):
                         with dashboard_loading(
                             "Đang tải dữ liệu chi tiết tỉnh/thành...",
                             hint=f"Chuẩn hóa chuỗi thời gian và phân lớp AQI cho {selected_province}.",
-                            overlay=False,
+                            overlay=True,
                             min_duration=0.35,
                         ):
                             detail_raw = load_province_detail(

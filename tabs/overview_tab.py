@@ -293,46 +293,7 @@ def _build_scope_metrics(df, state, selected_range):
     return derived_state
 
 
-def _render_trend_grid(
-    trend_primary_kicker,
-    aqi_1d_color,
-    aqi_1d_text,
-    pm_1d_color,
-    pm_1d_text,
-    trend_secondary_kicker,
-    aqi_7d_color,
-    aqi_7d_text,
-    pm_7d_color,
-    pm_7d_text,
-    cig_n,
-    exposure_label,
-):
-    """
-    Renders the trend grid comparing short-term and long-term changes,
-    and cigarette equivalents.
-    """
-    st.markdown(
-        f"""
-    <div class="trend-grid">
-        <div class="trend-card">
-            <div class="trend-kicker">{trend_primary_kicker}</div>
-            <div class="trend-main" style="color:{aqi_1d_color}">AQI: {aqi_1d_text}</div>
-            <div class="trend-sub" style="color:{pm_1d_color}">PM2.5: {pm_1d_text}</div>
-        </div>
-        <div class="trend-card">
-            <div class="trend-kicker">{trend_secondary_kicker}</div>
-            <div class="trend-main" style="color:{aqi_7d_color}">AQI: {aqi_7d_text}</div>
-            <div class="trend-sub" style="color:{pm_7d_color}">PM2.5: {pm_7d_text}</div>
-        </div>
-        <div class="trend-card">
-            <div class="trend-kicker">Tương đương thuốc lá</div>
-            <div class="trend-main" style="color:#ef4444">{cig_n} <span style="font-size:1rem;color:#64748b;font-weight:600;">điếu</span></div>
-            <div class="trend-sub">trong {exposure_label} · 22 µg/m³ = 1 điếu</div>
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
+
 
 
 def _render_pollutant_cards(df):
@@ -675,13 +636,17 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
         f"<div class='iq-card iq-card-hero'>"
         f"{hero_bg_html}"
         f"<div class='iq-hero-content'>"
-        f"<div class='iq-hero-kicker'>Chất lượng không khí tại {scope_label}</div>"
-        f"<div class='iq-hero-row'>"
+        f"<div class='iq-hero-kicker'>CHẤT LƯỢNG KHÔNG KHÍ TẠI {scope_label.upper()} TRONG {exposure_label.upper()}</div>"
+        f"<div class='iq-hero-row' style='display: flex; align-items: center; gap: 16px;'>"
+        f"<div style='display: flex; align-items: baseline; gap: 8px;'>"
         f"<div class='iq-hero-aqi' style='color:{_col}'>{avg_aqi}</div>"
         f"<div class='iq-hero-status'>{_lbl}</div>"
         f"</div>"
+        f"<div style='font-size: 1.15rem; color: {aqi_1d_color}; font-weight: 700; white-space: nowrap;'>{aqi_1d_text}</div>"
+        f"</div>"
         f"<div class='iq-hero-sub'>PM2.5 trung bình hiện tại: <strong>{avg_pm25} µg/m³</strong></div>"
         f"<div class='iq-hero-sub'>Nồng độ PM2.5 đang cao gấp <strong>{who_pm25_multi} lần</strong> mức hướng dẫn năm của WHO (5 µg/m³).</div>"
+        f"<div class='iq-hero-sub' style='margin-top: 10px;'><span style='background: rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 8px;'><strong>🚬 Tương đương: {cig_n} điếu thuốc lá</strong></span></div>"
         f"</div>"
         f"{insight_block_html}"
         f"</div>"
@@ -689,21 +654,6 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
         f"</div>"
     )
     st.markdown(iqair_hybrid_html, unsafe_allow_html=True)
-
-    _render_trend_grid(
-        trend_primary_kicker,
-        aqi_1d_color,
-        aqi_1d_text,
-        pm_1d_color,
-        pm_1d_text,
-        trend_secondary_kicker,
-        aqi_7d_color,
-        aqi_7d_text,
-        pm_7d_color,
-        pm_7d_text,
-        cig_n,
-        exposure_label,
-    )
     _render_pollutant_cards(df)
 
     if is_city_trimmed:
