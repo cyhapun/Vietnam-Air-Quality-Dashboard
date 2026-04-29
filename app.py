@@ -7,7 +7,6 @@ from services.crawl_data.get_province_aqi import run_province_aggregation
 from services.crawl_data.get_forecast import run_forecast_update
 import argparse
 
-from components.footer import render_footer
 from components.header import render_header
 from components.sidebar import build_state
 from components.navigation import render_navigation
@@ -209,7 +208,7 @@ def render_tab_or_blank(tab_module, df):
 def render_dashboard():
     """
     Main function to render the entire dashboard layout using three
-    st.columns([1, 15]) rows (header / main / footer). The left column of the
+    st.columns([1, 15]) rows (header / main). The left column of the
     main row hosts the hover navigation rail; tab content renders on the right.
     """
     DF = load_data()
@@ -253,11 +252,6 @@ def render_dashboard():
 
     with content_col:
         _render_tab_content(state, active_tab)
-
-    # ── Row 3: Footer ───────────────────────────
-    ftr_left, ftr_right = st.columns([1, 15], gap="small")
-    with ftr_right:
-        render_footer()
 
 
 def _render_tab_content(state, active_tab):
