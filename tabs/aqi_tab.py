@@ -316,7 +316,7 @@ def render_health_advice_box(avg_val, poll_type):
 <div style="height: 100%; min-height: 270px; background-color: {hex_rgba(clr, 0.08)}; border: 1.5px solid {hex_rgba(clr, 0.3)}; border-radius: 12px; padding: 22px 24px; display: flex; flex-direction: column;">
     <div style="display: flex; align-items: center; margin-bottom: 12px;">
         {icon_html}
-        <span style="color: {clr}; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">KHUYẾN CÁO SỨC KHỎE</span>
+        <span style="color: {clr}; font-size: 15px; font-weight: 800; letter-spacing: 0.5px;">Khuyến cáo sức khỏe</span>
     </div>
     <div style="margin-bottom: 12px;">
         <span style="background-color: {clr}; color: {t_col}; padding: 6px 14px; border-radius: 8px; font-size: 15px; font-weight: 700; display: inline-block;">{lbl}</span>
@@ -367,7 +367,7 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
         prev_ts = df["timestamp"].min()
         period_lbl = "Đầu chu kỳ"
     else:
-        period_lbl = f"{label_map.get(time_range, 'Trước')} (cùng giờ)"
+        period_lbl = label_map.get(time_range, 'Trước')
         prev_ts = last_ts - delta
         
     # Find the record closest to (but not after) the target past timestamp
@@ -789,26 +789,26 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
                 advice = f"Cảnh báo: Đã ghi nhận các đỉnh ô nhiễm nguy hiểm tại <b>{worse_peak}</b>. Cần chú ý bảo vệ hô hấp trong các đợt bùng phát này."
 
             # Ensure no leading whitespace for the f-string to prevent markdown code block rendering
-            html_insight = f'''<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+            html_insight = f'''<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
 <div>
-    <div style="font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 1.25rem; letter-spacing: 0.5px;">Phân tích phân bố</div>
-    <div style="margin-bottom: 1.25rem;">
-        <div style="font-size: 13px; color: #64748b;">Chênh lệch Trung vị (Median)</div>
-        <div style="font-size: 28px; font-weight: 800; color: #0f172a;">{diff:.1f} <span style="font-size: 14px; font-weight: 500; color: #64748b;">đơn vị</span></div>
+    <div style="font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 14px; letter-spacing: 0.5px;">Phân tích phân bố</div>
+    <div style="margin-bottom: 14px;">
+        <div style="font-size: 12px; color: #64748b;">Chênh lệch Trung vị (Median)</div>
+        <div style="font-size: 24px; font-weight: 800; color: #0f172a;">{diff:.1f} <span style="font-size: 13px; font-weight: 500; color: #64748b;">đơn vị</span></div>
     </div>
-    <div style="padding: 14px; background: white; border-radius: 8px; border-left: 4px solid {b_color}; margin-bottom: 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-        <div style="font-size: 14px; color: #1e293b; line-height: 1.6;">{eval_text}</div>
-        <div style="font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 8px;">{detail_text}</div>
+    <div style="padding: 10px; background: white; border-radius: 8px; border-left: 4px solid {b_color}; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="font-size: 13px; color: #1e293b; line-height: 1.5;">{eval_text}</div>
+        <div style="font-size: 12px; color: #64748b; line-height: 1.4; margin-top: 6px;">{detail_text}</div>
     </div>
 </div>
 <div>
-    <div style="font-size: 13px; color: #64748b; line-height: 1.8; margin-bottom: 1rem;">
+    <div style="font-size: 12px; color: #64748b; line-height: 1.6; margin-bottom: 0.5rem;">
         • <b>{sel1}</b>: Trạng thái Trung vị <span style="color: {color1}; font-weight: 700;">{status1}</span><br>
         • <b>{sel2}</b>: Trạng thái Trung vị <span style="color: {color2}; font-weight: 700;">{status2}</span>
     </div>
-    <div style="padding-top: 12px; border-top: 1px dashed #e2e8f0;">
-        <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase;">Khuyến nghị từ Outliers</div>
-        <div style="font-size: 13px; color: #1e293b; line-height: 1.5;">{advice}</div>
+    <div style="padding-top: 8px; border-top: 1px dashed #e2e8f0;">
+        <div style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase;">Khuyến nghị từ Outliers</div>
+        <div style="font-size: 12px; color: #1e293b; line-height: 1.4;">{advice}</div>
     </div>
 </div>
 </div>'''
@@ -1104,9 +1104,6 @@ def render(global_df):
         <div style="color:#64748b; font-size:11px; display:flex; align-items:center;">
             <span style="margin-right:4px;">↓ Tối thiểu</span>
         </div>
-        <div style="color:#94a3b8; font-size:10px; font-weight:500;">
-            lúc {str_min_time}
-        </div>
     </div>
     <!-- Max Card -->
     <div style="background:{hex_rgba(c_max, 0.12)}; border: 1.5px solid {hex_rgba(c_max, 0.4)}; padding: 10px 14px; border-radius: 10px; display:flex; flex-direction:column; min-width:140px;">
@@ -1116,9 +1113,6 @@ def render(global_df):
         </div>
         <div style="color:#64748b; font-size:11px; display:flex; align-items:center;">
             <span style="margin-right:4px;">↑ Tối đa</span>
-        </div>
-        <div style="color:#94a3b8; font-size:10px; font-weight:500;">
-            lúc {str_max_time}
         </div>
     </div>
 </div>''', unsafe_allow_html=True)
@@ -1492,7 +1486,7 @@ def render(global_df):
 
         st.markdown(f'''<div style="font-size:16px; font-family:'Be Vietnam Pro',sans-serif; font-weight:700; color:#0f172a; margin-bottom:12px;">Top 10 Ô nhiễm ({rank_time_lbl})</div>''', unsafe_allow_html=True)
         
-        top_list_html = f'''<div style="display:flex; font-size:12px; font-weight:600; color:#64748b; padding-bottom: 10px; border-bottom: 2px solid rgba(148,163,184,0.1); margin-bottom: 12px; text-transform:uppercase;">
+        top_list_html = f'''<div style="display:flex; font-size:11px; font-weight:600; color:#64748b; padding-bottom: 6px; border-bottom: 2px solid rgba(148,163,184,0.1); margin-bottom: 8px; text-transform:uppercase;">
             <div style="flex:4;">Địa điểm</div>
             <div style="flex:3; text-align:center;">Trạng thái</div>
             <div style="flex:2; text-align:right;">{poll_lbl}</div>
@@ -1514,11 +1508,10 @@ def render(global_df):
                     continue
                 
                 # Filter strictly within the time window [dt_start, dt_end)
-                # This works for both individual hours (24h view) and resampled blocks (7d, 30d, 3m)
                 loc_df_sub = loc_df[(loc_df["timestamp"] >= dt_start) & (loc_df["timestamp"] < dt_end)]
                 if loc_df_sub.empty: continue
                 
-                # Calculate mean (for hourly, it's just the one value; for ranges, it's the average)
+                # Calculate mean
                 metric_val = loc_df_sub[selected_poll_key].mean()
                 top_locations.append({
                     "loc": loc_name,
@@ -1538,12 +1531,12 @@ def render(global_df):
                 
                 t_col = "#1e293b" if lbl in ["Tốt", "Vừa phải", "Không lành mạnh cho nhóm nhạy cảm"] else "#f8fafc"
                 
-                top_list_html += f'''<div style="display:flex; align-items:center; background-color: rgba(248,250,252,0.6); padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(148,163,184,0.15);">
-                     <div style="flex:4; font-size:13px; font-weight:600; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:8px;" title="{loc_name_full}">{loc_name_full}</div>
+                top_list_html += f'''<div style="display:flex; align-items:center; background-color: rgba(248,250,252,0.6); padding: 9px 10px; border-radius: 8px; margin-bottom: 9px; border: 1px solid rgba(148,163,184,0.15);">
+                     <div style="flex:4; font-size:12px; font-weight:600; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:8px;" title="{loc_name_full}">{loc_name_full}</div>
                      <div style="flex:3; display:flex; justify-content:center;">
-                         <span style="background-color: {c}; color: {t_col}; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight:600; white-space:nowrap;">{lbl}</span>
+                         <span style="background-color: {c}; color: {t_col}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight:600; white-space:nowrap;">{lbl}</span>
                      </div>
-                     <div style="flex:2; text-align:right; font-size:15px; font-weight:700; color:#0f172a;">{str_v}</div>
+                     <div style="flex:2; text-align:right; font-size:14px; font-weight:700; color:#0f172a;">{str_v}</div>
                 </div>'''
         else:
             top_list_html += '''<div style="color:#64748b; font-size:13px; font-style:italic; text-align:center; padding: 20px 0;">Không có dữ liệu trong khoảng thời gian này</div>'''
