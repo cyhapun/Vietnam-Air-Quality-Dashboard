@@ -35,35 +35,48 @@ from utils.helpers import (
 )
 
 
-def start_crawler_thread():
+def start_crawler_thread(mode="realtime"):
     """
     Background thread function to schedule data crawling.
-    Executes a continuous loop that updates historical AQI, calculates province aggregations,
-    and updates weather forecasts, sleeping for roughly one hour between iterations.
+    Executes a continuous loop based on the selected mode.
     """
     time.sleep(20)
     while True:
         try:
-            print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler đang chạy ngầm...")
-            # Step 1: Crawl new data for each station (Batch API)
-            run_hourly_update()
+            print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler ({mode}) đang chạy ngầm...")
+            
+            # Cập nhật dữ liệu hiện tại (áp dụng cho 'realtime' và 'current')
+            if mode in ["realtime", "current"]:
+                # Step 1: Crawl new data for each station (Batch API)
+                run_hourly_update()
+                time.sleep(15)
 
-            time.sleep(15)
+                # Step 2: Recalculate representative values (Mean/Mode) for each province/city
+                run_province_aggregation()
+                time.sleep(15)
 
-            # Step 2: Recalculate representative values (Mean/Mode) for each province/city
-            run_province_aggregation()
+            # Cập nhật dữ liệu dự báo (áp dụng cho 'realtime' và 'forecast')
+            if mode in ["realtime", "forecast"]:
+                # Step 3: Update Forecast data for the future
+                run_forecast_update()
 
-            time.sleep(15)
-
-            # Step 3: Update Forecast data for the future
-            run_forecast_update()
-
-            print("Đã hoàn tất cập nhật dữ liệu!")
+            print(f"Đã hoàn tất cập nhật dữ liệu cho chế độ: {mode}!")
         except Exception as e:
             print(f"❌ Lỗi crawler: {e}")
 
-        # Sleep for 1 hour (3610 seconds) then run again (allow 10s for API data update to avoid errors)
+        # Sleep for 1 hour (3610 seconds) then run again
         time.sleep(3610)
+
+
+@st.cache_resource
+def initialize_background_tasks(mode):
+    """
+    Initializes and starts the background crawler thread with the specified mode.
+    """
+    # Truyền args=(mode,) vào thread để start_crawler_thread nhận được tham số
+    thread = threading.Thread(target=start_crawler_thread, args=(mode,), daemon=True)
+    thread.start()
+    return "Crawler started"
 
 
 # Use the cache decorator to ensure this thread is INITIALIZED ONLY ONCE
@@ -83,19 +96,18 @@ parser = argparse.ArgumentParser(description="Tùy chọn cho Vietnam AQI Dashbo
 parser.add_argument(
     "mode",
     nargs="?",
-    choices=["realtime"],
-    help="Bật tính năng chạy ngầm crawler để cập nhật dữ liệu real-time",
+    choices=["realtime", "current", "forecast"],
+    help="Chế độ crawler chạy ngầm: 'realtime' (cập nhật tất cả), 'current' (chỉ hiện tại), 'forecast' (chỉ dự báo)",
 )
 
-# Use parse_known_args to ignore default parameters of the 'streamlit run' command
 args, unknown = parser.parse_known_args()
 
-if args.mode == "realtime":
-    initialize_background_tasks()
-    print("Đang bật chế độ Real-time.")
+if args.mode in ["realtime", "current", "forecast"]:
+    initialize_background_tasks(args.mode)
+    print(f"Đang bật chế độ crawler ngầm: {args.mode.upper()}.")
 else:
     print(
-        "Không sử dụng chế độ Real-time. Thêm 'realtime' sau tên file khi chạy để bật."
+        "Không sử dụng chế độ chạy ngầm. Thêm 'realtime', 'current', hoặc 'forecast' sau tên file khi chạy để bật."
     )
 
 st.set_page_config(
