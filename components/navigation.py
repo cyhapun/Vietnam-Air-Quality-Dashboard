@@ -19,16 +19,9 @@ def render_navigation(active_tab: str):
             f"<span class='az-nav-label'>{label}</span>"
             f"</a>"
         )
-    items_html.append(
-        f"<a class='az-nav-item az-nav-refresh' href='?refresh=1&tab={active_tab}{cb_param}' target='_self' title='Refresh Data'>"
-        f"<span class='az-nav-icon'>{REFRESH_ICON_SVG}</span>"
-        f"<span class='az-nav-label'>Refresh Data</span>"
-        f"</a>"
-    )
 
     pass
 
-    # Sentinel div — CSS uses :has(._az-nav-sentinel) to target only this column/row
     st.markdown(
         "<div class='_az-nav-sentinel' style='min-height:400px;width:75px;'></div>",
         unsafe_allow_html=True,
