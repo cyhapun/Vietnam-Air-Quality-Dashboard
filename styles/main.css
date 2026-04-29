@@ -3656,8 +3656,11 @@ section.main [role="option"] * {
   margin-top: 5px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  height: 24px;
+  box-sizing: border-box;
   gap: 6px;
-  padding: 2px 8px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.35);
   background: rgba(255, 255, 255, 0.08);

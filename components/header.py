@@ -31,9 +31,10 @@ def render_header(state, logo_html):
         else f"<a class='hdr-mode-link' href='{toggle_href}' target='_self' title='Bấm để bật chế độ mù màu'><div class='hdr-mode'><span class='hdr-mode-mark'>●</span>Chế độ mù màu: Tắt</div></a>"
     )
 
+    refresh_svg = """<svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="margin-right: 3px; vertical-align: middle; margin-top: -2px;"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.83 6.72 2.25" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M21 3v6h-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
     refresh_badge = (
         f"<a class='hdr-mode-link' href='{refresh_href}' target='_self' title='Bấm để làm mới dữ liệu'>"
-        f"<div class='hdr-mode'><span class='hdr-mode-mark'>🔄</span>Làm mới dữ liệu</div></a>"
+        f"<div class='hdr-mode'>{refresh_svg}Làm mới dữ liệu</div></a>"
     )
 
     st.markdown(
