@@ -240,7 +240,7 @@ def _inject_weather_css():
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
         /* ── Reset & base ── */
-        .wx-root { font-family: 'Inter', sans-serif; }
+        .wx-root { font-family: 'Be Vietnam Pro', 'Inter', sans-serif; }
 
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
@@ -250,21 +250,7 @@ def _inject_weather_css():
         .wx-animate-delay-1 { animation-delay: 0.1s; }
         .wx-animate-delay-2 { animation-delay: 0.2s; }
 
-        /* ── HERO BANNER (top blue card) ── */
-        .wx-hero {
-            position: relative;
-            overflow: hidden;
-            border-radius: 12px;
-            background: linear-gradient(to right, #ffffff, #f8fbff);
-            border: 1px solid #e2eaf3;
-            border-left: 5px solid #0ea5e9;
-            padding: 20px 22px 24px;
-            margin-bottom: 14px;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-            color: #1e293b;
-            animation: fadeInUp 0.6s ease-out both;
-        }
-        .wx-hero::before, .wx-hero::after { content: none; }
+        /* ── HERO CARD inner content (dùng trong .card chuẩn) ── */
         .wx-hero-inner { position: relative; z-index: 2; }
 
         /* breadcrumb */
@@ -278,29 +264,6 @@ def _inject_weather_css():
         .wx-breadcrumb a { color: #0ea5e9; text-decoration: none; }
         .wx-breadcrumb a:hover { color: #0284c7; }
 
-        /* AQI | Weather toggle pill */
-        .wx-nav-pills {
-            display: inline-flex;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 14px;
-        }
-        .wx-nav-pill {
-            padding: 6px 16px;
-            font-size: 0.80rem;
-            font-weight: 700;
-            color: #64748b;
-            background: #f8fafc;
-            cursor: default;
-        }
-        .wx-nav-pill.active {
-            background: #e0f2fe;
-            color: #0369a1;
-            border-left: 1px solid #bae6fd;
-            border-right: 1px solid #bae6fd;
-        }
-
         /* Main grid: left=temp info, right=hourly strip */
         .wx-hero-grid {
             display: grid;
@@ -308,12 +271,6 @@ def _inject_weather_css():
             gap: 20px;
             align-items: start;
             padding-bottom: 8px;
-        }
-
-        /* Main layout: vertical stack for current info and hourly strip */
-        .wx-current-wrap {
-            margin-bottom: 24px;
-            animation: fadeInUp 0.6s ease-out both;
         }
 
         /* Big temperature display */
@@ -362,11 +319,10 @@ def _inject_weather_css():
 
         /* ── HOURLY STRIP (right panel in hero) ── */
         .wx-hour-panel {
-            background: #ffffff;
+            background: #f8fafc;
             border: 1px solid #e2eaf3;
             border-radius: 12px;
             padding: 12px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
         }
         .wx-hour-tabs {
             display: flex;
@@ -378,7 +334,7 @@ def _inject_weather_css():
             border-radius: 8px;
             font-size: 0.73rem;
             font-weight: 700;
-            background: #f8fafc;
+            background: #ffffff;
             color: #64748b;
             border: 1px solid transparent;
         }
@@ -416,7 +372,7 @@ def _inject_weather_css():
             letter-spacing: 0.2px;
         }
 
-        /* ── Info Section Card (Premium Title) ── */
+        /* ── Info Section Card (dùng trong các section header weather) ── */
         .wx-info-card {
             background: linear-gradient(to right, #ffffff, #f8fbff);
             border: 1px solid #e2eaf3;
@@ -456,44 +412,6 @@ def _inject_weather_css():
             font-size: 1rem;
             color: #64748b;
             line-height: 1.5;
-            font-weight: 500;
-        }
-        
-        /* ── ACTION BAR (Integrated Filter Bar) ── */
-        .wx-action-bar {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 16px;
-            padding: 12px 20px;
-            margin-bottom: -54px; /* Offset to overlap with Streamlit container */
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-            animation: fadeInUp 0.6s ease-out both;
-            position: relative;
-            z-index: 10;
-        }
-        .wx-action-title {
-            display: flex;
-            align-items: center;
-            padding-right: 24px;
-            border-right: 1px solid rgba(0, 0, 0, 0.08);
-            min-width: 180px;
-        }
-        .wx-action-main {
-            font-size: 0.82rem;
-            font-weight: 800;
-            color: #0f172a;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            line-height: 1.2;
-        }
-        .wx-action-sub {
-            font-size: 0.65rem;
-            color: #64748b;
             font-weight: 500;
         }
         
@@ -2947,13 +2865,15 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
     ml_fn, ax_fn = _get_plot_helpers(ctx)
     _inject_weather_css()
     
-    # ── Tab Header Card (Description) ──
+    # ── Tab Header Card (Description) ── (đồng bộ với overview/AQI style)
     st.markdown(
-        _info_card_html(
-            "THỜI TIẾT", 
-            "Dự báo & Phân tích Khí tượng Chuyên sâu", 
-            "Theo dõi diễn biến nhiệt độ, lượng mưa và các chỉ số khí tượng thực tế từ hệ thống trạm quan trắc quốc gia."
-        ),
+        '<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
+        '<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
+        '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">THỜI TIẾT</span>'
+        'Dự báo & Phân tích Khí tượng Chuyên sâu'
+        '</div>'
+        '<div style="font-size: 0.9rem; color: #64748b; font-weight: 500;">Theo dõi diễn biến nhiệt độ, lượng mưa và các chỉ số khí tượng thực tế từ hệ thống trạm quan trắc quốc gia.</div>'
+        '</div>',
         unsafe_allow_html=True
     )
 
@@ -2992,56 +2912,45 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
     if "weather_location_scope" not in st.session_state:
         st.session_state.weather_location_scope = ""
 
-    # ── TOP CONTROLS ──
-    st.markdown(_html("""
-        <div class="wx-action-bar">
-            <div class="wx-action-title">
-                <div>
-                    <div class="wx-action-main">Phạm vi xem</div>
-                    <div class="wx-action-sub">Tùy chỉnh khu vực & thời gian</div>
-                </div>
-            </div>
-            <div id="wx-filter-container" class="wx-filter-container"></div>
-        </div>
-    """), unsafe_allow_html=True)
+    # ── TOP CONTROLS (đồng bộ filter bar style với overview_tab) ──
+    c_f_city, c_f_date, c_f_btn = st.columns([1.5, 1.2, 1.0], gap="small")
 
-    with st.container():
-        # Adjusting spacer to prevent overlap with the title text
-        c_fill, c_top1, c_top2, c_btn = st.columns([1.4, 1.2, 1.2, 1.2], gap="small")
-        
-        with c_top1:
-            selected_city = st.selectbox("Khu vực", options=cities, key="weather_city",
-                                         help="Chọn khu vực xem thời tiết.", label_visibility="collapsed")
+    with c_f_city:
+        st.markdown("<div class='ov-filter-label'>Khu vực</div>", unsafe_allow_html=True)
+        selected_city = st.selectbox("Khu vực", options=cities, key="weather_city",
+                                     help="Chọn khu vực xem thời tiết.", label_visibility="collapsed")
 
-        # We need city_df_all to get valid date range for the date picker
-        city_df_all = weather_df[weather_df["city"] == selected_city].sort_values("timestamp").copy()
-        day_series_all = pd.to_datetime(city_df_all["timestamp"]).dt.normalize()
-        min_day = day_series_all.min().date()
-        max_day = day_series_all.max().date()
-        default_anchor = day_series_all.iloc[max(0, len(day_series_all) - 10)].date()
+    # We need city_df_all to get valid date range for the date picker
+    city_df_all = weather_df[weather_df["city"] == selected_city].sort_values("timestamp").copy()
+    day_series_all = pd.to_datetime(city_df_all["timestamp"]).dt.normalize()
+    min_day = day_series_all.min().date()
+    max_day = day_series_all.max().date()
+    default_anchor = day_series_all.iloc[max(0, len(day_series_all) - 10)].date()
 
-        if "weather_anchor_picker" not in st.session_state:
-            st.session_state["weather_anchor_picker"] = default_anchor
-        if (st.session_state["weather_anchor_picker"] < min_day or st.session_state["weather_anchor_picker"] > max_day):
-            st.session_state["weather_anchor_picker"] = default_anchor
+    if "weather_anchor_picker" not in st.session_state:
+        st.session_state["weather_anchor_picker"] = default_anchor
+    if (st.session_state["weather_anchor_picker"] < min_day or st.session_state["weather_anchor_picker"] > max_day):
+        st.session_state["weather_anchor_picker"] = default_anchor
 
-        with c_top2:
-            anchor_pick = st.date_input(
-                "Ngày mốc dự báo",
-                min_value=min_day,
-                max_value=max_day,
-                key="weather_anchor_picker",
-                help="Chọn ngày khởi đầu để xem chi tiết và dự báo.",
-                label_visibility="collapsed"
-            )
-        
-        with c_btn:
-            if show_analysis_button:
-                if st.button("Xem Phân tích ➜", type="primary", use_container_width=True, key="wt_go_to_analysis"):
-                    st.session_state["wx_view_mode"] = "dashboard"
-                    st.rerun()
-            else:
-                st.button("Dữ liệu trực tuyến", type="secondary", use_container_width=True, disabled=True)
+    with c_f_date:
+        st.markdown("<div class='ov-filter-label'>Ngày mốc dự báo</div>", unsafe_allow_html=True)
+        anchor_pick = st.date_input(
+            "Ngày mốc dự báo",
+            min_value=min_day,
+            max_value=max_day,
+            key="weather_anchor_picker",
+            help="Chọn ngày khởi đầu để xem chi tiết và dự báo.",
+            label_visibility="collapsed"
+        )
+
+    with c_f_btn:
+        st.markdown("<div class='ov-filter-label'>&nbsp;</div>", unsafe_allow_html=True)
+        if show_analysis_button:
+            if st.button("← Quay lại Phân tích", type="primary", use_container_width=True, key="wt_go_to_analysis"):
+                st.session_state["wx_view_mode"] = "analysis"
+                st.rerun()
+        else:
+            st.button("Dữ liệu trực tuyến", type="secondary", use_container_width=True, disabled=True)
 
 
     # Variables for the lower controls (moved from above)
@@ -3143,14 +3052,12 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
 
     big_icon = _condition_img(cond_now, size=64)
 
-    # ── HERO CARD (Grid Layout Restored) ───────────────────────────────────────
+    # ── HERO CARD (đồng bộ với card style chuẩn) ───────────────────────────────
     st.markdown(_html(f"""
-    <div class='wx-hero'>
-      <div class='wx-hero-inner'>
-        <div class='wx-breadcrumb'>Thời tiết &gt; Việt Nam &gt; {selected_city}</div>
-        <div class='wx-nav-pills'>
-          <span class='wx-nav-pill'>AQI</span>
-          <span class='wx-nav-pill active'>Thời tiết</span>
+    <div class="card" style="padding: 1.5rem; margin-bottom: 1rem; border-left: 4px solid #0ea5e9;">
+      <div class="wx-hero-inner">
+        <div class="wx-breadcrumb" style="color:#64748b; font-size:0.75rem; margin-bottom:12px;">
+          <span style="color:#0ea5e9; font-weight:600;">Thời tiết</span> &rsaquo; Việt Nam &rsaquo; {selected_city}
         </div>
         <div class='wx-hero-grid'>
           <!-- Left: Current conditions -->
