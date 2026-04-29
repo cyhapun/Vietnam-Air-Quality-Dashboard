@@ -629,7 +629,7 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
         f"</div>"
         f"<div style='font-size: 1.15rem; color: {aqi_1d_color}; font-weight: 700; white-space: nowrap;'>{aqi_1d_text}</div>"
         f"</div>"
-        f"<div style='display: flex; gap: 48px; margin-top: 20px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.15);'>"
+        f"<div style='display: flex; gap: 48px; margin-top: 20px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.15); color: #ffffff;'>"
         f"<div style='display: flex; flex-direction: column; gap: 6px;'>"
         f"<div style='font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; font-weight: 600;'>Khung giờ đáng chú ý</div>"
         f"<div style='font-size: 1.1rem; font-weight: 600;'>{hero_insights['slot_focus']}</div>"
