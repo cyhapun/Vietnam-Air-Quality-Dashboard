@@ -240,7 +240,7 @@ def _inject_weather_css():
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
         /* ── Reset & base ── */
-        .wx-root { font-family: 'Inter', sans-serif; }
+        .wx-root { font-family: 'Be Vietnam Pro', 'Inter', sans-serif; }
 
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
@@ -250,71 +250,19 @@ def _inject_weather_css():
         .wx-animate-delay-1 { animation-delay: 0.1s; }
         .wx-animate-delay-2 { animation-delay: 0.2s; }
 
-        /* ── HERO BANNER (top blue card) ── */
-        .wx-hero {
-            position: relative;
-            overflow: hidden;
-            border-radius: 20px;
-            background: linear-gradient(160deg, #1565C0 0%, #1976D2 30%, #42A5F5 70%, #81D4FA 100%);
-            padding: 20px 22px 24px;
-            margin-bottom: 14px;
-            box-shadow: 0 8px 32px rgba(21, 101, 192, 0.30);
-            color: #fff;
-            animation: fadeInUp 0.6s ease-out both;
-        }
-        .wx-hero::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(200px 80px at 80% 10%, rgba(255,255,255,0.18) 0%, transparent 70%),
-                radial-gradient(100px 50px at 15% 80%, rgba(255,255,255,0.10) 0%, transparent 70%);
-            pointer-events: none;
-        }
-        /* Stable bottom fade instead of decorative bump (better on mobile) */
-        .wx-hero::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 52px;
-            background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(2, 18, 40, 0.24) 100%);
-            pointer-events: none;
-        }
+        /* ── HERO CARD inner content (dùng trong .card chuẩn) ── */
         .wx-hero-inner { position: relative; z-index: 2; }
 
         /* breadcrumb */
         .wx-breadcrumb {
             font-size: 0.72rem;
             font-weight: 600;
-            color: rgba(255,255,255,0.80);
+            color: #64748b;
             margin-bottom: 10px;
             letter-spacing: 0.2px;
         }
-        .wx-breadcrumb a { color: rgba(255,255,255,0.80); text-decoration: none; }
-        .wx-breadcrumb a:hover { color: #fff; }
-
-        /* AQI | Weather toggle pill */
-        .wx-nav-pills {
-            display: inline-flex;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.25);
-            margin-bottom: 14px;
-        }
-        .wx-nav-pill {
-            padding: 6px 16px;
-            font-size: 0.80rem;
-            font-weight: 700;
-            color: rgba(255,255,255,0.75);
-            background: rgba(255,255,255,0.12);
-            cursor: default;
-        }
-        .wx-nav-pill.active {
-            background: rgba(255,255,255,0.28);
-            color: #fff;
-        }
+        .wx-breadcrumb a { color: #0ea5e9; text-decoration: none; }
+        .wx-breadcrumb a:hover { color: #0284c7; }
 
         /* Main grid: left=temp info, right=hourly strip */
         .wx-hero-grid {
@@ -325,37 +273,31 @@ def _inject_weather_css():
             padding-bottom: 8px;
         }
 
-        /* Main layout: vertical stack for current info and hourly strip */
-        .wx-current-wrap {
-            margin-bottom: 24px;
-            animation: fadeInUp 0.6s ease-out both;
-        }
-
         /* Big temperature display */
         .wx-title-row { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 2px; }
         .wx-city-name {
             font-size: 1.05rem;
             font-weight: 700;
-            color: rgba(255,255,255,0.95);
+            color: #1e293b;
             margin-bottom: 4px;
         }
         .wx-temp-big {
             font-size: 3.8rem;
             font-weight: 900;
             line-height: 1;
-            color: #fff;
+            color: #0ea5e9;
             letter-spacing: -2px;
         }
-        .wx-temp-unit { font-size: 1.4rem; font-weight: 700; color: rgba(255,255,255,0.80); margin-bottom: 8px; }
+        .wx-temp-unit { font-size: 1.4rem; font-weight: 700; color: #64748b; margin-bottom: 8px; }
         .wx-cond-text {
             font-size: 1.05rem;
             font-weight: 700;
-            color: rgba(255,255,255,0.95);
+            color: #334155;
             margin: 6px 0 4px;
         }
         .wx-hilow {
             font-size: 0.82rem;
-            color: rgba(255,255,255,0.80);
+            color: #64748b;
             margin-bottom: 8px;
         }
 
@@ -365,23 +307,21 @@ def _inject_weather_css():
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            background: rgba(255,255,255,0.18);
-            border: 1px solid rgba(255,255,255,0.22);
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
             border-radius: 20px;
             padding: 4px 10px;
             font-size: 0.74rem;
             font-weight: 600;
-            color: #fff;
+            color: #475569;
         }
         .wx-stat-pill svg { flex-shrink: 0; }
 
         /* ── HOURLY STRIP (right panel in hero) ── */
         .wx-hour-panel {
-            background: rgba(10, 30, 60, 0.45);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.18);
-            border-radius: 16px;
+            background: #f8fafc;
+            border: 1px solid #e2eaf3;
+            border-radius: 12px;
             padding: 12px;
         }
         .wx-hour-tabs {
@@ -394,14 +334,14 @@ def _inject_weather_css():
             border-radius: 8px;
             font-size: 0.73rem;
             font-weight: 700;
-            background: rgba(255,255,255,0.12);
-            color: rgba(255,255,255,0.65);
+            background: #ffffff;
+            color: #64748b;
             border: 1px solid transparent;
         }
         .wx-hour-tab.active {
-            background: rgba(255,255,255,0.28);
-            color: #fff;
-            border-color: rgba(255,255,255,0.30);
+            background: #e0f2fe;
+            color: #0369a1;
+            border-color: #bae6fd;
         }
         .wx-hour-strip {
             display: grid;
@@ -409,17 +349,17 @@ def _inject_weather_css():
             gap: 6px;
         }
         .wx-hour-item {
-            background: rgba(255,255,255,0.10);
-            border: 1px solid rgba(255,255,255,0.14);
+            background: #ffffff;
+            border: 1px solid #e2eaf3;
             border-radius: 10px;
             padding: 7px 4px;
             text-align: center;
         }
-        .wx-hour-item.now { background: rgba(255,255,255,0.24); border-color: rgba(255,255,255,0.35); }
-        .wx-hour-time  { font-size: 0.60rem; color: rgba(255,255,255,0.70); font-weight: 700; }
-        .wx-hour-temp  { font-size: 0.88rem; font-weight: 800; color: #fff; margin-top: 4px; }
-        .wx-hour-rain  { font-size: 0.58rem; color: #90CAF9; margin-top: 2px; }
-        .wx-hour-note  { font-size: 0.65rem; color: rgba(255,255,255,0.50); margin-top: 8px; }
+        .wx-hour-item.now { background: #f0f9ff; border-color: #bae6fd; }
+        .wx-hour-time  { font-size: 0.60rem; color: #64748b; font-weight: 700; }
+        .wx-hour-temp  { font-size: 0.88rem; font-weight: 800; color: #1e293b; margin-top: 4px; }
+        .wx-hour-rain  { font-size: 0.58rem; color: #0ea5e9; margin-top: 2px; }
+        .wx-hour-note  { font-size: 0.65rem; color: #94a3b8; margin-top: 8px; }
 
         /* ── PARAMS SECTION ── */
         .wx-section-wrap { margin-bottom: 14px; }
@@ -432,7 +372,7 @@ def _inject_weather_css():
             letter-spacing: 0.2px;
         }
 
-        /* ── Info Section Card (Premium Title) ── */
+        /* ── Info Section Card (dùng trong các section header weather) ── */
         .wx-info-card {
             background: linear-gradient(to right, #ffffff, #f8fbff);
             border: 1px solid #e2eaf3;
@@ -472,44 +412,6 @@ def _inject_weather_css():
             font-size: 1rem;
             color: #64748b;
             line-height: 1.5;
-            font-weight: 500;
-        }
-        
-        /* ── ACTION BAR (Integrated Filter Bar) ── */
-        .wx-action-bar {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 16px;
-            padding: 12px 20px;
-            margin-bottom: -54px; /* Offset to overlap with Streamlit container */
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-            animation: fadeInUp 0.6s ease-out both;
-            position: relative;
-            z-index: 10;
-        }
-        .wx-action-title {
-            display: flex;
-            align-items: center;
-            padding-right: 24px;
-            border-right: 1px solid rgba(0, 0, 0, 0.08);
-            min-width: 180px;
-        }
-        .wx-action-main {
-            font-size: 0.82rem;
-            font-weight: 800;
-            color: #0f172a;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            line-height: 1.2;
-        }
-        .wx-action-sub {
-            font-size: 0.65rem;
-            color: #64748b;
             font-weight: 500;
         }
         
@@ -609,56 +511,46 @@ def _inject_weather_css():
             gap: 10px;
         }
 
-        /* Base card – teal/slate gradient like AQI.in */
+        /* Base card – light theme */
         .wx-pcard {
-            border-radius: 16px;
-            background: linear-gradient(145deg, #2d6a8a 0%, #1e4f6b 100%);
-            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid #e2eaf3;
             padding: 15px 16px;
-            box-shadow: 0 4px 16px rgba(15,40,60,0.18);
+            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
             min-height: 118px;
             position: relative;
             overflow: hidden;
-            color: #f0f8ff;
+            color: #1e293b;
             transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
         }
-        .wx-pcard::before {
-            content:''; position:absolute; inset:0;
-            background: radial-gradient(120px 60px at 80% 10%, rgba(255,255,255,0.08) 0%, transparent 70%);
-            pointer-events:none;
-        }
+        .wx-pcard::before { content: none; }
         .wx-pcard:hover {
             transform: translateY(-3px);
-            border-color: rgba(186,230,253,0.45);
-            box-shadow: 0 14px 28px rgba(8, 32, 52, 0.34), 0 0 0 1px rgba(186,230,253,0.18) inset;
+            border-color: #bae6fd;
+            box-shadow: 0 10px 20px rgba(14, 165, 233, 0.08);
         }
-        /* UV card – green gradient */
-        .wx-pcard.uv {
-            background: linear-gradient(145deg, #4caf50 0%, #2e7d32 100%);
-        }
-        /* Cloud card – slate with clouds art */
-        .wx-pcard.cloud-card {
-            background: linear-gradient(145deg, #3a7ca5 0%, #1c5a80 100%);
-        }
+        .wx-pcard.uv { background: #ffffff; }
+        .wx-pcard.cloud-card { background: #ffffff; }
 
         .wx-pcard-label {
             font-size: 0.64rem;
             text-transform: uppercase;
             letter-spacing: 0.9px;
-            color: rgba(180,220,255,0.85);
+            color: #64748b;
             font-weight: 700;
             margin-bottom: 5px;
         }
         .wx-pcard-value {
             font-size: 1.65rem;
             font-weight: 900;
-            color: #fff;
+            color: #0ea5e9;
             line-height: 1;
         }
-        .wx-pcard-value-sm { font-size: 1rem; font-weight: 700; color: rgba(255,255,255,0.75); }
+        .wx-pcard-value-sm { font-size: 1rem; font-weight: 700; color: #334155; }
         .wx-pcard-sub {
             font-size: 0.68rem;
-            color: rgba(180,220,255,0.80);
+            color: #64748b;
             margin-top: 5px;
             line-height: 1.4;
         }
@@ -670,9 +562,9 @@ def _inject_weather_css():
         .wx-compass-svg { flex-shrink: 0; }
         .wx-compass-svg svg { width: 84px; height: 84px; }
         .wx-compass-info {}
-        .wx-compass-deg { font-size: 1.6rem; font-weight: 900; color:#fff; line-height:1; }
-        .wx-compass-dir { font-size: 1.0rem; font-weight: 700; color:rgba(180,220,255,0.9); }
-        .wx-compass-sub { font-size: 0.68rem; color:rgba(180,220,255,0.7); margin-top:3px; }
+        .wx-compass-deg { font-size: 1.6rem; font-weight: 900; color:#0ea5e9; line-height:1; }
+        .wx-compass-dir { font-size: 1.0rem; font-weight: 700; color:#334155; }
+        .wx-compass-sub { font-size: 0.68rem; color:#64748b; margin-top:3px; }
 
         /* ── WIND SPEED (turbine icon) ── */
         .wx-wind-wrap { display:flex; align-items:center; gap:12px; }
@@ -794,11 +686,11 @@ def _inject_weather_css():
             gap: 10px;
             margin-top: 2px;
             padding-top: 7px;
-            border-top: 1px solid rgba(255,255,255,0.12);
+            border-top: 1px solid #e2eaf3;
         }
         .wx-cloud-metric { flex: 1; }
         .wx-cloud-metric.right { text-align: right; }
-        .wx-cloud-divider { width:1px; background:rgba(255,255,255,0.15); align-self:stretch; margin:0 2px; }
+        .wx-cloud-divider { width:1px; background:#e2eaf3; align-self:stretch; margin:0 2px; }
 
         /* ── RAIN card ── */
         .wx-rain-wrap { display:flex; align-items:center; gap:10px; }
@@ -868,26 +760,26 @@ def _inject_weather_css():
             color: #64748b;
         }
 
-        /* Shared dark tone (same direction as monthly calendar section) */
+        /* Shared light tone */
         .wx-month-tone {
-            background: linear-gradient(155deg, #10243c 0%, #1a3553 60%, #1f3f61 100%) !important;
-            border: 1px solid rgba(148, 163, 184, 0.24) !important;
-            box-shadow: 0 8px 26px rgba(15, 23, 42, 0.22);
-            color: #e2e8f0 !important;
+            background: #ffffff !important;
+            border: 1px solid #e2eaf3 !important;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04) !important;
+            color: #1e293b !important;
         }
         .wx-month-tone .wx-fc-title,
         .wx-month-tone .wx-switch-pane-title,
         .wx-month-tone .wx-block-title,
         .wx-month-tone .wx-kpi-v {
-            color: #f8fafc !important;
+            color: #0f172a !important;
         }
         .wx-month-tone .wx-fc-link,
         .wx-month-tone .wx-block-sub,
         .wx-month-tone .wx-kpi-k {
-            color: #cbd5e1 !important;
+            color: #64748b !important;
         }
         .wx-month-tone .wx-block-head {
-            border-left-color: #60a5fa;
+            border-left-color: #0ea5e9 !important;
         }
 
         /* Horizontal scroll strip */
@@ -958,9 +850,9 @@ def _inject_weather_css():
             overflow-x: auto;
         }
         .wx-hourly-card.wx-month-tone {
-            background: linear-gradient(155deg, #10243c 0%, #1a3553 60%, #1f3f61 100%) !important;
-            border: 1px solid rgba(148, 163, 184, 0.24) !important;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+            background: #ffffff !important;
+            border: 1px solid #e2eaf3 !important;
+            box-shadow: none !important;
         }
         .wx-htable {
             width: 100%;
@@ -971,33 +863,33 @@ def _inject_weather_css():
             font-size: 0.64rem;
             text-transform: uppercase;
             letter-spacing: 0.7px;
-            color: #94a3b8;
+            color: #64748b;
             font-weight: 700;
             padding: 8px 10px;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid #e2e8f0;
             text-align: left;
             white-space: nowrap;
         }
-        .wx-htable tbody tr { border-bottom: 1px solid #f8fafc; }
-        .wx-htable tbody tr:hover { background: #f8faff; }
+        .wx-htable tbody tr { border-bottom: 1px solid #f1f5f9; }
+        .wx-htable tbody tr:hover { background: #f8fafc; }
         .wx-htable tbody td {
             padding: 9px 10px;
-            color: #0f172a;
+            color: #1e293b;
             font-weight: 500;
             white-space: nowrap;
         }
         .wx-hourly-card.wx-month-tone .wx-htable thead th {
-            color: #cbd5e1;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+            color: #64748b;
+            border-bottom: 1px solid #e2e8f0;
         }
         .wx-hourly-card.wx-month-tone .wx-htable tbody td {
-            color: #e2e8f0;
+            color: #1e293b;
         }
         .wx-hourly-card.wx-month-tone .wx-htable tbody tr {
-            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+            border-bottom: 1px solid #f1f5f9;
         }
         .wx-hourly-card.wx-month-tone .wx-htable tbody tr:hover {
-            background: rgba(148, 163, 184, 0.12);
+            background: #f8fafc;
         }
         .wx-htable-cond { display: flex; align-items: center; gap: 5px; }
         .wx-temp-pill,
@@ -1038,11 +930,11 @@ def _inject_weather_css():
         }
         .wx-month-left,
         .wx-month-right {
-            background: linear-gradient(155deg, #10243c 0%, #1a3553 60%, #1f3f61 100%);
-            border: 1px solid rgba(148, 163, 184, 0.18);
+            background: #ffffff;
+            border: 1px solid #e2eaf3;
             border-radius: 18px;
-            box-shadow: 0 8px 26px rgba(15, 23, 42, 0.22);
-            color: #e2e8f0;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+            color: #1e293b;
         }
         .wx-month-left {
             padding: 14px;
@@ -1055,7 +947,7 @@ def _inject_weather_css():
         }
         .wx-month-weekdays div {
             font-size: 0.78rem;
-            color: #cbd5e1;
+            color: #64748b;
             text-align: left;
             font-weight: 700;
             padding-left: 2px;
@@ -1067,20 +959,20 @@ def _inject_weather_css():
         }
         .wx-cal-cell {
             min-height: 104px;
-            border: 1px solid rgba(148, 163, 184, 0.15);
+            border: 1px solid #e2eaf3;
             border-radius: 12px;
             padding: 8px 8px 6px;
-            background: rgba(15, 35, 60, 0.52);
+            background: #f8fafc;
             position: relative;
         }
         .wx-cal-cell.empty {
-            background: rgba(255, 255, 255, 0.02);
-            border-color: rgba(148, 163, 184, 0.07);
+            background: #ffffff;
+            border-color: transparent;
         }
         .wx-cal-cell.active {
-            background: linear-gradient(150deg, rgba(59,130,246,0.52), rgba(37,99,235,0.44));
-            border-color: rgba(147, 197, 253, 0.68);
-            box-shadow: inset 0 0 0 1px rgba(191, 219, 254, 0.35);
+            background: #f0f9ff;
+            border-color: #bae6fd;
+            box-shadow: inset 0 0 0 1px #e0f2fe;
         }
         .wx-cal-badge {
             position: absolute;
@@ -1088,14 +980,15 @@ def _inject_weather_css():
             right: 7px;
             font-size: 0.60rem;
             font-weight: 800;
-            color: #f8fafc;
-            background: rgba(59, 130, 246, 0.85);
+            color: #0369a1;
+            background: #e0f2fe;
+            border: 1px solid #bae6fd;
             border-radius: 999px;
             padding: 1px 7px;
         }
         .wx-cal-day {
             font-size: 0.88rem;
-            color: #cbd5e1;
+            color: #64748b;
             font-weight: 700;
             margin-bottom: 6px;
         }
@@ -1110,19 +1003,19 @@ def _inject_weather_css():
             font-size: 1.24rem;
             line-height: 1;
             font-weight: 800;
-            color: #f8fafc;
+            color: #1e293b;
             text-align: center;
         }
         .wx-cal-temp-min {
             font-size: 0.86rem;
-            color: #bfdbfe;
+            color: #94a3b8;
             text-align: center;
             margin-top: 2px;
             font-weight: 700;
         }
         .wx-cal-no-data {
             font-size: 0.74rem;
-            color: #64748b;
+            color: #94a3b8;
             margin-top: 18px;
             text-align: center;
             font-weight: 700;
@@ -1137,7 +1030,7 @@ def _inject_weather_css():
             font-size: 1.07rem;
             line-height: 1.35;
             font-weight: 800;
-            color: #f8fafc;
+            color: #1e293b;
             text-align: center;
             margin-bottom: 10px;
         }
@@ -1169,7 +1062,7 @@ def _inject_weather_css():
         .wx-month-legend-title {
             font-size: 0.93rem;
             font-weight: 800;
-            color: #e2e8f0;
+            color: #1e293b;
             margin-bottom: 8px;
         }
         .wx-month-legend-item {
@@ -1177,9 +1070,9 @@ def _inject_weather_css():
             align-items: center;
             justify-content: space-between;
             font-size: 0.86rem;
-            color: #e2e8f0;
+            color: #334155;
             padding: 6px 0;
-            border-bottom: 1px dashed rgba(148, 163, 184, 0.25);
+            border-bottom: 1px dashed #e2eaf3;
             font-weight: 700;
         }
         .wx-month-legend-item b {
@@ -1187,14 +1080,14 @@ def _inject_weather_css():
             text-align: center;
             border-radius: 8px;
             padding: 2px 6px;
-            color: #f8fafc;
-            background: rgba(71, 85, 105, 0.80);
+            color: #1e293b;
+            background: #f1f5f9;
         }
         .wx-month-note {
             margin-top: 10px;
             font-size: 0.78rem;
             line-height: 1.5;
-            color: #cbd5e1;
+            color: #64748b;
         }
 
         .wx-kpi-strip {
@@ -1224,28 +1117,30 @@ def _inject_weather_css():
             font-weight: 800;
         }
         .wx-kpi-strip-month .wx-kpi-card {
-            background: linear-gradient(155deg, rgba(16, 36, 60, 0.92) 0%, rgba(26, 53, 83, 0.92) 60%, rgba(31, 63, 97, 0.92) 100%);
-            border: 1px solid rgba(148, 163, 184, 0.20);
-            box-shadow: none;
+            background: #ffffff;
+            border: 1px solid #e2eaf3;
+            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
         }
         .wx-kpi-strip-month .wx-kpi-k {
-            color: #cbd5e1;
+            color: #64748b;
         }
         .wx-kpi-strip-month .wx-kpi-v {
-            color: #f8fafc;
+            color: #1e293b;
         }
 
-        /* ── DARK CHART CARD ── */
+        /* ── DARK CHART CARD (Re-themed to Light) ── */
         .wx-dark-card {
-            background: #0f172a;
+            background: #ffffff;
             border-radius: 18px;
+            border: 1px solid #e2eaf3;
             padding: 14px;
             margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
         }
         .wx-dark-card-title {
             font-size: 0.88rem;
             font-weight: 700;
-            color: #e2e8f0;
+            color: #1e293b;
             margin-bottom: 10px;
         }
 
@@ -2115,18 +2010,18 @@ def _compass_svg(deg_raw) -> str:
     ticks = "".join(
         f"<line x1='{44+38*math.sin(i*math.pi/8):.1f}' y1='{44-38*math.cos(i*math.pi/8):.1f}' "
         f"x2='{44+42*math.sin(i*math.pi/8):.1f}' y2='{44-42*math.cos(i*math.pi/8):.1f}' "
-        f"stroke='rgba(150,200,230,0.4)' stroke-width='{'1.5' if i%4==0 else '0.8'}'/>"
+        f"stroke='#94a3b8' stroke-width='{'1.5' if i%4==0 else '0.8'}'/>"
         for i in range(16)
     )
     return (
         "<svg width='88' height='88' viewBox='0 0 88 88' xmlns='http://www.w3.org/2000/svg'>"
-        "<circle cx='44' cy='44' r='42' fill='rgba(10,30,50,0.55)' stroke='rgba(100,160,200,0.35)' stroke-width='1.5'/>"
+        "<circle cx='44' cy='44' r='42' fill='#f8fafc' stroke='#e2eaf3' stroke-width='1.5'/>"
         + ticks +
         "<text x='44' y='11' text-anchor='middle' fill='#ef4444' font-size='9' font-weight='800' font-family='Inter'>N</text>"
-        "<text x='44' y='82' text-anchor='middle' fill='rgba(180,220,255,0.8)' font-size='9' font-weight='700' font-family='Inter'>S</text>"
-        "<text x='9' y='47' text-anchor='middle' fill='rgba(180,220,255,0.8)' font-size='9' font-weight='700' font-family='Inter'>W</text>"
-        "<text x='79' y='47' text-anchor='middle' fill='rgba(180,220,255,0.8)' font-size='9' font-weight='700' font-family='Inter'>E</text>"
-        "<circle cx='44' cy='44' r='28' fill='rgba(20,50,75,0.70)' stroke='rgba(100,160,200,0.20)' stroke-width='1'/>"
+        "<text x='44' y='82' text-anchor='middle' fill='#64748b' font-size='9' font-weight='700' font-family='Inter'>S</text>"
+        "<text x='9' y='47' text-anchor='middle' fill='#64748b' font-size='9' font-weight='700' font-family='Inter'>W</text>"
+        "<text x='79' y='47' text-anchor='middle' fill='#64748b' font-size='9' font-weight='700' font-family='Inter'>E</text>"
+        "<circle cx='44' cy='44' r='28' fill='#ffffff' stroke='#e2eaf3' stroke-width='1'/>"
         f"<polygon points='{nx:.1f},{ny:.1f} {cx+5*math.sin(r+1.5):.1f},{cy-5*math.cos(r+1.5):.1f} "
         f"{tx:.1f},{ty:.1f} {cx+5*math.sin(r-1.5):.1f},{cy-5*math.cos(r-1.5):.1f}' fill='#ef4444'/>"
         f"<polygon points='{tx:.1f},{ty:.1f} {cx+4*math.sin(r+1.5):.1f},{cy-4*math.cos(r+1.5):.1f} "
@@ -2148,18 +2043,18 @@ def _turbine_svg(wind_speed_kmh=np.nan) -> str:
     return (
         f"<svg class='wx-turbine-svg' style='--wx-spin:{spin_seconds:.2f}s;' width='70' height='90' viewBox='0 0 70 90' xmlns='http://www.w3.org/2000/svg'>"
         # pole
-        "<rect x='32' y='48' width='6' height='38' rx='3' fill='rgba(180,220,255,0.50)'/>"
+        "<rect x='32' y='48' width='6' height='38' rx='3' fill='#bae6fd'/>"
         # rotor
         "<g class='wx-turbine-rotor'>"
         # blade 1 (top)
-        "<ellipse cx='35' cy='26' rx='4' ry='20' fill='rgba(200,230,255,0.70)' transform='rotate(-15 35 48)'/>"
+        "<ellipse cx='35' cy='26' rx='4' ry='20' fill='#38bdf8' transform='rotate(-15 35 48)'/>"
         # blade 2 (bottom-right)
-        "<ellipse cx='35' cy='26' rx='4' ry='20' fill='rgba(200,230,255,0.70)' transform='rotate(105 35 48)'/>"
+        "<ellipse cx='35' cy='26' rx='4' ry='20' fill='#38bdf8' transform='rotate(105 35 48)'/>"
         # blade 3 (bottom-left)
-        "<ellipse cx='35' cy='26' rx='4' ry='20' fill='rgba(200,230,255,0.70)' transform='rotate(225 35 48)'/>"
+        "<ellipse cx='35' cy='26' rx='4' ry='20' fill='#38bdf8' transform='rotate(225 35 48)'/>"
         "</g>"
         # hub
-        "<circle cx='35' cy='48' r='5' fill='rgba(220,240,255,0.86)'/>"
+        "<circle cx='35' cy='48' r='5' fill='#0284c7'/>"
         "</svg>"
     )
 
@@ -2211,19 +2106,19 @@ def _pressure_gauge_svg(pressure_val) -> str:
         tx = cx + 50 * math.cos(td)
         ty = cy + 50 * math.sin(td)
         ticks.append(f"<text x='{tx:.0f}' y='{ty:.0f}' text-anchor='middle' "
-                     f"fill='rgba(180,220,255,0.60)' font-size='6' font-family='Inter'>{lbl}</text>")
+                     f"fill='#64748b' font-size='6' font-weight='600' font-family='Inter'>{lbl}</text>")
 
     svg = (
         f"<svg width='100' height='90' viewBox='0 0 100 90' xmlns='http://www.w3.org/2000/svg'>"
-        f"<path d='{bg_path}' fill='none' stroke='rgba(100,150,200,0.25)' stroke-width='6' stroke-linecap='round'/>"
+        f"<path d='{bg_path}' fill='none' stroke='#cbd5e1' stroke-width='6' stroke-linecap='round'/>"
     )
     if fill_path:
-        svg += f"<path d='{fill_path}' fill='none' stroke='#ef4444' stroke-width='6' stroke-linecap='round'/>"
+        svg += f"<path d='{fill_path}' fill='none' stroke='#0ea5e9' stroke-width='6' stroke-linecap='round'/>"
     svg += "".join(ticks)
     svg += (
         f"<line x1='{cx}' y1='{cy}' x2='{nx:.1f}' y2='{ny:.1f}' "
-        f"stroke='#ef4444' stroke-width='2.5' stroke-linecap='round'/>"
-        f"<circle cx='{cx}' cy='{cy}' r='5' fill='#e2e8f0' stroke='#334155' stroke-width='1.2'/>"
+        f"stroke='#0ea5e9' stroke-width='2.5' stroke-linecap='round'/>"
+        f"<circle cx='{cx}' cy='{cy}' r='5' fill='#ffffff' stroke='#0ea5e9' stroke-width='1.5'/>"
         f"</svg>"
     )
     return svg
@@ -2234,7 +2129,7 @@ def _cloud_svg() -> str:
     return (
         "<div class='wx-cloud-banner'>"
         "<svg class='wx-cloud-cover-svg' viewBox='0 0 360 90' preserveAspectRatio='none' xmlns='http://www.w3.org/2000/svg'>"
-        "<g class='wx-cloud-track wx-cloud-track-1' fill='rgba(240,248,255,0.88)'>"
+        "<g class='wx-cloud-track wx-cloud-track-1' fill='#e0f2fe'>"
         "<ellipse cx='24' cy='30' rx='20' ry='12'/>"
         "<ellipse cx='42' cy='24' rx='22' ry='14'/>"
         "<ellipse cx='62' cy='30' rx='20' ry='12'/>"
@@ -2245,7 +2140,7 @@ def _cloud_svg() -> str:
         "<ellipse cx='334' cy='21' rx='22' ry='14'/>"
         "<ellipse cx='352' cy='26' rx='18' ry='11'/>"
         "</g>"
-        "<g class='wx-cloud-track wx-cloud-track-2' fill='rgba(214,230,247,0.82)'>"
+        "<g class='wx-cloud-track wx-cloud-track-2' fill='#bae6fd'>"
         "<ellipse cx='88' cy='48' rx='24' ry='14'/>"
         "<ellipse cx='112' cy='42' rx='26' ry='16'/>"
         "<ellipse cx='140' cy='48' rx='22' ry='13'/>"
@@ -2256,7 +2151,7 @@ def _cloud_svg() -> str:
         "<ellipse cx='30' cy='52' rx='17' ry='10'/>"
         "<ellipse cx='46' cy='56' rx='14' ry='9'/>"
         "</g>"
-        "<g class='wx-cloud-track wx-cloud-track-3' fill='rgba(196,218,238,0.72)'>"
+        "<g class='wx-cloud-track wx-cloud-track-3' fill='#7dd3fc'>"
         "<ellipse cx='148' cy='64' rx='18' ry='10'/>"
         "<ellipse cx='164' cy='60' rx='20' ry='12'/>"
         "<ellipse cx='184' cy='64' rx='16' ry='9'/>"
@@ -2283,11 +2178,11 @@ def _rain_svg() -> str:
         "</g>"
         "<g class='wx-rain-cloud'>"
         # cloud
-        "<path d='M10 38 a12 12 0 0 1 2-24 14 14 0 0 1 27 3 10 10 0 0 1 0 21Z' fill='#90CAF9'/>"
-        "<path d='M12 38 a10 10 0 0 1 1.5-19 12 12 0 0 1 23 2.5 8 8 0 0 1 0 16.5Z' fill='#BBDEFB'/>"
+        "<path d='M10 38 a12 12 0 0 1 2-24 14 14 0 0 1 27 3 10 10 0 0 1 0 21Z' fill='#38bdf8'/>"
+        "<path d='M12 38 a10 10 0 0 1 1.5-19 12 12 0 0 1 23 2.5 8 8 0 0 1 0 16.5Z' fill='#e0f2fe'/>"
         "</g>"
         # raindrops
-        "<g stroke='#29B6F6' stroke-width='2.2' stroke-linecap='round'>"
+        "<g stroke='#0ea5e9' stroke-width='2.2' stroke-linecap='round'>"
         "<line class='wx-rain-drop d1' x1='18' y1='44' x2='15' y2='52'/>"
         "<line class='wx-rain-drop d2' x1='28' y1='44' x2='25' y2='52'/>"
         "<line class='wx-rain-drop d3' x1='38' y1='44' x2='35' y2='52'/>"
@@ -2356,7 +2251,7 @@ def _params_section_html(latest, scope_df):
         "<div class='wx-compass-info'>"
         f"<div class='wx-pcard-label'>Hướng</div>"
         f"<div class='wx-compass-deg'>{wind_deg_str}° {wind_dir_text}</div>"
-        f"<div class='wx-compass-sub'>Tốc độ: <b style='color:#fff'>{_fmt_num(wind_now,1)} km/h</b></div>"
+        f"<div class='wx-compass-sub'>Tốc độ: <b style='color:#0ea5e9'>{_fmt_num(wind_now,1)} km/h</b></div>"
         "</div></div></div>"
     )
     cards.append(
@@ -2401,12 +2296,12 @@ def _params_section_html(latest, scope_df):
     )
     cards.append(
         "<div class='wx-pcard uv' style='padding:14px 16px;'>"
-        "<div class='wx-pcard-label' style='color:rgba(210,255,210,0.85);'>Chỉ Số UV</div>"
-        f"<div class='wx-pcard-value'>{uv_str} <span style='font-size:1rem;font-weight:700;color:rgba(210,255,200,0.9);'>{uv_label}</span></div>"
+        "<div class='wx-pcard-label'>Chỉ Số UV</div>"
+        f"<div class='wx-pcard-value'>{uv_str} <span style='font-size:1rem;font-weight:700;color:#10b981;'>{uv_label}</span></div>"
         "<div class='wx-uv-bar-wrap'><div class='wx-uv-track'>"
         f"<span class='wx-uv-thumb' style='left:{uv_pct:.1f}%;'></span>"
         "</div><div class='wx-uv-labels'><span>Thấp</span><span>TB</span><span>Cao</span><span>Rất cao</span><span>Cực cao</span></div></div>"
-        f"<div class='wx-pcard-sub' style='color:rgba(210,255,210,0.80);margin-top:6px;'>Chỉ số UV hiện tại là {uv_str}, hãy xem xét các khuyến nghị cho điều này!</div>"
+        f"<div class='wx-pcard-sub' style='margin-top:6px;'>Chỉ số UV hiện tại là {uv_str}, hãy xem xét các khuyến nghị cho điều này!</div>"
         "</div>"
     )
 
@@ -2963,485 +2858,6 @@ def _comfort_score(temp, humidity, wind_speed, aqi=None) -> float:
         st.markdown(_insight_html(content, "#ef4444", "239,68,68"), unsafe_allow_html=True)
 
 
-# ── Dashboard 2 — Rain Season ──────────────────────────────────────────────────
-
-def render_rain_season(df: pd.DataFrame, city_name: str = "", scope_label: str = "72h"):
-    # Dynamic header based on scope
-    _headers = {
-        "24h": "🌧️ Lượng Mưa Theo Giờ",
-        "72h": "🌧️ Lượng Mưa Theo Giờ (3 ngày)",
-        "7 ngày": "🌧️ Lượng Mưa Theo Ngày (Tuần)",
-        "30 ngày": "🌧️ Lượng Mưa Theo Ngày (Tháng)",
-    }
-    _section_title = _headers.get(scope_label, "🌧️ Phân Tích Lượng Mưa")
-    _section_sub = "Phân bổ lượng mưa và độ ẩm theo thời gian — nhận diện thời điểm và tần suất mưa"
-    
-    _dash_section_header(_section_title, _section_sub)
-    if df.empty or "rain" not in df.columns or "timestamp" not in df.columns:
-        st.info("Không đủ dữ liệu mưa để phân tích mùa.")
-        return
-
-    src = df.copy()
-    src["timestamp"] = pd.to_datetime(src["timestamp"], errors="coerce")
-    src = src.dropna(subset=["timestamp"])
-    
-    # Dynamic X-axis key and label
-    if scope_label in ["24h", "72h"]:
-        src["x_key"] = src["timestamp"].dt.strftime("%H:00")
-        x_title = "Giờ"
-        x_prefix = ""
-    else:
-        src["x_key"] = src["timestamp"].dt.strftime("%d/%m")
-        x_title = "Ngày"
-        x_prefix = "N"
-
-    col_l, col_r = st.columns([1.3, 1], gap="large")
-
-    # ── Left: Heatmap location × month ──
-    with col_l:
-        if "location" in src.columns and src["location"].nunique() > 1:
-            piv_src = src.dropna(subset=["location"]).copy()
-            piv_src["location"] = piv_src["location"].astype(str).str.strip()
-            pivot = (
-                piv_src.groupby(["location", "x_key"], observed=False, sort=True)["rain"]
-                .sum().unstack(fill_value=0)
-            )
-            top_locs = pivot.sum(axis=1).nlargest(14).index
-            pivot = pivot.loc[top_locs]
-        elif "city" in src.columns and src["city"].nunique() > 1:
-            pivot = (
-                src.groupby(["city", "x_key"], observed=False, sort=True)["rain"]
-                .sum().unstack(fill_value=0)
-            )
-        else:
-            pivot = (
-                src.groupby("x_key", observed=False, sort=True)["rain"]
-                .sum().to_frame(city_name or "Trung bình").T
-            )
-
-        z = pivot.values.tolist()
-        x = [f"{x_prefix}{v}" for v in pivot.columns]
-        y = [str(v) for v in pivot.index.tolist()]
-
-        fig = go.Figure(go.Heatmap(
-            z=z, x=x, y=y,
-            colorscale=["#f0f9ff", "#38bdf8", "#4f46e5", "#1e1b4b"],
-            hovertemplate=f"{x_title} %{{x}}<br>%{{y}}<br>Mưa: %{{z:.1f}} mm<extra></extra>",
-            colorbar=dict(title="mm", thickness=12, len=0.8),
-        ))
-        fig.update_layout(**_dash_layout(
-            height=380,
-            xaxis=dict(
-                title=x_title, 
-                gridcolor="rgba(0,0,0,0)",
-                nticks=12 if scope_label in ["24h", "72h"] else 12,
-                tickangle=0
-            ),
-            yaxis=dict(gridcolor="rgba(0,0,0,0)", tickfont=dict(size=10)),
-        ))
-        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
-
-    # ── Right: Bar (rain) + Line (humidity) + insight ──
-    with col_r:
-        agg_m: dict = {"rain": ("rain", "sum")}
-        if "humidity" in src.columns:
-            agg_m["humidity"] = ("humidity", "mean")
-        mth = src.groupby("x_key", observed=False, sort=True).agg(**agg_m).reset_index().dropna(subset=["rain"])
-
-        fig2 = go.Figure()
-        fig2.add_trace(go.Bar(
-            x=mth["x_key"], y=mth["rain"],
-            name="Mưa trung bình (mm)",
-            marker_color="#38bdf8",
-            hovertemplate=f"{x_title} %{{x}}<br>Mưa: %{{y:.1f}} mm<extra></extra>",
-        ))
-        if "humidity" in mth.columns:
-            fig2.add_trace(go.Scatter(
-                x=mth["x_key"], y=mth["humidity"],
-                name="Độ ẩm TB (%)", mode="lines+markers",
-                line=dict(color="#4f46e5", width=2.5),
-                marker=dict(size=6),
-                yaxis="y2",
-                hovertemplate=f"{x_title} %{{x}}<br>Độ ẩm: %{{y:.1f}}%<extra></extra>",
-            ))
-        fig2.update_layout(**_dash_layout(
-            height=220,
-            xaxis=dict(
-                title=x_title, 
-                gridcolor="rgba(0,0,0,0.04)",
-                nticks=8 if scope_label in ["24h", "72h"] else 12,
-                tickangle=0
-            ),
-            yaxis=dict(title="Mưa (mm)", gridcolor="rgba(0,0,0,0.04)"),
-            yaxis2=dict(overlaying="y", side="right", title="Độ ẩm (%)", showgrid=False, range=[0, 110]),
-            legend=dict(orientation="h", x=0, y=1.15, font=dict(size=10)),
-            barmode="overlay",
-            hovermode="x unified",
-        ))
-        st.plotly_chart(fig2, width='stretch', config={"displayModeBar": False})
-
-        if not mth.empty and not mth["rain"].isna().all():
-            w_idx = mth["rain"].idxmax()
-            d_idx = mth["rain"].idxmin()
-            w_val = mth.loc[w_idx, "x_key"]
-            d_val = mth.loc[d_idx, "x_key"]
-            
-            content = (
-                f"🌧️ <b>{x_title} mưa nhiều nhất:</b> <span style='color:#1d4ed8;font-weight:700;'>{x_prefix}{w_val}</span>"
-                f" ({mth['rain'].max():.1f} mm)<br>"
-                f"☀️ <b>{x_title} ít mưa nhất:</b> <span style='color:#22c55e;font-weight:700;'>{x_prefix}{d_val}</span>"
-                f" ({mth['rain'].min():.1f} mm)"
-            )
-            st.markdown(_insight_html(content, "#38bdf8", "56,189,248"), unsafe_allow_html=True)
-
-
-
-
-# ── Dashboard 5 — Spatial Map ──────────────────────────────────────────────────
-
-def render_spatial_map(detail_summary: pd.DataFrame, anchor_day=None):
-    _dash_section_header(
-        "🗺️ Bản Đồ Không Gian",
-        "Phân bố nhiệt độ và độ ẩm theo địa điểm — nhận diện vùng oi bức và điểm dễ chịu",
-    )
-    if detail_summary.empty:
-        st.info("Không có dữ liệu chi tiết theo địa điểm.")
-        return
-
-    df = detail_summary.copy()
-    # Normalize coordinate column names if they exist under different names
-    lat_col = next((c for c in df.columns if c.lower() in ["lat", "latitude"]), None)
-    lon_col = next((c for c in df.columns if c.lower() in ["lon", "longitude"]), None)
-    
-    df["comfort"] = df.apply(
-        lambda r: _comfort_score(
-            r.get("temp_avg", np.nan),
-            r.get("humidity",  np.nan),
-            r.get("wind_speed", np.nan),
-        ),
-        axis=1,
-    )
-
-    col_l, col_r = st.columns([1.3, 1], gap="large")
-
-    with col_l:
-        if lat_col and lon_col:
-            vm = df.dropna(subset=[lat_col, lon_col, "temp_avg"]).copy()
-            if not vm.empty:
-                # Optimized Mapbox view
-                size_val = (vm["humidity"].fillna(50) / 100 * 18 + 7).clip(6, 25)
-                fig = go.Figure(go.Scattermapbox(
-                    lat=vm[lat_col], lon=vm[lon_col],
-                    mode="markers",
-                    marker=dict(
-                        size=size_val,
-                        color=vm["temp_avg"],
-                        colorscale="Plasma",
-                        showscale=True,
-                        colorbar=dict(title="°C", thickness=10, len=0.7, y=0.5),
-                        opacity=0.8,
-                    ),
-                    text=vm["location"] if "location" in vm.columns else None,
-                    customdata=np.stack([vm["humidity"].fillna(0), vm["comfort"]], axis=1),
-                    hovertemplate=(
-                        "<b>%{text}</b><br>"
-                        "Nhiệt độ: %{marker.color:.1f}°C<br>"
-                        "Độ ẩm: %{customdata[0]:.0f}%<br>"
-                        "Comfort: %{customdata[1]:.0f}/100<extra></extra>"
-                    ),
-                ))
-                fig.update_layout(**_dash_layout(
-                    height=420,
-                    mapbox=dict(
-                        style="carto-positron",
-                        zoom=7,
-                        center=dict(lat=float(vm[lat_col].mean()), lon=float(vm[lon_col].mean())),
-                    ),
-                    margin=dict(l=0, r=0, t=10, b=0),
-                ))
-                st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
-            else:
-                st.info("Không đủ tọa độ hợp lệ để vẽ bản đồ.")
-        else:
-            # Redesigned Fallback: Comfort Index Ranking (Bar Chart)
-            # This provides unique value instead of just another scatter plot.
-            top_df = df.nlargest(12, "comfort").sort_values("comfort", ascending=True)
-            if not top_df.empty:
-                fig = go.Figure(go.Bar(
-                    y=top_df["location"].str[:18],
-                    x=top_df["comfort"],
-                    orientation="h",
-                    marker=dict(
-                        color=top_df["comfort"],
-                        colorscale="RdYlGn",
-                        line=dict(width=1, color="white"),
-                    ),
-                    hovertemplate="Địa điểm: %{y}<br>Comfort: %{x:.1f}/100<extra></extra>",
-                ))
-                fig.update_layout(**_dash_layout(
-                    title=dict(text="Xếp hạng Chỉ số Tiện nghi (Comfort)", font=dict(size=13, weight=600)),
-                    height=420,
-                    xaxis=dict(title="Điểm số (0-100)", range=[0, 105], gridcolor="rgba(0,0,0,0.06)"),
-                    yaxis=dict(title="", tickfont=dict(size=10)),
-                ))
-                st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
-
-    with col_r:
-        # Humidity vs Temp Analysis
-        valid2 = df.dropna(subset=["temp_avg", "humidity"]).copy()
-        if not valid2.empty:
-            # Add padding to axes to avoid the "blank/edge" look in the screenshot
-            t_min, t_max = valid2["temp_avg"].min(), valid2["temp_avg"].max()
-            h_min, h_max = valid2["humidity"].min(), valid2["humidity"].max()
-            t_pad = (t_max - t_min) * 0.15 if t_max != t_min else 2.0
-            h_pad = (h_max - h_min) * 0.15 if h_max != h_min else 5.0
-            
-            t_hi = max(36.0, t_max + 1.0)
-            h_hi = max(95.0, h_max + 2.0)
-            
-            fig2 = go.Figure()
-            # Heatmap Underlay for zones (Optional but nice)
-            fig2.add_shape(
-                type="rect", x0=75, x1=100, y0=30, y1=45,
-                fillcolor="rgba(239,68,68,0.08)", line_width=0, layer="below"
-            )
-            
-            fig2.add_trace(go.Scatter(
-                x=valid2["humidity"], y=valid2["temp_avg"],
-                mode="markers",
-                marker=dict(
-                    size=11, opacity=0.9,
-                    color=valid2["comfort"],
-                    colorscale="RdYlGn",
-                    showscale=False,
-                    line=dict(width=1, color="white"),
-                ),
-                text=valid2["location"] if "location" in valid2.columns else None,
-                hovertemplate="<b>%{text}</b><br>Độ ẩm: %{x:.0f}%<br>Nhiệt độ: %{y:.1f}°C<extra></extra>",
-            ))
-            
-            fig2.add_shape(
-                type="rect",
-                x0=75, x1=h_hi, y0=30, y1=t_hi,
-                line=dict(color="#ef4444", width=2, dash="dash"),
-                fillcolor="rgba(239,68,68,0.03)",
-            )
-            fig2.add_annotation(
-                x=85, y=30.5,
-                text="⚠️ Vùng oi bức (Sultry)",
-                showarrow=False,
-                font=dict(size=11, color="#ef4444", weight="bold"),
-                bgcolor="rgba(255,255,255,0.9)",
-                borderpad=4,
-            )
-            fig2.update_layout(**_dash_layout(
-                height=280,
-                xaxis=dict(
-                    title="Độ ẩm (%)", gridcolor="rgba(0,0,0,0.04)", 
-                    range=[max(0, h_min - h_pad), min(105, h_max + h_pad)]
-                ),
-                yaxis=dict(
-                    title="Nhiệt độ (°C)", gridcolor="rgba(0,0,0,0.04)",
-                    range=[t_min - t_pad, t_max + t_pad]
-                ),
-                hovermode="closest",
-            ))
-
-            # Add linear trend line (numpy polyfit)
-            if len(valid2) >= 3:
-                x_vals = valid2["humidity"].values.astype(float)
-                y_vals = valid2["temp_avg"].values.astype(float)
-                mask = np.isfinite(x_vals) & np.isfinite(y_vals)
-                if mask.sum() >= 2:
-                    coef = np.polyfit(x_vals[mask], y_vals[mask], 1)
-                    x_line = np.linspace(x_vals[mask].min(), x_vals[mask].max(), 50)
-                    y_line = np.polyval(coef, x_line)
-                    fig2.add_trace(go.Scatter(
-                        x=x_line, y=y_line,
-                        mode="lines",
-                        line=dict(color="#64748b", width=1.8, dash="dash"),
-                        name="Xu hướng",
-                        hoverinfo="skip",
-                        showlegend=False,
-                    ))
-
-            # Add "Vùng dễ chịu" comfort zone annotation (temp 22–29, humidity 50–75)
-            fig2.add_shape(
-                type="rect", x0=50, x1=75, y0=22, y1=29,
-                fillcolor="rgba(34,197,94,0.08)",
-                line=dict(color="#22c55e", width=1.5, dash="dash"),
-                layer="below",
-            )
-            fig2.add_annotation(
-                x=62.5, y=22.5,
-                text="✅ Vùng dễ chịu",
-                showarrow=False,
-                font=dict(size=10, color="#16a34a"),
-                bgcolor="rgba(255,255,255,0.85)",
-                borderpad=3,
-            )
-
-            st.plotly_chart(fig2, width='stretch', config={"displayModeBar": False})
-            st.caption("Mỗi điểm = 1 địa điểm. Màu xanh = thoải mái, đỏ = ôi bức. Đường nét đứt = xu hướng tuyến tính (hồi quy). Hình chữ nhật xanh = Vùng nhiệt độ/ẩm lý tưởng.")
-
-        if "comfort" in df.columns and "location" in df.columns:
-            top5 = df.nlargest(5, "comfort")[["location", "comfort"]].copy()
-            lines = []
-            for _, row in top5.iterrows():
-                c = float(row["comfort"])
-                clr = "#22c55e" if c >= 70 else "#f59e0b" if c >= 50 else "#ef4444"
-                lines.append(
-                    f"<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>"
-                    f"<span style='font-weight:600;color:#334155;'>🏠 {escape(str(row['location'])[:22])}</span>"
-                    f"<span style='background:{clr}20;color:{clr};padding:2px 8px;border-radius:6px;font-weight:800;font-size:12px;'>{c:.0f}/100</span>"
-                    f"</div>"
-                )
-            content = "".join(lines) if lines else "Chưa đủ dữ liệu."
-            st.markdown(_insight_html(content, "#10b981", "16,185,129"), unsafe_allow_html=True)
-
-
-# ── Dashboard 6 — Comparison ───────────────────────────────────────────────────
-
-def render_comparison(df: pd.DataFrame, comparison_items: list, level: str = "city"):
-    # Dynamic header based on level
-    _titles = {
-        "city": "📊 So Sánh Đa Tỉnh",
-        "location": "📊 So Sánh Khu Vực",
-    }
-    _subs = {
-        "city": "Radar 5 chiều và điểm tiện nghi — xếp hạng các tỉnh thành thoải mái nhất",
-        "location": "Radar 5 chiều và điểm tiện nghi — xếp hạng các xã phường trong khu vực",
-    }
-    _dash_section_header(_titles.get(level, "📊 So Sánh"), _subs.get(level, ""))
-
-    _group_col = "city" if level == "city" else "location"
-    if df.empty or not comparison_items or _group_col not in df.columns:
-        st.info(f"Không đủ dữ liệu để so sánh các {'tỉnh thành' if level=='city' else 'địa điểm'}.")
-        return
-
-    axes = ["temp", "humidity", "rain", "wind_speed", "cloud"]
-    axes_labels = ["Nhiệt độ", "Độ ẩm", "Mưa", "Gió", "Mây"]
-    ranges = {
-        "temp": (15.0, 40.0), "humidity": (20.0, 100.0),
-        "rain": (0.0, 20.0), "wind_speed": (0.0, 30.0), "cloud": (0.0, 100.0),
-    }
-
-    stats_map: dict = {}
-    for item in comparison_items:
-        cdf = df[df[_group_col] == item]
-        if cdf.empty:
-            continue
-        row: dict = {}
-        for ax in axes:
-            row[ax] = float(cdf[ax].mean()) if ax in cdf.columns and not cdf[ax].isna().all() else np.nan
-        # Add AQI to the comparison stats
-        row["aqi"] = float(cdf["aqi"].mean()) if "aqi" in cdf.columns and not cdf["aqi"].isna().all() else np.nan
-        stats_map[item] = row
-
-    if not stats_map:
-        st.info(f"Không có dữ liệu thống kê theo {'tỉnh' if level=='city' else 'địa điểm'}.")
-        return
-
-    def _norm_val(ax: str, v) -> float:
-        if pd.isna(v): return 50.0
-        lo, hi = ranges[ax]
-        return float(np.clip((v - lo) / (hi - lo) * 100, 0, 100))
-
-    _PALETTE = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6"]
-    _FILL    = ["rgba(59,130,246,0.12)", "rgba(239,68,68,0.12)", "rgba(16,185,129,0.12)",
-                "rgba(245,158,11,0.12)", "rgba(139,92,246,0.12)", "rgba(236,72,153,0.12)",
-                "rgba(20,184,166,0.12)"]
-
-    col_l, col_r = st.columns([1.2, 1], gap="large")
-
-    # ── Left: Multi-trace Scatterpolar ──
-    with col_l:
-        fig = go.Figure()
-        
-        scores = {
-            item: _comfort_score(
-                stats.get("temp"), stats.get("humidity"),
-                stats.get("wind_speed"), stats.get("aqi")
-            )
-            for item, stats in stats_map.items()
-        }
-        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        max_score = max(scores.values()) if scores else 100.0
-
-        # Radar chart: Limit to Top 6 to prevent spaghetti chaos in UI
-        top_radar_items = [item for item, _ in ranked[:6]]
-
-        for i, item in enumerate(top_radar_items):
-            stats = stats_map[item]
-            r_vals = [_norm_val(ax, stats.get(ax, np.nan)) for ax in axes]
-            rc = r_vals + [r_vals[0]]
-            tc = axes_labels + [axes_labels[0]]
-            clr  = _PALETTE[i % len(_PALETTE)]
-            fill = _FILL[i % len(_FILL)]
-            fig.add_trace(go.Scatterpolar(
-                r=rc, theta=tc, fill="toself", name=item,
-                line=dict(color=clr, width=2.2),
-                fillcolor=fill,
-                hovertemplate=f"<b>{item}</b><br>%{{theta}}: %{{r:.1f}}<extra></extra>",
-            ))
-        fig.update_layout(**_dash_layout(
-            height=380,
-            polar=dict(
-                bgcolor="rgba(0,0,0,0)",
-                radialaxis=dict(visible=True, range=[0, 100], showticklabels=False, gridcolor="rgba(148,163,184,0.2)"),
-                angularaxis=dict(tickfont=dict(size=11, color="#334155"), gridcolor="rgba(148,163,184,0.2)"),
-            ),
-            legend=dict(orientation="h", x=0, y=-0.08, font=dict(size=11)),
-        ))
-        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
-
-    # ── Right: Animated progress bars + mini dataframe ──
-    with col_r:
-        medals = ["🥇", "🥈", "🥉"]
-
-        # Limit UI bars/tables to top 10 items so UI bounding box doesn't break
-        display_ranked = ranked[:10]
-
-        bars_html = "<div style='margin-bottom:14px;'>"
-        for rank, (city, sc) in enumerate(display_ranked):
-            # Bug fix: normalize bars to max score, not raw 0–100 so relative differences are visible
-            pct = (sc / max_score * 100) if max_score > 0 else 0
-            clr = "#22c55e" if sc >= 70 else "#f59e0b" if sc >= 50 else "#ef4444"
-            medal = medals[rank] if rank < 3 else f"#{rank+1}"
-            # Bug fix: was `{item}` (dangling/wrong var) — corrected to `{city}`
-            bars_html += f"""
-<div style='margin-bottom:10px;'>
-  <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;'>
-    <span style='font-size:13px;font-weight:700;color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;' title='{escape(city)}'>{medal} {escape(city)}</span>
-    <span style='font-size:13px;font-weight:800;color:{clr};'>{sc:.0f}<span style='font-size:11px;color:#94a3b8;font-weight:500;'>/100</span></span>
-  </div>
-  <div style='background:rgba(148,163,184,0.15);border-radius:99px;height:8px;overflow:hidden;'>
-    <div style='width:{pct:.1f}%;height:100%;background:{clr};border-radius:99px;transition:width 0.5s ease;'></div>
-  </div>
-</div>"""
-        bars_html += "</div>"
-        st.markdown(bars_html, unsafe_allow_html=True)
-
-        table_rows = []
-        for city, _ in display_ranked:
-            s = stats_map[city]
-            sc = scores[city]
-            temp_val = f"{s['temp']:.1f}°C" if not pd.isna(s.get('temp', np.nan)) else "--"
-            hum_val = f"{s['humidity']:.0f}%" if not pd.isna(s.get('humidity', np.nan)) else "--"
-            aqi_val = f"{s['aqi']:.0f}" if not pd.isna(s.get('aqi', np.nan)) else "--"
-            table_rows.append({
-                "Địa điểm" if level == "location" else "Tỉnh thành": city,
-                "AQI": aqi_val,
-                "Comfort": f"{sc:.0f}/100",
-                "Nhiệt độ": temp_val,
-                "Độ ẩm": hum_val,
-            })
-        if table_rows:
-            st.dataframe(pd.DataFrame(table_rows), hide_index=True, width='stretch')
-        st.caption("Radar càng lớn = chỉ số tại địa điểm đó càng cao so với range chuẩn. Comfort score tích hợp AQI penalty.")
-
-
-# ─── Main render ──────────────────────────────────────────────────────────────
 
 
 def render(df: pd.DataFrame, show_analysis_button: bool = False):
@@ -3449,13 +2865,15 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
     ml_fn, ax_fn = _get_plot_helpers(ctx)
     _inject_weather_css()
     
-    # ── Tab Header Card (Description) ──
+    # ── Tab Header Card (Description) ── (đồng bộ với overview/AQI style)
     st.markdown(
-        _info_card_html(
-            "THỜI TIẾT", 
-            "Dự báo & Phân tích Khí tượng Chuyên sâu", 
-            "Theo dõi diễn biến nhiệt độ, lượng mưa và các chỉ số khí tượng thực tế từ hệ thống trạm quan trắc quốc gia."
-        ),
+        '<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
+        '<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
+        '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">THỜI TIẾT</span>'
+        'Dự báo & Phân tích Khí tượng Chuyên sâu'
+        '</div>'
+        '<div style="font-size: 0.9rem; color: #64748b; font-weight: 500;">Theo dõi diễn biến nhiệt độ, lượng mưa và các chỉ số khí tượng thực tế từ hệ thống trạm quan trắc quốc gia.</div>'
+        '</div>',
         unsafe_allow_html=True
     )
 
@@ -3494,56 +2912,45 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
     if "weather_location_scope" not in st.session_state:
         st.session_state.weather_location_scope = ""
 
-    # ── TOP CONTROLS ──
-    st.markdown(_html("""
-        <div class="wx-action-bar">
-            <div class="wx-action-title">
-                <div>
-                    <div class="wx-action-main">Phạm vi xem</div>
-                    <div class="wx-action-sub">Tùy chỉnh khu vực & thời gian</div>
-                </div>
-            </div>
-            <div id="wx-filter-container" class="wx-filter-container"></div>
-        </div>
-    """), unsafe_allow_html=True)
+    # ── TOP CONTROLS (đồng bộ filter bar style với overview_tab) ──
+    c_f_city, c_f_date, c_f_btn = st.columns([1.5, 1.2, 1.0], gap="small")
 
-    with st.container():
-        # Adjusting spacer to prevent overlap with the title text
-        c_fill, c_top1, c_top2, c_btn = st.columns([1.4, 1.2, 1.2, 1.2], gap="small")
-        
-        with c_top1:
-            selected_city = st.selectbox("Khu vực", options=cities, key="weather_city",
-                                         help="Chọn khu vực xem thời tiết.", label_visibility="collapsed")
+    with c_f_city:
+        st.markdown("<div class='ov-filter-label'>Khu vực</div>", unsafe_allow_html=True)
+        selected_city = st.selectbox("Khu vực", options=cities, key="weather_city",
+                                     help="Chọn khu vực xem thời tiết.", label_visibility="collapsed")
 
-        # We need city_df_all to get valid date range for the date picker
-        city_df_all = weather_df[weather_df["city"] == selected_city].sort_values("timestamp").copy()
-        day_series_all = pd.to_datetime(city_df_all["timestamp"]).dt.normalize()
-        min_day = day_series_all.min().date()
-        max_day = day_series_all.max().date()
-        default_anchor = day_series_all.iloc[max(0, len(day_series_all) - 10)].date()
+    # We need city_df_all to get valid date range for the date picker
+    city_df_all = weather_df[weather_df["city"] == selected_city].sort_values("timestamp").copy()
+    day_series_all = pd.to_datetime(city_df_all["timestamp"]).dt.normalize()
+    min_day = day_series_all.min().date()
+    max_day = day_series_all.max().date()
+    default_anchor = day_series_all.iloc[max(0, len(day_series_all) - 10)].date()
 
-        if "weather_anchor_picker" not in st.session_state:
-            st.session_state["weather_anchor_picker"] = default_anchor
-        if (st.session_state["weather_anchor_picker"] < min_day or st.session_state["weather_anchor_picker"] > max_day):
-            st.session_state["weather_anchor_picker"] = default_anchor
+    if "weather_anchor_picker" not in st.session_state:
+        st.session_state["weather_anchor_picker"] = default_anchor
+    if (st.session_state["weather_anchor_picker"] < min_day or st.session_state["weather_anchor_picker"] > max_day):
+        st.session_state["weather_anchor_picker"] = default_anchor
 
-        with c_top2:
-            anchor_pick = st.date_input(
-                "Ngày mốc dự báo",
-                min_value=min_day,
-                max_value=max_day,
-                key="weather_anchor_picker",
-                help="Chọn ngày khởi đầu để xem chi tiết và dự báo.",
-                label_visibility="collapsed"
-            )
-        
-        with c_btn:
-            if show_analysis_button:
-                if st.button("Xem Phân tích ➜", type="primary", use_container_width=True, key="wt_go_to_analysis"):
-                    st.session_state["wx_view_mode"] = "dashboard"
-                    st.rerun()
-            else:
-                st.button("Dữ liệu trực tuyến", type="secondary", use_container_width=True, disabled=True)
+    with c_f_date:
+        st.markdown("<div class='ov-filter-label'>Ngày mốc dự báo</div>", unsafe_allow_html=True)
+        anchor_pick = st.date_input(
+            "Ngày mốc dự báo",
+            min_value=min_day,
+            max_value=max_day,
+            key="weather_anchor_picker",
+            help="Chọn ngày khởi đầu để xem chi tiết và dự báo.",
+            label_visibility="collapsed"
+        )
+
+    with c_f_btn:
+        st.markdown("<div class='ov-filter-label'>&nbsp;</div>", unsafe_allow_html=True)
+        if show_analysis_button:
+            if st.button("← Xem Phân tích", type="primary", use_container_width=True, key="wt_go_to_analysis"):
+                st.session_state["wx_view_mode"] = "analysis"
+                st.rerun()
+        else:
+            st.button("Dữ liệu trực tuyến", type="secondary", use_container_width=True, disabled=True)
 
 
     # Variables for the lower controls (moved from above)
@@ -3645,14 +3052,12 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
 
     big_icon = _condition_img(cond_now, size=64)
 
-    # ── HERO CARD (Grid Layout Restored) ───────────────────────────────────────
+    # ── HERO CARD (đồng bộ với card style chuẩn) ───────────────────────────────
     st.markdown(_html(f"""
-    <div class='wx-hero'>
-      <div class='wx-hero-inner'>
-        <div class='wx-breadcrumb'>Thời tiết &gt; Việt Nam &gt; {selected_city}</div>
-        <div class='wx-nav-pills'>
-          <span class='wx-nav-pill'>AQI</span>
-          <span class='wx-nav-pill active'>Thời tiết</span>
+    <div class="card" style="padding: 1.5rem; margin-bottom: 1rem; border-left: 4px solid #0ea5e9;">
+      <div class="wx-hero-inner">
+        <div class="wx-breadcrumb" style="color:#64748b; font-size:0.75rem; margin-bottom:12px;">
+          <span style="color:#0ea5e9; font-weight:600;">Thời tiết</span> &rsaquo; Việt Nam &rsaquo; {selected_city}
         </div>
         <div class='wx-hero-grid'>
           <!-- Left: Current conditions -->
@@ -4193,78 +3598,3 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
             comp_items = []
         comp_level = "location"
 
-    render_rain_season(rain_src, selected_city, scope_label=scope_label)
-    if not detail_summary.empty:
-        render_spatial_map(detail_summary, anchor_day)
-    
-    # ── Item 9: Climate Scorecard — Comprehensive Climate Ranking ──────────────
-    if not detail_summary.empty and "location" in detail_summary.columns:
-        score_df = detail_summary.copy()
-        # Compute AQI-aware comfort score
-        aqi_col = "aqi" if "aqi" in score_df.columns else None
-        score_df["_comfort"] = score_df.apply(
-            lambda r: _comfort_score(
-                r.get("temp_avg", np.nan), r.get("humidity", np.nan),
-                r.get("wind_speed", np.nan),
-                r.get(aqi_col, np.nan) if aqi_col else None,
-            ), axis=1
-        )
-        top10 = score_df.nlargest(10, "_comfort").reset_index(drop=True)
-
-        def _badge(comfort, aqi_val):
-            aqi_ok = pd.isna(aqi_val) or float(aqi_val) <= 100
-            if comfort >= 90 and (pd.isna(aqi_val) or float(aqi_val) <= 50):
-                return "🏆 Xuất sắc"
-            if comfort >= 80 and aqi_ok:
-                return "✅ Tốt"
-            if comfort >= 70:
-                return "🆗 Khá"
-            return "⚠️ Trung bình"
-
-        _dash_section_header(
-            "🏅 Bảng Xếp Hạng Khí Hậu Tổng Hợp",
-            "Top 10 địa điểm có điều kiện khí hậu tốt nhất dựa trên Comfort Score tổng hợp",
-        )
-
-        gold_bg   = "rgba(251,191,36,0.12)"
-        silver_bg = "rgba(148,163,184,0.10)"
-        rows_html_list = []
-        for rank, row in top10.iterrows():
-            aqi_v = row.get("aqi", np.nan) if aqi_col else np.nan
-            badge = _badge(float(row["_comfort"]), aqi_v)
-            if rank == 0:   row_bg = gold_bg
-            elif rank <= 2: row_bg = silver_bg
-            else:           row_bg = "transparent"
-            _rank_icons = ["🥇", "🥈", "🥉"]
-            rank_icon = _rank_icons[rank] if rank < 3 else f"{rank+1}."
-            loc_name = escape(str(row.get("location", ""))[:28])
-            temp_s = f"{row.get('temp_avg', np.nan):.1f}°C" if not pd.isna(row.get("temp_avg", np.nan)) else "--"
-            hum_s  = f"{row.get('humidity', np.nan):.0f}%"   if not pd.isna(row.get("humidity",  np.nan)) else "--"
-            aqi_s  = f"{aqi_v:.0f}" if not pd.isna(aqi_v) else "--"
-            cscore = f"{row['_comfort']:.0f}★"
-            rows_html_list.append(
-                f"<tr style='background:{row_bg};'>"
-                f"<td style='padding:8px 10px;font-weight:700;'>{rank_icon} {loc_name}</td>"
-                f"<td style='padding:8px 10px;text-align:center;'>{temp_s}</td>"
-                f"<td style='padding:8px 10px;text-align:center;'>{hum_s}</td>"
-                f"<td style='padding:8px 10px;text-align:center;font-weight:800;color:#22c55e;'>{cscore}</td>"
-                f"<td style='padding:8px 10px;text-align:center;'>{aqi_s}</td>"
-                f"<td style='padding:8px 10px;text-align:center;'>{badge}</td>"
-                f"</tr>"
-            )
-        table_html = (
-            "<div class='wx-analysis-card' style='background:#ffffff;border:1px solid #e2eaf3;padding:20px;overflow-x:auto;'>"
-            "<table style='width:100%;border-collapse:collapse;font-size:13px;color:#334155;'>"
-            "<thead><tr style='background:#f8fafc;'>"
-            "<th style='padding:8px 10px;text-align:left;font-weight:700;color:#0f172a;'>Địa điểm</th>"
-            "<th style='padding:8px 10px;text-align:center;'>Độ/Ẩm ℃</th>"
-            "<th style='padding:8px 10px;text-align:center;'>Độ Ẩm</th>"
-            "<th style='padding:8px 10px;text-align:center;'>Comfort ★</th>"
-            "<th style='padding:8px 10px;text-align:center;'>AQI</th>"
-            "<th style='padding:8px 10px;text-align:center;'>Đánh giá</th>"
-            "</tr></thead>"
-            f"<tbody>{''.join(rows_html_list)}</tbody>"
-            "</table>"
-            "</div>"
-        )
-        st.markdown(table_html, unsafe_allow_html=True)

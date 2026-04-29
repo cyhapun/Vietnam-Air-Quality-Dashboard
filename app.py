@@ -145,6 +145,7 @@ elif vietnam_svg_base64:
     st.session_state["_loader_art_url"] = (
         f"data:image/svg+xml;base64,{vietnam_svg_base64}"
     )
+    
 if logo_base64:
     logo_html = f'<img src="data:image/png;base64,{logo_base64}" style="width:100%;height:100%;object-fit:contain;padding:2px;">'
 else:
@@ -388,7 +389,7 @@ def _render_tab_content(state, active_tab):
                         with dashboard_loading(
                             "Đang tải dữ liệu chi tiết tỉnh/thành...",
                             hint=f"Chuẩn hóa chuỗi thời gian và phân lớp AQI cho {selected_province}.",
-                            overlay=False,
+                            overlay=True,
                             min_duration=0.35,
                         ):
                             detail_raw = load_province_detail(

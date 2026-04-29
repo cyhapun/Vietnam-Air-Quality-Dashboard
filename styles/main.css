@@ -1,6 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap");
 
 :root {
+  color-scheme: light only !important;
   --pri-900: #102844;
   --pri-800: #173a5e;
   --pri-700: #1f4f7d;
@@ -12,6 +13,33 @@
   --ink-700: #334155;
   --ink-500: #64748b;
   --line-200: #dbe7f2;
+}
+
+/* Force light mode on all dropdowns and inputs in the main area */
+[data-testid="stAppViewContainer"] [data-baseweb="popover"] {
+  background-color: #ffffff !important;
+}
+
+[data-testid="stAppViewContainer"] [data-baseweb="menu"] {
+  background-color: #ffffff !important;
+}
+
+[data-testid="stAppViewContainer"] [data-baseweb="menu"] li {
+  color: #1e293b !important;
+}
+
+[data-testid="stAppViewContainer"] [data-baseweb="menu"] li:hover {
+  background-color: #f1f5f9 !important;
+  color: #0ea5e9 !important;
+}
+
+[data-testid="stAppViewContainer"] [data-baseweb="select"] {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-testid="stAppViewContainer"] [data-baseweb="select"] > div {
+  color: #1e293b !important;
 }
 
 *,
@@ -3628,8 +3656,11 @@ section.main [role="option"] * {
   margin-top: 5px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  height: 24px;
+  box-sizing: border-box;
   gap: 6px;
-  padding: 2px 8px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.35);
   background: rgba(255, 255, 255, 0.08);

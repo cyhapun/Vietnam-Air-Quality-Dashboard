@@ -293,46 +293,7 @@ def _build_scope_metrics(df, state, selected_range):
     return derived_state
 
 
-def _render_trend_grid(
-    trend_primary_kicker,
-    aqi_1d_color,
-    aqi_1d_text,
-    pm_1d_color,
-    pm_1d_text,
-    trend_secondary_kicker,
-    aqi_7d_color,
-    aqi_7d_text,
-    pm_7d_color,
-    pm_7d_text,
-    cig_n,
-    exposure_label,
-):
-    """
-    Renders the trend grid comparing short-term and long-term changes,
-    and cigarette equivalents.
-    """
-    st.markdown(
-        f"""
-    <div class="trend-grid">
-        <div class="trend-card">
-            <div class="trend-kicker">{trend_primary_kicker}</div>
-            <div class="trend-main" style="color:{aqi_1d_color}">AQI: {aqi_1d_text}</div>
-            <div class="trend-sub" style="color:{pm_1d_color}">PM2.5: {pm_1d_text}</div>
-        </div>
-        <div class="trend-card">
-            <div class="trend-kicker">{trend_secondary_kicker}</div>
-            <div class="trend-main" style="color:{aqi_7d_color}">AQI: {aqi_7d_text}</div>
-            <div class="trend-sub" style="color:{pm_7d_color}">PM2.5: {pm_7d_text}</div>
-        </div>
-        <div class="trend-card">
-            <div class="trend-kicker">Tương đương thuốc lá</div>
-            <div class="trend-main" style="color:#ef4444">{cig_n} <span style="font-size:1rem;color:#64748b;font-weight:600;">điếu</span></div>
-            <div class="trend-sub">trong {exposure_label} · 22 µg/m³ = 1 điếu</div>
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
+
 
 
 def _render_pollutant_cards(df):
@@ -647,24 +608,9 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
     )
     hero_insights = _compute_hero_insights(df, avg_aqi, _lbl)
 
-    insight_block_html = textwrap.dedent(
-        f"""
-    <div class="aqi-insight-wrap in-hero">
-        <div class="aqi-insight-grid">
-            <div class="aqi-insight-card">
-                <div class="aqi-insight-kicker">Khung giờ đáng chú ý</div>
-                <div class="aqi-insight-main">{hero_insights['slot_focus']}</div>
-                <div class="aqi-insight-sub">{hero_insights['slot_focus_sub']}</div>
-            </div>
-            <div class="aqi-insight-card">
-                <div class="aqi-insight-kicker">Mức độ rủi ro theo nhóm</div>
-                <div class="aqi-insight-main">Trẻ em · Người già</div>
-                <div class="aqi-insight-sub">Trẻ em: {hero_insights['risk_children']} Người già: {hero_insights['risk_elderly']}</div>
-            </div>
-        </div>
-    </div>
-    """
-    )
+
+
+    cig_svg = "<svg width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='margin-right: 4px; vertical-align: middle; margin-top: -2px;'><path d='M18 12H2v4h16'/><path d='M22 12v4'/><path d='M7 12v4'/><path d='M18 8c0-2.5-2-2.5-2-5'/><path d='M22 8c0-2.5-2-2.5-2-5'/></svg>"
 
     iqair_hybrid_html = (
         f"<div class='iq-wrap'>"
@@ -675,35 +621,31 @@ def render_overview(state, df_override=None, scope_label="Việt Nam"):
         f"<div class='iq-card iq-card-hero'>"
         f"{hero_bg_html}"
         f"<div class='iq-hero-content'>"
-        f"<div class='iq-hero-kicker'>Chất lượng không khí tại {scope_label}</div>"
-        f"<div class='iq-hero-row'>"
+        f"<div class='iq-hero-kicker'>CHẤT LƯỢNG KHÔNG KHÍ TẠI {scope_label.upper()} TRONG {exposure_label.upper()}</div>"
+        f"<div class='iq-hero-row' style='display: flex; align-items: center; gap: 16px;'>"
+        f"<div style='display: flex; align-items: baseline; gap: 8px;'>"
         f"<div class='iq-hero-aqi' style='color:{_col}'>{avg_aqi}</div>"
         f"<div class='iq-hero-status'>{_lbl}</div>"
         f"</div>"
-        f"<div class='iq-hero-sub'>PM2.5 trung bình hiện tại: <strong>{avg_pm25} µg/m³</strong></div>"
-        f"<div class='iq-hero-sub'>Nồng độ PM2.5 đang cao gấp <strong>{who_pm25_multi} lần</strong> mức hướng dẫn năm của WHO (5 µg/m³).</div>"
+        f"<div style='font-size: 1.15rem; color: {aqi_1d_color}; font-weight: 700; white-space: nowrap;'>{aqi_1d_text}</div>"
         f"</div>"
-        f"{insight_block_html}"
+        f"<div style='display: flex; gap: 48px; margin-top: 20px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.15);'>"
+        f"<div style='display: flex; flex-direction: column; gap: 6px;'>"
+        f"<div style='font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; font-weight: 600;'>Khung giờ đáng chú ý</div>"
+        f"<div style='font-size: 1.1rem; font-weight: 600;'>{hero_insights['slot_focus']}</div>"
+        f"<div style='font-size: 0.9rem; opacity: 0.9;'>{hero_insights['slot_focus_sub']}</div>"
+        f"</div>"
+        f"<div style='display: flex; flex-direction: column; gap: 6px;'>"
+        f"<div style='font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; font-weight: 600;'>Mức độ tiếp xúc</div>"
+        f"<div style='font-size: 1.1rem; font-weight: 600; display: flex; align-items: center;'>{cig_svg} Tương đương {cig_n} điếu thuốc lá</div>"
+        f"<div style='font-size: 0.9rem; opacity: 0.9;'>Trong thời gian {exposure_label}</div>"
+        f"</div>"
+        f"</div>"
         f"</div>"
         f"</div>"
         f"</div>"
     )
     st.markdown(iqair_hybrid_html, unsafe_allow_html=True)
-
-    _render_trend_grid(
-        trend_primary_kicker,
-        aqi_1d_color,
-        aqi_1d_text,
-        pm_1d_color,
-        pm_1d_text,
-        trend_secondary_kicker,
-        aqi_7d_color,
-        aqi_7d_text,
-        pm_7d_color,
-        pm_7d_text,
-        cig_n,
-        exposure_label,
-    )
     _render_pollutant_cards(df)
 
     if is_city_trimmed:
@@ -724,15 +666,7 @@ def render(df):
     globals().update(ctx)
     selected_range = st.session_state.get("ov_time_range", "24h")
     df = _filter_df_by_time_range(df, selected_range)
-    st.markdown(
-        '<div class="card" style="padding: 1.5rem; border-left: 5px solid #0ea5e9; background: linear-gradient(to right, #ffffff, #f8fbff); margin-bottom: 1.5rem;">'
-        '<div style="font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">'
-        '<span class="q-tag" style="font-size: 0.85rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 6px;">TỔNG QUAN</span>'
-        'Chỉ số Chất lượng Không khí Việt Nam'
-        '</div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
+
 
     if df.empty:
         st.info(f"Không có dữ liệu để hiển thị bản đồ/xếp hạng trong khung {selected_range}.")
@@ -971,35 +905,36 @@ def render(df):
         return "".join(rows)
 
 
-    rank_left, rank_right = st.columns(2, gap="small")
-    with rank_left:
-        st.markdown(
-            f"""
-            <div class="ov-live-card">
-                <div class="ov-live-head">Xếp hạng trực tiếp các tỉnh/thành ô nhiễm nhất</div>
-                <div class="ov-live-sub">Xếp hạng các Tỉnh/thành ô nhiễm nhất tại Việt Nam theo thời gian thực</div>
-                <div class="ov-live-table-head">
-                    <div>#</div><div>Tỉnh/thành</div><div>AQI Mỹ</div>
+    with st.expander("Bảng xếp hạng trực tiếp các Tỉnh/thành", expanded=False):
+        rank_left, rank_right = st.columns(2, gap="small")
+        with rank_left:
+            st.markdown(
+                f"""
+                <div class="ov-live-card">
+                    <div class="ov-live-head">Xếp hạng trực tiếp các tỉnh/thành ô nhiễm nhất</div>
+                    <div class="ov-live-sub">Xếp hạng các Tỉnh/thành ô nhiễm nhất tại Việt Nam theo thời gian thực</div>
+                    <div class="ov-live-table-head">
+                        <div>#</div><div>Tỉnh/thành</div><div>AQI Mỹ</div>
+                    </div>
+                    {_rows_html(rank_now)}
                 </div>
-                {_rows_html(rank_now)}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                """,
+                unsafe_allow_html=True,
+            )
 
-    with rank_right:
-        st.markdown(
-            f"""
-            <div class="ov-live-card">
-                <div class="ov-live-head">Xếp hạng trực tiếp các tỉnh/thành trong lành nhất</div>
-                <div class="ov-live-sub">Xếp hạng các tỉnh/thành trong lành nhất tại Việt Nam theo thời gian thực</div>
-                <div class="ov-live-table-head">
-                    <div>#</div><div>Tỉnh/thành</div><div>AQI Mỹ</div>
+        with rank_right:
+            st.markdown(
+                f"""
+                <div class="ov-live-card">
+                    <div class="ov-live-head">Xếp hạng trực tiếp các tỉnh/thành trong lành nhất</div>
+                    <div class="ov-live-sub">Xếp hạng các tỉnh/thành trong lành nhất tại Việt Nam theo thời gian thực</div>
+                    <div class="ov-live-table-head">
+                        <div>#</div><div>Tỉnh/thành</div><div>AQI Mỹ</div>
+                    </div>
+                    {_rows_html(rank_clean)}
                 </div>
-                {_rows_html(rank_clean)}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                """,
+                unsafe_allow_html=True,
+            )
 
     # ══════════════════════════════════════════════
