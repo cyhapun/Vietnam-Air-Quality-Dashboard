@@ -14,11 +14,14 @@ def render_header(state, logo_html):
     globals().update(state)
     colorblind_on = bool(st.session_state.get("colorblind_mode", False))
     header_class = "hdr hdr-cb" if colorblind_on else "hdr"
-    toggle_href = "?cb=toggle"
+    use_modern_qp = hasattr(st, "query_params")
+    active_tab = st.query_params.get("tab", "overview") if use_modern_qp else st.experimental_get_query_params().get("tab", ["overview"])[0]
+    toggle_cb_val = "0" if colorblind_on else "1"
+    toggle_href = f"?tab={active_tab}&cb={toggle_cb_val}"
     colorblind_badge = (
-      f"<a class='hdr-mode-link' href='{toggle_href}' target='_self' title='Bấm để bật/tắt chế độ mù màu'><div class='hdr-mode hdr-mode-on'><span class='hdr-mode-mark'>■</span>Chế độ mù màu: Bật</div></a>"
+      f"<a class='hdr-mode-link' href='{toggle_href}' target='_self' title='Bấm để tắt chế độ mù màu'><div class='hdr-mode hdr-mode-on'><span class='hdr-mode-mark'>■</span>Chế độ mù màu: Bật</div></a>"
         if colorblind_on
-      else f"<a class='hdr-mode-link' href='{toggle_href}' target='_self' title='Bấm để bật/tắt chế độ mù màu'><div class='hdr-mode'><span class='hdr-mode-mark'>●</span>Chế độ mù màu: Tắt</div></a>"
+      else f"<a class='hdr-mode-link' href='{toggle_href}' target='_self' title='Bấm để bật chế độ mù màu'><div class='hdr-mode'><span class='hdr-mode-mark'>●</span>Chế độ mù màu: Tắt</div></a>"
     )
 
     st.markdown(

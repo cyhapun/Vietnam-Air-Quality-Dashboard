@@ -148,22 +148,22 @@ def _consume_header_actions():
     Consume one-shot header actions from query parameters.
     Handles 'refresh' to clear cache and 'cb' to toggle colorblind mode.
     """
-    action = None
     use_modern_qp = hasattr(st, "query_params")
 
     if use_modern_qp:
-        action = st.query_params.get("cb")
+        cb_val = st.query_params.get("cb")
         refresh_action = st.query_params.get("refresh")
     else:
         qp = st.experimental_get_query_params()
-        action = qp.get("cb", [None])[0]
+        cb_val = qp.get("cb", [None])[0]
         refresh_action = qp.get("refresh", [None])[0]
 
     # Handle Refresh
     if refresh_action == "1":
         st.cache_data.clear()
         if use_modern_qp:
-            del st.query_params["refresh"]
+            if "refresh" in st.query_params:
+                del st.query_params["refresh"]
         else:
             qp = st.experimental_get_query_params()
             if "refresh" in qp:
@@ -171,21 +171,23 @@ def _consume_header_actions():
             st.experimental_set_query_params(**qp)
         st.rerun()
 
-    if action != "toggle":
-        return
-
-    st.session_state["colorblind_mode"] = not bool(
-        st.session_state.get("colorblind_mode", False)
-    )
-    st.session_state["_header_toggle_loading"] = True
-
-    if use_modern_qp:
-        try:
-            del st.query_params["cb"]
-        except Exception:
-            st.query_params.clear()
-    else:
-        st.experimental_set_query_params()
+    if cb_val == "1":
+        if not st.session_state.get("colorblind_mode", False):
+            st.session_state["colorblind_mode"] = True
+            st.session_state["_header_toggle_loading"] = True
+    elif cb_val == "0":
+        if st.session_state.get("colorblind_mode", True):
+            st.session_state["colorblind_mode"] = False
+            st.session_state["_header_toggle_loading"] = True
+    elif cb_val == "toggle":
+        st.session_state["colorblind_mode"] = not bool(st.session_state.get("colorblind_mode", False))
+        st.session_state["_header_toggle_loading"] = True
+        if use_modern_qp:
+            st.query_params["cb"] = "1" if st.session_state["colorblind_mode"] else "0"
+        else:
+            qp = st.experimental_get_query_params()
+            qp["cb"] = ["1" if st.session_state["colorblind_mode"] else "0"]
+            st.experimental_set_query_params(**qp)
 
 
 _consume_header_actions()
