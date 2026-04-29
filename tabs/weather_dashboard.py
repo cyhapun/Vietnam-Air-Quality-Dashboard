@@ -1248,7 +1248,7 @@ def render(global_df: pd.DataFrame):
     if "day"   not in df.columns: df["day"]   = df["timestamp"].dt.day
 
     if "wx_view_mode" not in st.session_state:
-        st.session_state["wx_view_mode"] = "forecast"
+        st.session_state["wx_view_mode"] = "analysis"
 
     # Chế độ Dự báo (Weather Tab)
     if st.session_state["wx_view_mode"] == "forecast":
