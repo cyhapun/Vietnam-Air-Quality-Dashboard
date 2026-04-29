@@ -78,16 +78,13 @@ def initialize_background_tasks(mode):
     thread.start()
     return "Crawler started"
 
-
-# Use the cache decorator to ensure this thread is INITIALIZED ONLY ONCE
-# even when Streamlit reruns (due to user interactions on the web)
 @st.cache_resource
-def initialize_background_tasks():
+def initialize_background_tasks(mode):
     """
     Initializes and starts the background crawler thread.
     Cached by Streamlit to prevent multiple thread spawns across app reruns.
     """
-    thread = threading.Thread(target=start_crawler_thread, daemon=True)
+    thread = threading.Thread(target=start_crawler_thread, args=(mode,), daemon=True)
     thread.start()
     return "Crawler started"
 
