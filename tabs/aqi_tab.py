@@ -19,6 +19,10 @@ CITY_FOLDERS = {
     "Thanh Hóa": "thanh_hoa", "Tuyên Quang": "tuyen_quang", "Vĩnh Long": "vinh_long"
 }
 
+# FIXED REFERENCE TIME for Forecast (to ensure visibility during evaluation)
+# The user requested to freeze the 'current' time so that forecast data remains visible in the future.
+FIXED_NOW = pd.Timestamp("2026-04-30 15:00:00")
+
 REGIONS = {
     "Miền Bắc": ["Hà Nội", "Bắc Ninh", "Cao Bằng", "Điện Biên", "Hải Phòng", "Hưng Yên", "Lai Châu", "Lạng Sơn", "Lào Cai", "Ninh Bình", "Phú Thọ", "Quảng Ninh", "Sơn La", "Thái Nguyên", "Tuyên Quang"],
     "Miền Trung": ["Đà Nẵng", "Huế", "Hà Tĩnh", "Khánh Hòa", "Lâm Đồng", "Nghệ An", "Quảng Ngãi", "Quảng Trị", "Gia Lai", "Đắk Lắk", "Thanh Hóa"],
@@ -159,7 +163,7 @@ def load_forecast_data(city_folder, filename):
     except Exception:
         return pd.DataFrame()
 
-def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_name):
+def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_name, reference_time=None):
     """
     Renders a horizontally scrollable hourly forecast UI.
     
@@ -173,8 +177,10 @@ def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_na
     if df_forecast.empty:
         return
     
-    # Filter for future data (from current hour onwards)
-    now = pd.Timestamp.now().replace(minute=0, second=0, microsecond=0)
+    # Filter for future data (from reference time onwards)
+    # Priority: reference_time (max historical data) > FIXED_NOW (fallback)
+    ref = reference_time if reference_time is not None else FIXED_NOW
+    now = ref.replace(minute=0, second=0, microsecond=0)
     df_future = df_forecast[df_forecast["timestamp"] >= (now - pd.Timedelta(hours=1))].copy()
     
     if df_future.empty:
@@ -221,7 +227,7 @@ def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_na
     scroll_html += '</div>'
     st.markdown(scroll_html, unsafe_allow_html=True)
 
-def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_name):
+def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_name, reference_time=None):
     """
     Renders a vertical list showing the daily average forecast for the next 4 days.
     
@@ -240,8 +246,9 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
     daily = df_forecast.groupby("date", observed=False).agg({poll_key: "mean"}).reset_index()
     
     # Filter for today and future
-    today = pd.Timestamp.now().date()
-    daily = daily[daily["date"] >= today].head(4)
+    # Priority: reference_time.date() > FIXED_NOW.date()
+    ref_date = reference_time.date() if reference_time is not None else FIXED_NOW.date()
+    daily = daily[daily["date"] >= ref_date].head(4)
     
     container_html = '<div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">'
     
@@ -250,6 +257,7 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
         val = row[poll_key]
         lbl, col = val_meta(val, poll_key)
         
+        today = ref_date
         day_pref = "Hôm nay" if d == today else d.strftime("%A")
         # Vietnamese translation for days
         day_map = {"Monday": "Thứ 2", "Tuesday": "Thứ 3", "Wednesday": "Thứ 4", "Thursday": "Thứ 5", "Friday": "Thứ 6", "Saturday": "Thứ 7", "Sunday": "CN"}
@@ -1373,7 +1381,10 @@ def render(global_df):
         # Lấy nhãn hiển thị từ từ điển POLLS có sẵn
         poll_label = POLLS.get(selected_poll_key, {}).get("label", selected_poll_key.upper())
         
-        render_hourly_forecast(df_forecast, selected_poll_key, poll_label, selected_city, selected_tier2)
+        # Calculate reference time from historical data to ensure continuity
+        ref_time = df["timestamp"].max() if not df.empty else None
+        
+        render_hourly_forecast(df_forecast, selected_poll_key, poll_label, selected_city, selected_tier2, reference_time=ref_time)
 
         # Forecast Header (Moved outside to ensure alignment)
         if "Tổng quan" in selected_tier2:
@@ -1389,7 +1400,7 @@ def render(global_df):
         # Daily Forecast & Advice Side-by-Side
         cDaily, cAdvice = st.columns([1.6, 1], gap="medium")
         with cDaily:
-            render_daily_forecast(df_forecast, selected_poll_key, poll_label, selected_city, selected_tier2)
+            render_daily_forecast(df_forecast, selected_poll_key, poll_label, selected_city, selected_tier2, reference_time=ref_time)
         with cAdvice:
             # Get average forecast for advice
             avg_forecast = df_forecast[selected_poll_key].mean()

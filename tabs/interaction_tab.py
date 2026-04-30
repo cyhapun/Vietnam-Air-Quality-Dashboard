@@ -1154,6 +1154,11 @@ def render(df: pd.DataFrame):
             aqi_val = float(getattr(row, "aqi_mean"))
             status_lbl, status_clr = val_meta(aqi_val, "aqi")
             short_lbl = short_status_map.get(str(status_lbl), str(status_lbl))
+            
+            # Determine text color for better contrast
+            # labels 'Tốt', 'Vừa phải', 'Không lành mạnh cho nhóm nhạy cảm' have light backgrounds
+            text_clr = "#1e293b" if str(status_lbl) in ["Tốt", "Vừa phải", "Không lành mạnh cho nhóm nhạy cảm"] else "#ffffff"
+            
             safe_name = html.escape(entity_name)
             safe_key = html.escape(f"{key_prefix}{entity_name}")
             top_class = " rrr-top" if idx == 1 else ""
@@ -1162,7 +1167,7 @@ def render(df: pd.DataFrame):
                 "<div class='rrr-row'>"
                 f"<span class='rrr-badge'>{idx}</span>"
                 f"<div class='rrr-name'>{safe_name}</div>"
-                f"<span class='rrr-status' style='background:{status_clr};'>{html.escape(short_lbl)}</span>"
+                f"<span class='rrr-status' style='background:{status_clr}; color:{text_clr};'>{html.escape(short_lbl)}</span>"
                 f"<div class='rrr-val'>{aqi_val:.1f}</div>"
                 "</div>"
                 "</div>"
@@ -1263,7 +1268,7 @@ body{{background:transparent;overflow-x:hidden;}}
 .rrr-row{{display:grid;grid-template-columns:20px minmax(0,1fr) 86px 48px;column-gap:6px;align-items:center;}}
 .rrr-badge{{min-width:22px;height:22px;border-radius:50%;background:#3a7bd5;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}}
 .rrr-name{{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:#1f2f46;font-weight:600;}}
-.rrr-status{{display:inline-block;padding:2px 6px;border-radius:20px;font-size:10.5px;font-weight:700;color:#fff;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}}
+.rrr-status{{display:inline-block;padding:2px 6px;border-radius:20px;font-size:10.5px;font-weight:700;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}}
 .rrr-val{{font-size:13px;font-weight:700;color:#145fae;text-align:right;white-space:nowrap;}}
 @media (max-width: 1280px){{
     .wrapper{{flex-direction:column;gap:14px;}}
