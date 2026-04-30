@@ -848,6 +848,7 @@ def render(df):
                 ),
                 textinfo="percent",
                 textfont=dict(size=14, color="#ffffff", family="Be Vietnam Pro"),
+                insidetextfont=dict(size=14, color=["#1e293b", "#1e293b", "#1e293b", "#ffffff", "#ffffff", "#ffffff"], family="Be Vietnam Pro"),
                 textposition="inside",
                 insidetextorientation="horizontal",
                 hovertemplate="<b>%{label}</b><br>%{value:.1f}%<extra></extra>",
