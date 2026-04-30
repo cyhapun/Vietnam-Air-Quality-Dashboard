@@ -8,6 +8,8 @@
 <img src="https://img.shields.io/badge/PANDAS-2.3-150458?style=for-the-badge&logo=pandas&logoColor=white" />
 <img src="https://img.shields.io/badge/POLARS-1.12-CD792C?style=for-the-badge&logo=polars&logoColor=white" />
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://vietnam-air-quality-dashboard.streamlit.app/)
+
 ### Đồ án môn học: Trực quan hóa Dữ liệu
 **Giảng viên hướng dẫn:** Bùi Tiến Lên  
 **Khoa Công nghệ Thông tin — Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM**  
@@ -270,4 +272,6 @@ Vietnam-Air-Quality-Dashboard/
 <div align="center">
   <p><b>Nhóm 8 · 2026 · Đồ án môn học Trực quan hóa Dữ liệu</b></p>
   <p><i>Trường Đại học Khoa học Tự nhiên - ĐHQG TP.HCM</i></p>
+  <br/>
+  <p><b>Trải nghiệm ứng dụng tại:</b> <a href="https://vietnam-air-quality-dashboard.streamlit.app/">https://vietnam-air-quality-dashboard.streamlit.app/</a></p>
 </div>
