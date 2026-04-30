@@ -2,11 +2,11 @@ import polars as pl
 from pathlib import Path
 from tqdm import tqdm 
 
-# Cấu hình đường dẫn linh hoạt hơn
-BASE_DIR = Path(__file__).resolve().parent.parent.parent # Trỏ về thư mục gốc dự án
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 ROOT_DIR = BASE_DIR / "data" / "aqi"
 
-# 1. Định nghĩa danh sách cột mục tiêu và kiểu dữ liệu chuẩn
+
 TARGET_SCHEMA = {
     "timestamp": pl.String,
     "year": pl.Int64,
@@ -58,31 +58,31 @@ def clean_and_format_lf(file_path):
 
 def run_province_aggregation():
     if not ROOT_DIR.exists():
-        print(f"⚠️ Thư mục không tồn tại: {ROOT_DIR}")
+        print(f"Thu muc khong ton tai: {ROOT_DIR}")
         return
 
     provinces = [d for d in ROOT_DIR.iterdir() if d.is_dir()]
-    tqdm.write(f"\nTỔNG HỢP DỮ LIỆU CHO CÁC TỈNH/THÀNH:")
+    tqdm.write(f"\nTONG HOP DU LIEU CHO CAC TINH/THANH:")
 
-    # Thanh tiến trình chính: Duyệt qua các tỉnh
-    for province_path in tqdm(provinces, desc="Tổng hợp dữ liệu", unit="tỉnh"):
+
+    for province_path in tqdm(provinces, desc="Tong hop du lieu", unit="tinh"):
         parquet_files = [f for f in province_path.glob("*.parquet") if f.name != 'all.parquet']
         if not parquet_files: continue
 
         lazy_frames = []
         
-        # Thanh tiến trình phụ: Duyệt file trong tỉnh (leave=False giúp thanh này tự biến mất khi xong)
-        for file in tqdm(parquet_files, desc=f"Đang đọc: {province_path.name}", unit="file", leave=False):
+
+        for file in tqdm(parquet_files, desc=f"Dang doc: {province_path.name}", unit="file", leave=False):
             try:
                 clean_lf = clean_and_format_lf(file)
                 lazy_frames.append(clean_lf)
             except Exception:
-                # Bỏ qua in lỗi để không làm vỡ giao diện tqdm
+
                 pass 
 
         if not lazy_frames: continue
 
-        # Gộp dữ liệu
+
         combined_df = pl.concat(lazy_frames)
 
         group_cols = ["timestamp", "year", "month", "day", "hour", "province"]
@@ -99,7 +99,7 @@ def run_province_aggregation():
             .sort(['year', 'month', 'day', 'hour'])
         )
 
-        # Lưu file
+
         output_file = province_path / "all.parquet"
         result.collect().write_parquet(output_file)
 

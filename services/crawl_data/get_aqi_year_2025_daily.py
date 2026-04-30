@@ -10,7 +10,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from tqdm import tqdm
 
-# Cố định dải thời gian: Toàn bộ năm 2025
+
 START_DATE = "2025-01-01"
 END_DATE = "2025-12-31"
 
@@ -27,7 +27,7 @@ retries = Retry(
 session.mount("http://", HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10))
 session.mount("https://", HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10))
 
-# Time Skeleton - Theo ngày
+
 full_time_range = pd.date_range(start=START_DATE, end=END_DATE, freq="D")
 FULL_TIME_STRINGS = full_time_range.strftime("%Y-%m-%d").tolist()
 
@@ -67,7 +67,7 @@ def process_and_save_batch(batch_targets):
     lats = [t["lat"] for t in batch_targets]
     lons = [t["lon"] for t in batch_targets]
 
-    # Cập nhật tham số API sang HOURLY cho Air Quality theo đúng document Open-Meteo
+
     air_url = "https://air-quality-api.open-meteo.com/v1/air-quality"
     air_params = {
         "latitude": ",".join(lats),
@@ -78,7 +78,7 @@ def process_and_save_batch(batch_targets):
         "timezone": "Asia/Bangkok"
     }
     
-    # API Archive của Weather hỗ trợ biến DAILY
+
     weather_url = "https://archive-api.open-meteo.com/v1/archive"
     weather_params = {
         "latitude": ",".join(lats),
@@ -94,13 +94,13 @@ def process_and_save_batch(batch_targets):
         r_weather = session.get(weather_url, params=weather_params, timeout=30)
         
         if r_air.status_code != 200 or r_weather.status_code != 200:
-            tqdm.write(f"🚨 Lỗi API (Air: {r_air.status_code}, Weather: {r_weather.status_code})")
+            tqdm.write(f"Loi API (Air: {r_air.status_code}, Weather: {r_weather.status_code})")
             return
 
         data_air = r_air.json()
         data_weather = r_weather.json()
 
-        # Handle TH chỉ gọi 1 trạm (Open-Meteo trả về dict thay vì list)
+
         if isinstance(data_air, dict) and "hourly" in data_air:
             data_air = [data_air]
             data_weather = [data_weather]
@@ -176,10 +176,10 @@ def process_and_save_batch(batch_targets):
                 df_final.to_parquet(target["out_file"], index=False)
 
             except Exception as e:
-                tqdm.write(f"❌ Lỗi ghi file cho trạm {target['location']}: {e}")
+                tqdm.write(f"Loi ghi file cho tram {target['location']}: {e}")
 
     except Exception as e:
-        tqdm.write(f"🚨 Lỗi gọi API Batch: {e}")
+        tqdm.write(f"Loi goi API Batch: {e}")
 
 def main():
     parser = argparse.ArgumentParser(description="Script crawl dữ liệu AQI theo ngày cho năm 2025")
@@ -249,7 +249,7 @@ def main():
             print(f"Lỗi khi đọc hoặc xử lý file {file_path}: {e}")
 
     print("\n" + "="*50)
-    print(f"✅ Hoàn thành toàn bộ quá trình! Dữ liệu được lưu tại thư mục: '{OUTPUT_DIR}'")
+    print(f"Hoan thanh toan bo qua trinh! Du lieu duoc luu tai thu muc: '{OUTPUT_DIR}'")
 
 if __name__ == "__main__":
     main()

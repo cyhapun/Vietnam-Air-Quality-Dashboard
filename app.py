@@ -43,28 +43,20 @@ def start_crawler_thread(mode="realtime"):
     time.sleep(20)
     while True:
         try:
-            print(f"[{time.strftime('%H:%M:%S')}] 🤖 Crawler ({mode}) đang chạy ngầm...")
-            
-            # Cập nhật dữ liệu hiện tại (áp dụng cho 'realtime' và 'current')
             if mode in ["realtime", "current"]:
-                # Step 1: Crawl new data for each station (Batch API)
                 run_hourly_update()
                 time.sleep(15)
 
-                # Step 2: Recalculate representative values (Mean/Mode) for each province/city
                 run_province_aggregation()
                 time.sleep(15)
 
-            # Cập nhật dữ liệu dự báo (áp dụng cho 'realtime' và 'forecast')
             if mode in ["realtime", "forecast"]:
-                # Step 3: Update Forecast data for the future
                 run_forecast_update()
 
             print(f"Đã hoàn tất cập nhật dữ liệu cho chế độ: {mode}!")
         except Exception as e:
-            print(f"❌ Lỗi crawler: {e}")
+            print(f"Loi crawler: {e}")
 
-        # Sleep for 1 hour (3610 seconds) then run again
         time.sleep(3610)
 
 
@@ -167,7 +159,6 @@ def _consume_header_actions():
         cb_val = qp.get("cb", [None])[0]
         refresh_action = qp.get("refresh", [None])[0]
 
-    # Handle Refresh
     if refresh_action == "1":
         st.cache_data.clear()
         if use_modern_qp:
@@ -250,12 +241,10 @@ def render_dashboard():
 
     active_tab = state.get("active_tab", "overview")
 
-    # ── Row 1: Header ───────────────────────────
     hdr_left, hdr_right = st.columns([1, 15], gap="small")
     with hdr_right:
         render_header(state, logo_html)
 
-    # ── Row 2: Navigation rail + tab content ────
     nav_col, content_col = st.columns([1, 15], gap="small")
     with nav_col:
         render_navigation(active_tab)
@@ -437,7 +426,7 @@ def _render_tab_content(state, active_tab):
     else:
         render_tab_or_blank(overview_tab, state["df"])
 
-    st.markdown("</div>", unsafe_allow_html=True)  # Close main-limit
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def main():

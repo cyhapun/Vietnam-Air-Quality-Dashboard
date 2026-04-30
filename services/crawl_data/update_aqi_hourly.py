@@ -10,15 +10,15 @@ from urllib3.util.retry import Retry
 import concurrent.futures
 from tqdm import tqdm
 
-# --- Cấu hình ---
+
 base_dir = os.path.abspath(os.path.dirname(__file__))
 OUTPUT_DIR = os.path.join(base_dir, "..", "..", "data", "aqi")
-BATCH_SIZE = 50  # Giới hạn tối đa của Open-Meteo cho mỗi request
+BATCH_SIZE = 50
 
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Cấu hình HTTP Session
+
 session = requests.Session()
 retries = Retry(total=5, backoff_factor=3, status_forcelist=[429, 500, 502, 503, 504])
 session.mount("https://", HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10))
@@ -33,14 +33,12 @@ def get_file_metadata(file_path):
         
         last_ts = pd.to_datetime(full_df["timestamp"].iloc[-1])
         
-        # Sync with Asia/Bangkok
         now_bkk = pd.Timestamp.utcnow().tz_convert("Asia/Bangkok").tz_localize(None)
         current_hour = now_bkk.floor("h")
         
         if last_ts >= current_hour:
             return "UP_TO_DATE"
             
-        # Do NOT return full_df here to save memory during the scanning phase
         return {
             "path": file_path,
             "lat": full_df["lat"].iloc[-1],
@@ -74,17 +72,17 @@ def process_batch(batch_meta):
     """Xử lý một nhóm tọa độ"""
     if not batch_meta: return 0, 0
     
-    # 1. Chuẩn bị thời gian và tham số Batch
+
     now_bkk = pd.Timestamp.utcnow().tz_convert("Asia/Bangkok").tz_localize(None)
     current_hour = now_bkk.floor("h")
-    # Lùi lại chính xác 3 tháng theo giờ
+
     cutoff_hour = current_hour - pd.DateOffset(months=3) 
     
     lats = [str(m["lat"]) for m in batch_meta]
     lons = [str(m["lon"]) for m in batch_meta]
     
     min_ts = min([m["last_ts"] for m in batch_meta])
-    # Đảm bảo không gọi API lấy dữ liệu cũ hơn 6 tháng (nếu file quá cũ)
+
     if min_ts < cutoff_hour:
         min_ts = cutoff_hour
         
@@ -122,7 +120,7 @@ def process_batch(batch_meta):
         updated_count = 0
         for i, meta in enumerate(batch_meta):
             try:
-                # Trích xuất dữ liệu mới
+
                 df_air = pd.DataFrame(data_air[i]["hourly"])
                 df_weather = pd.DataFrame(data_weather[i]["hourly"])
                 df_new = pd.merge(df_air, df_weather, on="time")
@@ -148,7 +146,7 @@ def process_batch(batch_meta):
                 df_new["day"] = df_new["timestamp"].dt.day
                 df_new["hour"] = df_new["timestamp"].dt.hour
                 
-                # Lọc bỏ các giờ trong tương lai (đã có script forecast lo việc này)
+
                 df_new = df_new[df_new["timestamp"] <= current_hour]
                 
                 # Load old data right before processing
@@ -171,22 +169,22 @@ def process_batch(batch_meta):
                 df_final.to_parquet(meta["path"], index=False)
                 updated_count += 1
             except Exception as e:
-                print(f"❌ Lỗi khi xử lý file {meta['path']}: {e}")
+                print(f"Loi khi xu ly file {meta['path']}: {e}")
                 
         return updated_count, 0
 
     except Exception as e:
-        print(f"🚨 Lỗi kết nối API Batch: {e}")
+        print(f"Loi ket noi API Batch: {e}")
         return 0, len(batch_meta)
 
 def run_hourly_update():
-    print(f"🔍 Đang quét thư mục: {OUTPUT_DIR}")
+    print(f"Quet thu muc: {OUTPUT_DIR}")
     csv_files = glob.glob(os.path.join(OUTPUT_DIR, "**", "*.parquet"), recursive=True)
     
     all_metadata = []
     skipped = 0
     
-    print("📋 Đang kiểm tra trạng thái các file...")
+    print("Dang kiem tra trang thai cac file...")
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         results = list(tqdm(executor.map(get_file_metadata, csv_files), total=len(csv_files)))
     
@@ -195,28 +193,28 @@ def run_hourly_update():
         elif res is not None: all_metadata.append(res)
     
     total_need_update = len(all_metadata)
-    print(f"📊 Tổng cộng: {len(csv_files)} file | Đã mới: {skipped} | Cần cập nhật: {total_need_update}")
+    print(f"Tong cong: {len(csv_files)} file | Da moi: {skipped} | Can cap nhat: {total_need_update}")
 
     if total_need_update == 0:
-        print("✅ Tất cả dữ liệu đã được cập nhật mới nhất!")
+        print("Tat ca du lieu da duoc cap nhat moi nhat!")
         return
 
     total_updated = 0
     total_errors = 0
     
-    print(f"🚀 Bắt đầu gọi API theo Batch (Size: {BATCH_SIZE})...")
+    print(f"Bat dau goi API theo Batch (Size: {BATCH_SIZE})...")
     for i in range(0, total_need_update, BATCH_SIZE):
         batch = all_metadata[i : i + BATCH_SIZE]
         upd, err = process_batch(batch)
         total_updated += upd
         total_errors += err
-        print(f"   ➤ Tiến độ: {min(i + BATCH_SIZE, total_need_update)}/{total_need_update} trạm...")
+        print(f"   Tien do: {min(i + BATCH_SIZE, total_need_update)}/{total_need_update} tram...")
         
         # Thêm độ trễ chống Rate Limit
         time.sleep(4)
 
     print("-" * 50)
-    print(f"✅ HOÀN TẤT CẬP NHẬT!")
+    print(f"HOAN TAT CAP NHAT!")
     print(f"📈 Thành công: {total_updated} file")
     print(f"⏭️ Bỏ qua: {skipped} file")
     print(f"❌ Lỗi: {total_errors} file")
@@ -227,4 +225,4 @@ if __name__ == "__main__":
     start_time = datetime.now()
     run_hourly_update()
     duration = datetime.now() - start_time
-    print(f"⏱️ Tổng thời gian thực hiện: {duration}")
+    print(f"Tong thoi gian thuc hien: {duration}")

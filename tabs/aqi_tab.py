@@ -6,7 +6,7 @@ import streamlit as st
 
 from utils.helpers import AQI_DEF, POLLS, aqi_meta, ml, ax, chart_h, PT, GC, LC, TF, hex_rgba, POLL_BANDS, val_meta
 
-# Map UI City names -> actual folder names
+
 CITY_FOLDERS = {
     "An Giang": "an_giang", "Bắc Ninh": "bac_ninh", "Cà Mau": "ca_mau", "Cần Thơ": "can_tho",
     "Cao Bằng": "cao_bang", "Đà Nẵng": "da_nang", "Đắk Lắk": "dak_lak", "Điện Biên": "dien_bien",
@@ -19,8 +19,8 @@ CITY_FOLDERS = {
     "Thanh Hóa": "thanh_hoa", "Tuyên Quang": "tuyen_quang", "Vĩnh Long": "vinh_long"
 }
 
-# FIXED REFERENCE TIME for Forecast (to ensure visibility during evaluation)
-# The user requested to freeze the 'current' time so that forecast data remains visible in the future.
+
+
 FIXED_NOW = pd.Timestamp("2026-04-30 15:00:00")
 
 REGIONS = {
@@ -127,14 +127,9 @@ def load_forecast_data(city_folder, filename):
         pd.DataFrame: Deduplicated and sorted forecast DataFrame, or empty DataFrame on failure.
     """
     base_dir = os.path.dirname(__file__)
-    # Try exact match first
     file_path = os.path.join(base_dir, "..", "data", "forecast", city_folder, filename)
     
     if not os.path.exists(file_path):
-        # Mismatch logic: Forecast files are often normalized (lowercase, no accents, underscores)
-        # We try to normalize the filename to match.
-        import re
-        s = filename.replace(".parquet", "")
         # Standard normalization used in get_forecast.py
         s = re.sub(r'[àáạảãâầấậẩẫăằắặẳẵÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]', 'a', s)
         s = re.sub(r'[èéẹẻẽêềếệểễÈÉẸẺẼÊỀẾỆỂỄ]', 'e', s)
@@ -177,8 +172,7 @@ def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_na
     if df_forecast.empty:
         return
     
-    # Filter for future data (from reference time onwards)
-    # Priority: reference_time (max historical data) > FIXED_NOW (fallback)
+
     ref = reference_time if reference_time is not None else FIXED_NOW
     now = ref.replace(minute=0, second=0, microsecond=0)
     df_future = df_forecast[df_forecast["timestamp"] >= (now - pd.Timedelta(hours=1))].copy()
@@ -186,7 +180,7 @@ def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_na
     if df_future.empty:
         return
 
-    # Clean location string: if 'Tổng quan' is in unit_name, just show city_name
+
     if "Tổng quan" in unit_name:
         location_str = city_name
     else:
@@ -197,7 +191,7 @@ def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_na
 <div style="font-size: 14px; color: #64748b;">Khu vực: <span style="font-weight: 600; color: #334155;">{location_str}</span></div>
 </div>''', unsafe_allow_html=True)
 
-    # Build horizontal scroll container
+
     scroll_html = '<div style="display: flex; overflow-x: auto; gap: 12px; padding-bottom: 16px; scrollbar-width: thin;">'
     
     for i, (_, row) in enumerate(df_future.head(48).iterrows()):
@@ -207,7 +201,7 @@ def render_hourly_forecast(df_forecast, poll_key, poll_label, city_name, unit_na
         
         hr_str = "Bây giờ" if i == 0 else ts.strftime("%H:%M")
         
-        # Determine day label (only for i=0 or hour=00:00)
+
         day_label = ""
         is_boundary = False
         if i == 0 or ts.hour == 0:
@@ -241,12 +235,11 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
     if df_forecast.empty:
         return
         
-    # Group by date
+
     df_forecast["date"] = df_forecast["timestamp"].dt.date
     daily = df_forecast.groupby("date", observed=False).agg({poll_key: "mean"}).reset_index()
     
-    # Filter for today and future
-    # Priority: reference_time.date() > FIXED_NOW.date()
+
     ref_date = reference_time.date() if reference_time is not None else FIXED_NOW.date()
     daily = daily[daily["date"] >= ref_date].head(4)
     
@@ -259,7 +252,7 @@ def render_daily_forecast(df_forecast, poll_key, poll_label, city_name, unit_nam
         
         today = ref_date
         day_pref = "Hôm nay" if d == today else d.strftime("%A")
-        # Vietnamese translation for days
+
         day_map = {"Monday": "Thứ 2", "Tuesday": "Thứ 3", "Wednesday": "Thứ 4", "Thursday": "Thứ 5", "Friday": "Thứ 6", "Saturday": "Thứ 7", "Sunday": "CN"}
         if d != today:
              day_pref = day_map.get(d.strftime("%A"), d.strftime("%d/%m"))
@@ -311,7 +304,7 @@ def render_health_advice_box(avg_val, poll_type):
     icon_url = icon_map.get(lbl)
     desc = advice_content.get(lbl, "Hệ thống đang cập nhật khuyến cáo cho mức độ này...")
     
-    # Header with dynamic icon (SVG or Material Fallback)
+
     if icon_url:
         icon_html = f'<img src="{icon_url}" style="width: 38px; height: 38px; margin-right: 12px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" />'
     else:
@@ -353,7 +346,7 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     last_ts = df["timestamp"].max()
     curr_val = df.loc[df["timestamp"] == last_ts, poll_key].values[0]
     
-    # New Point-to-Point Logic
+    # Point-to-Point Logic
     delta_map = {
         "24h": pd.Timedelta(days=1),
         "7 ngày": pd.Timedelta(days=7),
@@ -408,7 +401,7 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     status_msg = "Cải thiện" if diff <= 0 else "Kém đi"
     arrow = "↓" if diff <= 0 else "↑"
     
-    # Header with integrated Delta Badge
+
     if time_range == "Năm 2025":
         subtitle_lbl = "So sánh dữ liệu cuối chu kỳ với đầu chu kỳ"
         curr_lbl = "Cuối chu kỳ"
@@ -427,7 +420,7 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
         </div>
     </div>''', unsafe_allow_html=True)
     
-    # Get semantic colors and apply alpha
+
     lbl_curr, curr_c = val_meta(curr_val, poll_key)
     lbl_prev, prev_c = val_meta(prev_val, poll_key)
     curr_color = curr_c
@@ -437,13 +430,13 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
     
     fig = go.Figure()
     
-    # Add a horizontal reference line from the previous value
+
     fig.add_shape(
         type="line", line=dict(color="#94a3b8", width=1.5, dash="dash"),
         x0=-0.5, x1=1.5, y0=prev_val, y1=prev_val
     )
     
-    # Past Bar
+
     fig.add_trace(go.Bar(
         x=[period_lbl],
         y=[prev_val],
@@ -456,7 +449,7 @@ def render_comparison_bar_chart(df, poll_key, time_range, poll_label):
         hovertemplate=f"{period_lbl}: <b>%{{y:.1f}}</b><extra></extra>"
     ))
     
-    # Current Bar
+
     fig.add_trace(go.Bar(
         x=[curr_lbl],
         y=[curr_val],
@@ -489,22 +482,21 @@ def render_correlation_heatmap(df_sub, time_range):
         df_sub (pd.DataFrame): The filtered dataset containing pollutant columns.
         time_range (str): The time range being analyzed, used for display labels.
     """
-    # Select only pollutant columns
+
     cols = ["aqi", "pm2_5", "pm10", "o3", "no2", "co", "so2"]
     available_cols = [c for c in cols if c in df_sub.columns]
     
     if len(available_cols) < 2:
         return
         
-    # Filter for numeric columns and ensure they ARE numeric
-    # CSV uses 'pm2_5' instead of 'pm2.5'
+
     pollutant_cols = ["aqi", "pm2_5", "pm10", "o3", "no2", "co", "so2"]
     available_cols = [c for c in pollutant_cols if c in df_sub.columns]
     
     if len(available_cols) < 2:
         return
 
-    # Ensure numeric types and drop NaNs
+
     df_corr = df_sub[available_cols].copy()
     for col in available_cols:
         df_corr[col] = pd.to_numeric(df_corr[col], errors='coerce')
@@ -551,11 +543,11 @@ def render_correlation_heatmap(df_sub, time_range):
         elif c == "pm2_5": labels.append("PM2.5") # Map back to display name
         else: labels.append(POLLS[c]["label"])
         
-    # Create mask for triangular heatmap (keep only lower triangle, exclude diagonal)
+
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=0)
     df_masked = corr_matrix.where(~mask)
 
-    # Create matrices for text and hover
+
     text_matrix = []
     hover_matrix = []
     for i in range(len(labels)):
@@ -572,7 +564,7 @@ def render_correlation_heatmap(df_sub, time_range):
         text_matrix.append(t_row)
         hover_matrix.append(h_row)
 
-    # Standard scientific colorscale: Red (Positive Correlation) to Blue (Negative Correlation)
+
     fig = go.Figure(data=go.Heatmap(
         z=df_masked.values,
         x=labels,
@@ -625,12 +617,12 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
     if df_to_use.empty or poll_key not in df_to_use.columns:
         return
 
-    # 1. Initialize session state for mode
+
     if "aqi_comp_mode" not in st.session_state:
         st.session_state.aqi_comp_mode = "Theo Miền"
     comp_mode = st.session_state.aqi_comp_mode
 
-    # 2. Filter by time range
+
     max_d = df_to_use["timestamp"].max()
     delta_map = {
         "24h": pd.Timedelta(hours=24),
@@ -645,7 +637,7 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
     if df_sub.empty:
         return
 
-    # 3. Define options and defaults based on mode
+
     if comp_mode == "Theo Miền":
         options = list(REGIONS.keys())
         default1, default2 = "Miền Bắc", "Miền Nam"
@@ -660,7 +652,7 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
         default2 = "Hồ Chí Minh" if "Hồ Chí Minh" in options else options[-1]
         df_sub["comp_label"] = df_sub["province"].astype(str)
 
-    # 4. Section Header
+
     if time_range == "Năm 2025":
         actual_min = df_sub["timestamp"].min()
         actual_max = df_sub["timestamp"].max()
@@ -704,7 +696,7 @@ def render_regional_comparison(global_df, poll_key, poll_label, time_range):
             st.session_state[f"comp_sel2_{poll_key}"] = default2 if default2 in options2 else options2[0]
         sel2 = st.selectbox("Khu vực 2", options2, key=f"comp_sel2_{poll_key}", label_visibility="collapsed")
 
-    # 6. Process Plot Data & Render Full Width Chart
+
     df_raw = df_sub[df_sub["comp_label"].isin([sel1, sel2])].copy()
     df_plot = df_raw.groupby("comp_label", observed=False)[poll_key].mean().reset_index()
     
@@ -766,7 +758,7 @@ def render(global_df):
     )
     cities = list(CITY_FOLDERS.keys())
     
-    # Initialize State
+
     if "aqi_selected_city" not in st.session_state:
         st.session_state["aqi_selected_city"] = "Thành phố Hồ Chí Minh"
     if "aqi_selected_tier2" not in st.session_state:
@@ -781,7 +773,7 @@ def render(global_df):
     if "aqi_selected_bar" not in st.session_state:
         st.session_state["aqi_selected_bar"] = None
         
-    # Inject local CSS for Blue Theme on Chart Type widget (Frames only)
+
     st.markdown(f"""
         <style>
         /* Segmented Control Group Border & Width */

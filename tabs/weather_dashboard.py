@@ -532,7 +532,7 @@ def _render_slope_chart(annual: pd.DataFrame):
         showlegend=False, # Ẩn legend tên tỉnh cho đỡ rối
     )
 
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
 
 
@@ -648,7 +648,7 @@ def _render_dot_plot(annual: pd.DataFrame, reg_filter: str = "Tất cả"):
         hovermode="closest",
     )
 
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
 
 
@@ -712,7 +712,7 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
             legend=dict(orientation="h", x=0, y=1.08, font=dict(size=9), bgcolor="rgba(0,0,0,0)"),
             hovermode="closest"
         )
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig, width='stretch', config={"displayModeBar": False})
 
     with c2:
         # Heatmap mini cho thấy hệ số tương quan
@@ -731,7 +731,7 @@ def _render_multivariate_rain_analysis(annual: pd.DataFrame):
             xaxis=dict(side="bottom", tickfont=dict(size=8)),
             yaxis=dict(tickfont=dict(size=8))
         )
-        st.plotly_chart(fig_corr, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig_corr, width='stretch', config={"displayModeBar": False})
 
         # Giải thích ngắn gọn về r
         st.markdown(
@@ -763,6 +763,7 @@ def _render_layer1(df: pd.DataFrame):
             "Chỉ số", var_opts,
             format_func=lambda x: VAR_META[x]["label"],
             selection_mode="single", default=cur_var, key="l1_var_sg",
+            label_visibility="collapsed",
         ) or var_opts[0]
         _set_state(l1_var=cur_var)
 
@@ -848,7 +849,7 @@ def _render_layer1(df: pd.DataFrame):
                     legend=dict(orientation="h", x=0, y=1.1, font=dict(size=9), bgcolor="rgba(0,0,0,0)"),
                     hovermode="x unified", bargap=0.3,
                 )
-                st.plotly_chart(fig_t, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig_t, width='stretch', config={"displayModeBar": False})
 
                 if cur_var in nat_mon.columns:
                     m_hi  = int(nat_mon.loc[nat_mon[cur_var].idxmax(), "month"])
@@ -900,7 +901,7 @@ def _render_layer1(df: pd.DataFrame):
                 **_base_layout(height=290, margin=dict(l=8, r=8, t=8, b=8)),
                 yaxis=_ax(meta.get("unit","")), xaxis=_ax(), showlegend=False,
             )
-            st.plotly_chart(fig_box, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig_box, width='stretch', config={"displayModeBar": False})
 
         _card_close()
 
@@ -936,7 +937,7 @@ def _render_layer2(df: pd.DataFrame):
             f"</div>", unsafe_allow_html=True,
         )
     with c_back:
-        if st.button("← Xem Phân tích Toàn quốc", key="l2_back", use_container_width=True):
+        if st.button("← Xem Phân tích Toàn quốc", key="l2_back", width='stretch'):
             _go_layer1()
 
     region = PROVINCE_REGION.get(province, "")
@@ -967,6 +968,7 @@ def _render_layer2(df: pd.DataFrame):
             "Chỉ số", l2_vars,
             format_func=lambda x: VAR_META[x]["label"],
             selection_mode="single", default=l2_vars[0], key="l2_pv_sg",
+            label_visibility="collapsed",
         ) or l2_vars[0]
 
     filtered = _filter_by_season(df, preset, month)
@@ -1056,7 +1058,7 @@ def _render_layer2(df: pd.DataFrame):
                 legend=dict(orientation="h", x=0, y=1.09, font=dict(size=9), bgcolor="rgba(0,0,0,0)"),
                 hovermode="x unified", bargap=0.05,
             )
-            st.plotly_chart(fig_tl, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig_tl, width='stretch', config={"displayModeBar": False})
     _card_close()
 
     # ── Section 2: Heatmap ───────────────────────────────────────────────────────
@@ -1092,7 +1094,7 @@ def _render_layer2(df: pd.DataFrame):
             xaxis=_ax("Ngày", tickmode="linear", dtick=5),
             yaxis=dict(**_ax(), autorange="reversed"),
         )
-        st.plotly_chart(fig_hm, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig_hm, width='stretch', config={"displayModeBar": False})
     _card_close()
 
     # ── Section 3: Bar chart nội tỉnh + Wind rose ────────────────────────────────
@@ -1130,7 +1132,7 @@ def _render_layer2(df: pd.DataFrame):
                     xaxis=_ax(f"{mv['label']} ({mv['unit']})"),
                     yaxis=_ax(),
                 )
-                st.plotly_chart(fig_lb, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig_lb, width='stretch', config={"displayModeBar": False})
 
         else:
             st.info("Tỉnh này chỉ có một trạm quan trắc.")
@@ -1172,7 +1174,7 @@ def _render_layer2(df: pd.DataFrame):
                     legend=dict(orientation="h", x=0.05, y=-0.12,
                                 font=dict(size=8, color="#64748b"), bgcolor="rgba(0,0,0,0)"),
                 )
-                st.plotly_chart(fig_wr, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig_wr, width='stretch', config={"displayModeBar": False})
 
             else:
                 st.info("Không đủ dữ liệu hướng gió.")
@@ -1268,7 +1270,7 @@ def render(global_df: pd.DataFrame):
         )
     with c_back:
         st.markdown("<div style='margin-top:20px'>", unsafe_allow_html=True)
-        if st.button("← Xem Dự báo", type="primary", key="back_to_forecast_top", use_container_width=True):
+        if st.button("← Xem Dự báo", type="primary", key="back_to_forecast_top", width='stretch'):
             st.session_state["wx_view_mode"] = "forecast"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)

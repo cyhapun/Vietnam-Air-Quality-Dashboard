@@ -230,7 +230,7 @@ def _get_plot_helpers(ctx):
     return ml_fn, ax_fn
 
 
-# ─── CSS ─────────────────────────────────────────────────────────────────────
+
 
 def _inject_weather_css():
     """Injects custom CSS styles into the Streamlit app for the weather tab."""
@@ -250,7 +250,7 @@ def _inject_weather_css():
         .wx-animate-delay-1 { animation-delay: 0.1s; }
         .wx-animate-delay-2 { animation-delay: 0.2s; }
 
-        /* ── HERO CARD inner content (dùng trong .card chuẩn) ── */
+        /* HERO CARD inner content */
         .wx-hero-inner { position: relative; z-index: 2; }
 
         /* breadcrumb */
@@ -317,7 +317,7 @@ def _inject_weather_css():
         }
         .wx-stat-pill svg { flex-shrink: 0; }
 
-        /* ── HOURLY STRIP (right panel in hero) ── */
+        /* HOURLY STRIP */
         .wx-hour-panel {
             background: #f8fafc;
             border: 1px solid #e2eaf3;
@@ -361,7 +361,7 @@ def _inject_weather_css():
         .wx-hour-rain  { font-size: 0.58rem; color: #0ea5e9; margin-top: 2px; }
         .wx-hour-note  { font-size: 0.65rem; color: #94a3b8; margin-top: 8px; }
 
-        /* ── PARAMS SECTION ── */
+        /* PARAMS SECTION */
         .wx-section-wrap { margin-bottom: 14px; }
         .wx-section-title {
             font-size: 1.05rem;
@@ -372,7 +372,7 @@ def _inject_weather_css():
             letter-spacing: 0.2px;
         }
 
-        /* ── Info Section Card (dùng trong các section header weather) ── */
+        /* Info Section Card */
         .wx-info-card {
             background: linear-gradient(to right, #ffffff, #f8fbff);
             border: 1px solid #e2eaf3;
@@ -555,7 +555,7 @@ def _inject_weather_css():
             line-height: 1.4;
         }
 
-        /* ── COMPASS widget ── */
+        /* COMPASS widget */
         .wx-compass-wrap {
             display: flex; align-items: center; gap: 12px; height: 100%;
         }
@@ -566,7 +566,7 @@ def _inject_weather_css():
         .wx-compass-dir { font-size: 1.0rem; font-weight: 700; color:#334155; }
         .wx-compass-sub { font-size: 0.68rem; color:#64748b; margin-top:3px; }
 
-        /* ── WIND SPEED (turbine icon) ── */
+        /* WIND SPEED */
         .wx-wind-wrap { display:flex; align-items:center; gap:12px; }
         .wx-wind-icon { flex-shrink:0; }
         .wx-wind-icon svg { width: 72px; height: 88px; }
@@ -679,7 +679,7 @@ def _inject_weather_css():
             }
         }
 
-        /* ── CLOUD / VISIBILITY card ── */
+        /* CLOUD / VISIBILITY card */
         .wx-cloud-metrics {
             display:flex;
             align-items:stretch;
@@ -692,11 +692,11 @@ def _inject_weather_css():
         .wx-cloud-metric.right { text-align: right; }
         .wx-cloud-divider { width:1px; background:#e2eaf3; align-self:stretch; margin:0 2px; }
 
-        /* ── RAIN card ── */
+        /* RAIN card */
         .wx-rain-wrap { display:flex; align-items:center; gap:10px; }
         .wx-rain-wrap svg { width: 72px; height: 72px; }
 
-        /* ── PRESSURE gauge ── */
+        /* PRESSURE gauge */
         .wx-gauge-wrap { display:flex; align-items:center; gap:10px; }
         .wx-gauge-svg  { flex-shrink:0; }
         .wx-gauge-info {}
@@ -715,7 +715,7 @@ def _inject_weather_css():
             box-shadow: 0 1px 5px rgba(0,0,0,0.3);
         }
 
-        /* ── UV bar ── */
+        /* UV bar */
         .wx-uv-bar-wrap { margin-top: 10px; }
         .wx-uv-track {
             height: 8px; border-radius: 99px;
@@ -737,7 +737,7 @@ def _inject_weather_css():
             margin-top:3px; font-weight:600;
         }
 
-        /* ── 10-DAY FORECAST ── */
+        /* 10-DAY FORECAST */
         .wx-forecast-card {
             background: #fff;
             border: 1px solid #e2eaf3;
@@ -2946,11 +2946,11 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
     with c_f_btn:
         st.markdown("<div class='ov-filter-label'>&nbsp;</div>", unsafe_allow_html=True)
         if show_analysis_button:
-            if st.button("← Xem Phân tích", type="primary", use_container_width=True, key="wt_go_to_analysis"):
+            if st.button("← Xem Phân tích", type="primary", width='stretch', key="wt_go_to_analysis"):
                 st.session_state["wx_view_mode"] = "analysis"
                 st.rerun()
         else:
-            st.button("Dữ liệu trực tuyến", type="secondary", use_container_width=True, disabled=True)
+            st.button("Dữ liệu trực tuyến", type="secondary", width='stretch', disabled=True)
 
 
     # Variables for the lower controls (moved from above)

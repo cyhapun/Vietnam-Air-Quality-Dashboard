@@ -10,12 +10,13 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from tqdm import tqdm
 
-# Lấy mốc thời gian hiện tại theo đúng múi giờ Asia/Bangkok (đồng bộ với tham số API)
-now = pd.Timestamp.utcnow().tz_convert("Asia/Bangkok").tz_localize(None)
-current_hour = now.floor("h") # Làm tròn xuống khung giờ hiện hành
-start_hour = current_hour - pd.DateOffset(months=3) # Lùi lại chính xác 3 tháng
 
-# Cập nhật tham số truyền vào API (chỉ nhận định dạng YYYY-MM-DD)
+now = pd.Timestamp.utcnow().tz_convert("Asia/Bangkok").tz_localize(None)
+
+current_hour = now.floor("h")
+start_hour = current_hour - pd.DateOffset(months=3)
+
+
 START_DATE = start_hour.strftime("%Y-%m-%d")
 END_DATE = current_hour.strftime("%Y-%m-%d")
 
@@ -25,14 +26,14 @@ BATCH_SIZE = 35
 
 session = requests.Session()
 retries = Retry(
-    total=5,                # Tăng lên 5 lần để an toàn hơn
-    backoff_factor=2,       # Thời gian chờ sẽ là: 2s, 4s, 8s...
+    total=5,
+    backoff_factor=2,
     status_forcelist=[429, 500, 502, 503, 504]
 )
 session.mount("http://", HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10))
 session.mount("https://", HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10))
 
-# Time Skeleton - Dải thời gian sẽ được giới hạn nghiêm ngặt từ start_hour tới current_hour
+
 full_time_range = pd.date_range(start=start_hour, end=current_hour, freq="h")
 FULL_TIME_STRINGS = full_time_range.strftime("%Y-%m-%dT%H:%M").tolist()
 
@@ -55,7 +56,6 @@ def get_pollution_class(aqi):
     else: return 5
 
 def clean_filename(s):
-    """Hàm giúp xóa dấu tiếng Việt và ký tự đặc biệt"""
     s = str(s)
     s = re.sub(r'[àáạảãâầấậẩẫăằắặẳẵ]', 'a', s)
     s = re.sub(r'[èéẹẻẽêềếệểễ]', 'e', s)
@@ -68,7 +68,6 @@ def clean_filename(s):
     return re.sub(r'\s+', '_', s)
 
 def process_and_save_batch(batch_targets):
-    """Hàm xử lý gọi API dạng Batch và lưu file cho danh sách mục tiêu"""
     if not batch_targets: return
     
     lats = [t["lat"] for t in batch_targets]
@@ -98,13 +97,13 @@ def process_and_save_batch(batch_targets):
         r_weather = session.get(weather_url, params=weather_params, timeout=30)
         
         if r_air.status_code != 200 or r_weather.status_code != 200:
-            tqdm.write(f"🚨 Lỗi API (Air: {r_air.status_code}, Weather: {r_weather.status_code})")
+            tqdm.write(f"Loi API (Air: {r_air.status_code}, Weather: {r_weather.status_code})")
             return
 
         data_air = r_air.json()
         data_weather = r_weather.json()
 
-        # Xử lý format trả về của API (dict nếu 1 vị trí, list nếu nhiều vị trí)
+
         if isinstance(data_air, dict):
             data_air = [data_air]
             data_weather = [data_weather]
@@ -116,11 +115,11 @@ def process_and_save_batch(batch_targets):
                 df_air = pd.DataFrame(data_air[i]["hourly"])
                 df_weather = pd.DataFrame(data_weather[i]["hourly"])
                 
-                # Merge dữ liệu
+
                 df_merged = pd.merge(df_air, df_weather, on="time", how="inner")
                 df_final = pd.merge(df_skeleton, df_merged, on="time", how="left")
                 
-                # Xử lý các trường thông tin
+
                 df_final["province"] = target["province"]
                 df_final["location"] = target["location"]
                 df_final["lat"] = float(target["lat"])
@@ -140,14 +139,14 @@ def process_and_save_batch(batch_targets):
                 }
                 df_final.rename(columns=rename, inplace=True)
                 
-                # Trích xuất thời gian
+
                 df_final["timestamp"] = pd.to_datetime(df_final["timestamp"])
                 df_final["year"] = df_final["timestamp"].dt.year
                 df_final["month"] = df_final["timestamp"].dt.month
                 df_final["day"] = df_final["timestamp"].dt.day
                 df_final["hour"] = df_final["timestamp"].dt.hour
                 
-                # Sắp xếp và định hình cột
+
                 cols = [
                     "timestamp", "year", "month", "day", "hour", 
                     "province", "location", "lat", "lon", 
@@ -157,14 +156,14 @@ def process_and_save_batch(batch_targets):
                 ]
                 df_final = df_final[[c for c in cols if c in df_final.columns]]
                 
-                # Ghi file
+
                 df_final.to_parquet(target["out_file"], index=False)
 
             except Exception as e:
-                tqdm.write(f"❌ Lỗi ghi file cho trạm {target['location']}: {e}")
+                tqdm.write(f"Loi ghi file cho tram {target['location']}: {e}")
 
     except Exception as e:
-        tqdm.write(f"🚨 Lỗi gọi API Batch: {e}")
+        tqdm.write(f"Loi goi API Batch: {e}")
 
 
 def main():
@@ -204,7 +203,7 @@ def main():
             total_units = len(df_locations)
             os.makedirs(out_folder, exist_ok=True)
             
-            # KIỂM TRA: Gom danh sách các phường/xã CHƯA có file
+
             targets_to_fetch = []
             for _, row in df_locations.iterrows():
                 unit_name = row["Tên đơn vị"]
@@ -221,24 +220,23 @@ def main():
                     })
 
             if not targets_to_fetch:
-                print(f"\n[BỎ QUA] '{folder_name}' - Đã hoàn thành ({total_units}/{total_units} file).")
+                print(f"\n[BO QUA] '{folder_name}' - Da hoan thanh ({total_units}/{total_units} file).")
                 continue
 
             print(f"\n[{folder_name}] Đang xử lý {len(targets_to_fetch)} đơn vị hành chính còn thiếu...")
             
-            # CHẠY API THEO BATCH
+
             for i in tqdm(range(0, len(targets_to_fetch), BATCH_SIZE), desc="Đang Fetch (Batch)", unit="batch"):
                 batch = targets_to_fetch[i : i + BATCH_SIZE]
                 process_and_save_batch(batch)
                 
-                # Tránh lỗi Too Many Requests (429) 
                 time.sleep(1.1) 
                 
         except Exception as e:
             print(f"Lỗi khi đọc hoặc xử lý file {file_path}: {e}")
 
     print("\n" + "="*50)
-    print(f"✅ Hoàn thành toàn bộ quá trình! Dữ liệu được lưu tại thư mục: '{OUTPUT_DIR}'")
+    print(f"Hoan thanh toan bo qua trinh! Du lieu duoc luu tai thu muc: '{OUTPUT_DIR}'")
 
 if __name__ == "__main__":
     main()

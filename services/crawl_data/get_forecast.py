@@ -14,19 +14,19 @@ from pathlib import Path
 from tqdm import tqdm  
 import subprocess
 
-# --- CẤU HÌNH ĐƯỜNG DẪN ---
+
 base_dir = os.path.abspath(os.path.dirname(__file__))
 HISTORICAL_DIR = os.path.join(base_dir, "..", "..", "data", "aqi")
 FORECAST_DIR = os.path.join(base_dir, "..", "..", "data", "forecast")
 
 BATCH_SIZE = 50
 
-# Cấu hình Session chống lỗi mạng
+
 session = requests.Session()
 retries = Retry(total=5, backoff_factor=3, status_forcelist=[429, 500, 502, 503, 504])
 session.mount("https://", HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10))
 
-# --- HÀM TIỆN ÍCH ---
+
 def get_pollution_level(aqi):
     if pd.isna(aqi): return "Unknown"
     if aqi <= 50: return "Good"
@@ -46,7 +46,7 @@ def get_pollution_class(aqi):
     else: return 5
 
 def clean_filename(s):
-    """Xóa dấu tiếng Việt và ký tự đặc biệt, chuẩn hóa thành slug."""
+
     s = str(s)
     s = re.sub(r'[àáạảãâầấậẩẫăằắặẳẵ]', 'a', s)
     s = re.sub(r'[èéẹẻẽêềếệểễ]', 'e', s)
@@ -55,19 +55,19 @@ def clean_filename(s):
     s = re.sub(r'[ùúụủũưừứựửữ]', 'u', s)
     s = re.sub(r'[ỳýỵỷỹ]', 'y', s)
     s = re.sub(r'[Đđ]', 'd', s)
-    # Loại bỏ ký tự không phải chữ số hoặc khoảng trắng, thay khoảng trắng bằng gạch dưới
+
     s = re.sub(r'[^a-zA-Z0-9\s]', '', s).strip().lower()
     return re.sub(r'\s+', '_', s)
 
 def get_last_historical_timestamp(province, location):
-    """Lấy mốc timestamp mới nhất từ dữ liệu lịch sử của trạm này."""
+
     prov_slug = clean_filename(province)
     loc_slug = clean_filename(location)
     file_path = os.path.join(HISTORICAL_DIR, prov_slug, f"{loc_slug}.parquet")
     
     if os.path.exists(file_path):
         try:
-            # Dùng tail -n 1 để lấy dòng cuối cùng nhanh nhất
+
             last_line = subprocess.check_output(['tail', '-n', '1', file_path], stderr=subprocess.DEVNULL).decode('utf-8').strip()
             if last_line:
                 last_ts_str = last_line.split(',')[0]
@@ -75,16 +75,16 @@ def get_last_historical_timestamp(province, location):
         except Exception:
             pass
             
-    # Mặc định quay về giờ hiện tại nếu không tìm thấy hoặc lỗi
+
     return datetime.now().replace(minute=0, second=0, microsecond=0)
 
 def extract_locations_from_history():
-    """Quét thư mục historical để lấy danh sách tọa độ và thông tin tỉnh/trạm"""
+
     csv_files = glob.glob(os.path.join(HISTORICAL_DIR, "**", "*.parquet"), recursive=True)
     locations = []
     
-    print("📋 Đang lấy danh sách tọa độ từ thư mục data/aqi...")
-    # Thêm tqdm vào vòng lặp quét file
+    print("Dang lay danh sach toa do tu thu muc data/aqi...")
+
     for file in tqdm(csv_files, desc="Đang quét file", unit="file"):
         if "all.parquet" in os.path.basename(file): continue
         try:
@@ -112,7 +112,7 @@ def process_forecast_batch(batch_meta):
         "latitude": ",".join(lats),
         "longitude": ",".join(lons),
         "timezone": "Asia/Bangkok",
-        "past_days": 2,  # Lấy thêm 2 ngày quá khứ để vá khoảng hở nếu có
+        "past_days": 2,
         "forecast_days": 7  
     }
     
@@ -140,16 +140,16 @@ def process_forecast_batch(batch_meta):
 
         for i, meta in enumerate(batch_meta):
             try:
-                # 1. TẠO THƯ MỤC LƯU TRỮ THEO CẤU TRÚC: forecast/tinh_thanh/
+
                 folder_name = clean_filename(meta["province"])
                 out_folder = os.path.join(FORECAST_DIR, folder_name)
                 os.makedirs(out_folder, exist_ok=True)
                 
-                # 2. XỬ LÝ DỮ LIỆU
+
                 df_weather = pd.DataFrame(data_weather[i]["hourly"])
                 df_air = pd.DataFrame(data_air[i]["hourly"])
                 
-                # Gộp chung dữ liệu thời tiết và AQI dựa trên cột 'time'
+
                 df_merged = pd.merge(df_air, df_weather, on="time", how="right")
                 
                 rename_map = {
@@ -160,44 +160,43 @@ def process_forecast_batch(batch_meta):
                 }
                 df_merged.rename(columns=rename_map, inplace=True)
                 
-                # Meta Data
+
                 df_merged["province"] = meta["province"]
                 df_merged["location"] = meta["location"]
                 df_merged["lat"] = float(meta["lat"])
                 df_merged["lon"] = float(meta["lon"])
                 
-                # 3. XỬ LÝ MISSING VALUE (Nội suy/Ngoại suy)
-                # Phân tách 2 nhóm để xử lý nội suy khác nhau
+
+
                 weather_cols = ["temp", "humidity", "rain", "wind_speed", "wind_dir", "pressure", "cloud"]
                 poll_cols = ["aqi", "pm2_5", "pm10", "co", "no2", "o3", "so2"]
                 
-                # Nhóm thời tiết: Nội suy toàn bộ (vì thường có đủ 7 ngày)
+
                 df_merged[weather_cols] = df_merged[weather_cols].interpolate(method='linear', limit_direction='both')
                 
-                # Nhóm ô nhiễm: Chỉ nội suy các "lỗ hổng" bên trong vùng có dữ liệu (thường là khoảng 4 ngày đầu)
-                # Dùng limit_area='inside' để không tự ý điền thêm cho các ngày cuối nếu API không trả về
+
                 df_merged[poll_cols] = df_merged[poll_cols].interpolate(method='linear', limit_area='inside')
                 
-                # Sau khi nội suy AQI, tính toán lại level và class cho chính xác
+
                 df_merged["pollution_level"] = df_merged["aqi"].apply(get_pollution_level)
                 df_merged["pollution_class"] = df_merged["aqi"].apply(get_pollution_class)
 
-                # Chuyển đổi timestamp và nối tiếp dữ liệu
+
                 df_merged["timestamp"] = pd.to_datetime(df_merged["timestamp"])
                 
-                # Lấy mốc thời gian cuối cùng của trạm này
+
                 last_ts = get_last_historical_timestamp(meta["province"], meta["location"])
                 
-                # Chỉ lấy dữ liệu MỚI hơn mốc lịch sử
+
                 df_merged = df_merged[df_merged["timestamp"] > last_ts].copy()
                 
-                # Bổ sung cột thời gian chi tiết
+
                 df_merged["year"] = df_merged["timestamp"].dt.year
                 df_merged["month"] = df_merged["timestamp"].dt.month
                 df_merged["day"] = df_merged["timestamp"].dt.day
                 df_merged["hour"] = df_merged["timestamp"].dt.hour
                 
-                # Sắp xếp lại cột cho giống dữ liệu historical
+
                 cols = [
                     "timestamp", "year", "month", "day", "hour", 
                     "province", "location", "lat", "lon", 
@@ -207,7 +206,7 @@ def process_forecast_batch(batch_meta):
                 ]
                 df_merged = df_merged[[c for c in cols if c in df_merged.columns]]
                 
-                # 3. LƯU FILE THEO CẤU TRÚC: phuong_xa.parquet
+
                 safe_unit_name = clean_filename(meta["location"])
                 out_file = os.path.join(out_folder, f"{safe_unit_name}.parquet")
 
@@ -215,18 +214,18 @@ def process_forecast_batch(batch_meta):
                 
                 updated_count += 1
             except Exception as e:
-                # Dùng tqdm.write thay cho print để không làm vỡ thanh tiến trình
-                tqdm.write(f"❌ Lỗi ghi file cho trạm {meta['location']}: {e}")
+
+                tqdm.write(f"Loi ghi file cho tram {meta['location']}: {e}")
                 
         return updated_count, 0
 
     except Exception as e:
-        tqdm.write(f"🚨 Lỗi gọi API Batch Forecast: {e}")
+        tqdm.write(f"Loi goi API Batch Forecast: {e}")
         return 0, len(batch_meta)
 
 def calculate_province_all():
-    """Dùng Polars để tính mean/mode và tạo file all.csv cho mỗi tỉnh trong thư mục forecast"""
-    print("\n🔄 Đang tổng hợp dữ liệu (all.csv) cho từng tỉnh/thành...")
+
+    print("\nDang tong hop du lieu (all.csv) cho tung tinh/thanh...")
     
     root_path = Path(FORECAST_DIR)
     if not root_path.exists():
@@ -241,7 +240,7 @@ def calculate_province_all():
         lazy_frames = []
         for file in csv_files:
             try:
-                # Ép kiểu an toàn trước khi concat để tránh lỗi schema mismatch
+
                 lf = pl.scan_parquet(file)
                 lf = lf.with_columns([
                     pl.col("timestamp").cast(pl.String),
@@ -271,7 +270,7 @@ def calculate_province_all():
                 ])
                 lazy_frames.append(lf)
             except Exception as e:
-                tqdm.write(f"⚠️ Bỏ qua file lỗi {file.name}: {e}")
+                tqdm.write(f"Bo qua file loi {file.name}: {e}")
 
         if not lazy_frames: continue
 
@@ -279,7 +278,7 @@ def calculate_province_all():
 
         group_cols = ["timestamp", "year", "month", "day", "hour", "province"]
         mean_cols = ["lat", "lon", "aqi", "temp", "humidity", "rain", "wind_speed", "wind_dir", "pressure", "cloud", "pm2_5", "pm10", "co", "no2", "o3", "so2"]
-        mode_cols = ["pollution_level", "pollution_class"]
+
 
         result = (
             combined_df
@@ -295,38 +294,38 @@ def calculate_province_all():
         result.collect().write_parquet(output_file)
 
 def run_forecast_update():
-    print(f"\n🌤️ BẮT ĐẦU CẬP NHẬT DỮ LIỆU DỰ BÁO TỔNG HỢP (FORECAST)...")
+    print(f"\nBAT DAU CAP NHAT DU LIEU DU BAO TONG HOP (FORECAST)...")
     locations = extract_locations_from_history()
     total_locs = len(locations)
     
     if total_locs == 0:
-        print("⚠️ Không tìm thấy tọa độ nào từ thư mục dữ liệu cũ. Hãy chạy cào historical trước.")
+        print("Khong tim thay toa do nao tu thu muc du lieu cu. Hay chay cao historical truoc.")
         return
 
-    print(f"📊 Tìm thấy {total_locs} trạm. Đang tải và gộp dự báo 7 ngày tới...")
+    print(f"Tim thay {total_locs} tram. Dang tai va gop du bao 7 ngay toi...")
     
     total_updated = 0
     total_errors = 0
     
-    # Bọc range() bằng tqdm để hiển thị tiến trình gọi API
+
     for i in tqdm(range(0, total_locs, BATCH_SIZE), desc="Đang gọi API", unit="batch"):
         batch = locations[i : i + BATCH_SIZE]
         upd, err = process_forecast_batch(batch)
         total_updated += upd
         total_errors += err
         
-        # CHỐNG LỖI 429
+
         time.sleep(4)
 
     print("-" * 50)
-    print(f"✅ HOÀN TẤT CẬP NHẬT FORECAST!")
+    print(f"HOAN TAT CAP NHAT FORECAST!")
     print(f"📈 Lưu thành công: {total_updated} file (vào thư mục data/forecast/tinh_thanh/)")
-    print(f"❌ Lỗi: {total_errors} file")
+    print(f"Loi: {total_errors} file")
     print("-" * 50)
     
-    # KÍCH HOẠT HÀM GỘP ALL.CSV
+
     calculate_province_all()
-    print("✨ Quá trình chạy hoàn tất!")
+    print("Qua trinh chay hoan tat!")
 
 if __name__ == "__main__":
     run_forecast_update()

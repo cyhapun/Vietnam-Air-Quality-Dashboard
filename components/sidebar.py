@@ -27,13 +27,7 @@ TAB_ITEMS = [
 
 
 def _get_active_tab():
-    """
-    Determines the currently active tab from query parameters or session state.
-    Defaults to the 'overview' tab if none is specified or if the specified tab is invalid.
-    
-    Returns:
-        str: The key of the active tab.
-    """
+
     valid = {k for k, _, _ in TAB_ITEMS}
     default_tab = "overview"
 
@@ -55,18 +49,7 @@ def _get_active_tab():
 
 
 def build_state(DF):
-    """
-    Initializes global UI state (theme, colorblind mode) and calculates the
-    minimal global filter context for the dashboard. Navigation markup is now
-    rendered by components/navigation.py inside the main column layout —
-    this function no longer touches st.sidebar.
 
-    Args:
-        DF (pd.DataFrame): The main dataset used to calculate global defaults.
-
-    Returns:
-        dict: A dictionary containing the global state context (active tab, selected cities, date range, etc.).
-    """
     active_tab = _get_active_tab()
 
     if "ui_mode" not in st.session_state:

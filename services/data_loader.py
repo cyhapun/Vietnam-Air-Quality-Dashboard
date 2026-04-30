@@ -108,7 +108,7 @@ def _normalize_name(text: str) -> str:
 def _build_city_column(df: pd.DataFrame) -> pd.DataFrame:
     if "city" not in df.columns:
         if "province" in df.columns and "location" in df.columns:
-            # Only append location if it's not null/nan
+
             df["city"] = df.apply(
                 lambda r: f"{r['province']} - {r['location']}" if pd.notna(r["location"]) and str(r["location"]).lower() != "nan" else str(r["province"]),
                 axis=1
@@ -235,7 +235,6 @@ def _load_raw() -> pd.DataFrame:
     """Load + postprocess (cached). AQI labels added separately to avoid stale cache."""
     base = os.path.dirname(__file__)
 
-    # Priority 1: per-province all.parquet (has full pollutant columns)
     data_dir = _resolve_aqi_dir(base)
     if data_dir:
         all_files = glob.glob(os.path.join(data_dir, "**", "all.parquet"), recursive=True)
@@ -245,11 +244,9 @@ def _load_raw() -> pd.DataFrame:
                 dataset = ds.dataset(all_files, format="parquet")
                 cols = [c for c in PREFERRED_COLUMNS if c in dataset.schema.names]
                 raw_df = dataset.to_table(columns=cols if cols else None).to_pandas()
-                # Dataset might still contain some weird columns, filter again
                 raw_df = raw_df[[c for c in raw_df.columns if c in PREFERRED_COLUMNS]]
                 return _postprocess_df(raw_df)
             except Exception as pyarrow_e:
-                print(f"Lỗi đọc PyArrow: {pyarrow_e}. Đang dùng Thường (Fallback)...")
                 from concurrent.futures import ThreadPoolExecutor
                 
                 def _read_wrap(p):
@@ -266,7 +263,6 @@ def _load_raw() -> pd.DataFrame:
                 if df_list:
                     return _postprocess_df(pd.concat(df_list, ignore_index=True))
 
-    # Priority 2: single aggregated file
     all_csv = _resolve_all_csv(base)
     if all_csv:
         return _postprocess_df(_safe_read_csv(all_csv))
@@ -321,7 +317,6 @@ def load_province_detail(
     if has_time_filter and end_ts < start_ts:
         start_ts, end_ts = end_ts, start_ts
 
-    # Fast path for overview-like screens: use pre-aggregated all.parquet when available.
     if prefer_all_csv:
         all_csv_path = os.path.join(province_dir, "all.parquet")
         if os.path.exists(all_csv_path):
@@ -409,7 +404,7 @@ def load_weather_data() -> pd.DataFrame:
                         else:
                             df["city"] = "Unknown"
                     
-                    # Cắt giảm số cột trả về để nhẹ bộ nhớ, giống như PREFERRED_COLUMNS nhưng chỉ cần biến thời tiết
+
                     cols_to_keep = [c for c in PREFERRED_COLUMNS if c in df.columns]
                     return _postprocess_df(df[cols_to_keep])
                 except Exception:
@@ -462,9 +457,7 @@ def load_weather_province_detail(province: str) -> pd.DataFrame:
         from concurrent.futures import ThreadPoolExecutor
         def _read_one(p):
             try:
-                # Exclude all.parquet if we want pure station data, 
-                # but keep it if we want the aggregated baseline too.
-                # Here we keep everything for maximum detail.
+
                 d = pd.read_parquet(p)
                 # Ensure city is set
                 if "city" not in d.columns:
