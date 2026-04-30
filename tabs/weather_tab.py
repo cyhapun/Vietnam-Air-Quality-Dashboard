@@ -1273,6 +1273,16 @@ def _info_card_html(badge: str, title: str, sub: str) -> str:
     return _html(html).replace("\n", "").replace("    ", "")
 
 
+def _info_text_html(title: str, sub: str) -> str:
+    html = f"""
+    <div style='margin: 24px 0 12px 0;'>
+        <div style='font-size: 1.7rem; font-weight: 800; color: #1e293b; letter-spacing: -0.02em;'>{title}</div>
+        <div style='font-size: 0.95rem; color: #64748b; margin-top: 2px;'>{sub}</div>
+    </div>
+    """
+    return html.strip().replace("\n", "").replace("    ", "")
+
+
 # ─── Data helpers ─────────────────────────────────────────────────────────────
 
 def _build_hourly_frame(city_df):
@@ -1484,7 +1494,7 @@ def _forecast_hourly_switch_html(forecast_df, day_groups, anchor_day=None, switc
         ".wx-hourly-card-inline{margin:0;padding:10px 12px;border-radius:14px;}"
         + "".join(rules)
         + "</style>"
-        + _info_card_html("DỰ BÁO", "Dự báo 10 ngày", "Nhấn vào một ngày bất kỳ bên dưới để xem chi tiết dự báo theo giờ tương ứng.")
+        + _info_text_html("Dự báo 10 ngày", "Nhấn vào một ngày bất kỳ bên dưới để xem chi tiết dự báo theo giờ tương ứng.")
         + "<div class='wx-forecast-card wx-forecast-shell wx-month-tone'>"
         + "<div class='wx-switch-wrap'>"
         + "".join(radios)
@@ -2306,7 +2316,7 @@ def _params_section_html(latest, scope_df):
     )
 
     return (
-        _info_card_html("THÔNG SỐ", "Các thông số thời tiết tại khu vực", "Tổng hợp các yếu tố khí tượng quan trọng nhất tại thời điểm hiện tại.")
+        _info_text_html("Các thông số thời tiết tại khu vực", "Tổng hợp các yếu tố khí tượng quan trọng nhất tại thời điểm hiện tại.")
         + "<div class='wx-section-wrap'>"
         + "<div class='wx-params-grid'>"
         + "".join(cards)
@@ -3177,8 +3187,7 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
     detail_rows = _load_anchor_location_rows(selected_city, anchor_day)
     detail_summary = _build_location_day_summary(detail_rows)
 
-    st.markdown(_info_card_html(
-        "CHI TIẾT", 
+    st.markdown(_info_text_html(
         "Chi tiết theo địa điểm trong tỉnh", 
         f"Ngày mốc {anchor_day:%d/%m/%Y} tại {selected_city}. Nguồn: dữ liệu chi tiết Air Quality."
     ), unsafe_allow_html=True)
@@ -3347,7 +3356,7 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
 
         with cT1:
             st.markdown(
-                _info_card_html("LỊCH SỬ", f"Biểu đồ {metric_label}", f"Dữ liệu lịch sử tại {escape(str(selected_location))} theo khung thời gian đã chọn."),
+                _info_text_html(f"Biểu đồ {metric_label}", f"Dữ liệu lịch sử tại {escape(str(selected_location))} theo khung thời gian đã chọn."),
                 unsafe_allow_html=True,
             )
 
@@ -3453,7 +3462,7 @@ def render(df: pd.DataFrame, show_analysis_button: bool = False):
                     )
                 footer_html = f"<div style='margin-top:8px;color:#64748b;font-size:10px;font-style:italic;text-align:center;'>* Top 8 ({anchor_day:%d/%m/%Y})</div>" if use_detail_fallback else ""
                 st.markdown(
-                    _info_card_html("XẾP HẠNG", f"Top 8 {metric_label}", f"Xếp hạng theo {scope_label}")
+                    _info_text_html(f"Top 8 {metric_label}", f"Xếp hạng theo {scope_label}")
                     + f"<div class='wx-analysis-card' style='padding:20px 16px; height:100%; display:flex; flex-direction:column;'>"
                     + f"<div style='flex:1;'>{''.join(rank_rows)}</div>{footer_html}</div>", 
                     unsafe_allow_html=True

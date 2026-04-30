@@ -652,7 +652,201 @@ def _render_dot_plot(annual: pd.DataFrame, reg_filter: str = "Tất cả"):
 
 
 
+def _render_dot_plot(annual: pd.DataFrame, reg_filter: str = "Tất cả"):
+    """
+    Dot plot — mỗi hàng = 1 chỉ số, mỗi chấm = 1 tỉnh.
+    Giá trị chuẩn hóa 0→100 trong nhóm hiển thị.
+    Hàng rộng = chỉ số phân hóa mạnh. Chấm xa trung tâm = outlier.
+    """
+    avail_metrics = [m for m in SLOPE_METRICS if m in annual.columns]
+    avail_labels  = [SLOPE_METRIC_LABELS[SLOPE_METRICS.index(m)] for m in avail_metrics]
+    if not avail_metrics:
+        st.info("Không đủ dữ liệu.")
+        return
+
+    df = annual.copy()
+    df["region"] = df["city"].map(PROVINCE_REGION).fillna("Khác")
+
+    if reg_filter != "Tất cả":
+        df = df[df["region"] == reg_filter]
+    if df.empty:
+        st.info("Không có dữ liệu cho vùng này.")
+        return
+
+    fig = go.Figure()
+
+    coeff_of_var: dict[str, float] = {}
+
+    for yi, (m, lbl) in enumerate(zip(avail_metrics, avail_labels)):
+        vals = df[m].dropna()
+        if vals.empty:
+            continue
+        mn, mx  = vals.min(), vals.max()
+        span    = mx - mn if mx != mn else 1.0
+        mean    = vals.mean()
+        cv      = (vals.std() / mean * 100) if mean != 0 else 0
+        coeff_of_var[lbl] = cv
+
+        norm_vals = (df[m] - mn) / span * 100
+        norm_mean = (mean - mn) / span * 100
+
+        # Dots per province
+        for _, row in df.iterrows():
+            if pd.isna(row[m]): continue
+            nv  = (row[m] - mn) / span * 100
+            reg = str(row["region"])
+            clr = REGION_COLORS.get(reg, "#94a3b8")
+            # Xác định outlier: nằm ngoài 1.5 IQR
+            q1, q3  = vals.quantile(0.25), vals.quantile(0.75)
+            iqr     = q3 - q1
+            is_out  = row[m] < q1 - 1.5*iqr or row[m] > q3 + 1.5*iqr
+            fig.add_trace(go.Scatter(
+                x=[nv], y=[yi],
+                mode="markers",
+                marker=dict(
+                    size=9 if is_out else 6,
+                    color=clr,
+                    opacity=1.0 if is_out else 0.6,
+                    symbol="diamond" if is_out else "circle",
+                    line=dict(width=1.5 if is_out else 0, color=clr),
+                ),
+                showlegend=False,
+                customdata=[[str(row["city"]), reg, row[m], lbl,
+                             VAR_META.get(m, {}).get("unit",""),
+                             "outlier" if is_out else ""]],
+                hovertemplate=(
+                    "<b>%{customdata[0]}</b> (%{customdata[1]})<br>"
+                    "%{customdata[3]}: %{customdata[2]:.1f} %{customdata[4]}<br>"
+                    "%{customdata[5]}<extra></extra>"
+                ),
+            ))
+
+        # Mean marker (hình thoi đen)
+        fig.add_trace(go.Scatter(
+            x=[norm_mean], y=[yi],
+            mode="markers",
+            marker=dict(size=10, color="#1e293b", symbol="diamond",
+                        line=dict(width=0)),
+            showlegend=True if yi == 0 else False,
+            name="Trung bình nhóm",
+            hovertemplate=f"Trung bình {lbl}: {mean:.1f} {VAR_META.get(m,{}).get('unit','')}<extra></extra>",
+        ))
+
+        # CV annotation bên phải
+        fig.add_annotation(
+            x=105, y=yi,
+            text=f"CV={cv:.0f}%",
+            showarrow=False, xanchor="left",
+            font=dict(size=9, color="#94a3b8"),
+        )
+
+    fig.update_layout(
+        **_base_layout(height=max(220, len(avail_metrics) * 70), margin=dict(l=10, r=70, t=10, b=10)),
+        xaxis=dict(
+            **_ax("Giá trị chuẩn hóa trong nhóm (%)"),
+            range=[-5, 115],
+            tickvals=[0, 25, 50, 75, 100],
+            ticktext=["Min", "25%", "Median", "75%", "Max"],
+        ),
+        yaxis=dict(
+            **_ax(),
+            tickvals=list(range(len(avail_labels))),
+            ticktext=avail_labels,
+        ),
+        legend=dict(orientation="h", x=0, y=1.08, font=dict(size=9), bgcolor="rgba(0,0,0,0)"),
+        hovermode="closest",
+    )
+
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+def _render_multivariate_rain_analysis(annual: pd.DataFrame):
+    """
+    Biểu đồ bong bóng: X=Nhiệt độ, Y=Độ ẩm, Size=Lượng mưa.
+    Giúp trả lời câu hỏi về mối liên hệ giữa 3 yếu tố quan trọng nhất.
+    """
+    cols = ["temp", "humidity", "rain"]
+    if not all(c in annual.columns for c in cols):
+        st.info("Không đủ dữ liệu (Nhiệt độ, Độ ẩm, Lượng mưa) để phân tích tương quan.")
+        return
+
+    df = annual.dropna(subset=cols).copy()
+    if df.empty: return
+
+    # 1. Tính toán tương quan Pearson
+    corr = df[cols].corr()
+    r_tr = corr.loc["temp", "rain"]
+    r_hr = corr.loc["humidity", "rain"]
+
+    c1, c2 = st.columns([2.5, 1], gap="medium")
+
+    with c1:
+        # Bubble Chart
+        fig = go.Figure()
+        # Tính sizeref để bong bóng không quá to
+        max_rain = df["rain"].max()
+        sizeref = 2.0 * max_rain / (40**2) if max_rain > 0 else 1
+
+        for reg in REGION_ORDER + ["Khác"]:
+            sub = df[df["city"].map(PROVINCE_REGION).fillna("Khác") == reg]
+            if sub.empty: continue
+            fig.add_trace(go.Scatter(
+                x=sub["temp"], y=sub["humidity"], mode="markers",
+                name=reg,
+                marker=dict(
+                    size=sub["rain"], sizemode='area', sizeref=sizeref, sizemin=4,
+                    color=REGION_COLORS.get(reg, "#94a3b8"), opacity=0.85, # Tăng từ 0.7 lên 0.85
+                    line=dict(width=1, color="#ffffff")
+                ),
+                customdata=list(zip(sub["city"], sub["rain"])),
+                hovertemplate=(
+                    "<b>%{customdata[0]}</b><br>"
+                    "Nhiệt độ: %{x:.1f}°C<br>"
+                    "Độ ẩm: %{y:.1f}%<br>"
+                    "Lượng mưa: %{customdata[1]:.0f} mm<extra></extra>"
+                )
+            ))
+
+        fig.update_layout(
+            **_base_layout(height=380, margin=dict(l=10, r=10, t=20, b=10)),
+            xaxis=_ax("Nhiệt độ trung bình (°C)"),
+            yaxis=_ax("Độ ẩm trung bình (%)"),
+            legend=dict(orientation="h", x=0, y=1.08, font=dict(size=9), bgcolor="rgba(0,0,0,0)"),
+            hovermode="closest"
+        )
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+    with c2:
+        # Heatmap mini cho thấy hệ số tương quan
+        st.markdown("<div style='font-size:0.62rem; font-weight:700; color:#94a3b8; text-align:center; margin-bottom:8px'>HỆ SỐ TƯƠNG QUAN (r)</div>", unsafe_allow_html=True)
+        
+        fig_corr = go.Figure(data=go.Heatmap(
+            z=corr.values,
+            x=["Nhiệt độ", "Độ ẩm", "Mưa"],
+            y=["Nhiệt độ", "Độ ẩm", "Mưa"],
+            colorscale='RdBu_r', zmin=-1, zmax=1,
+            text=corr.values.round(2), texttemplate="%{text}",
+            showscale=False
+        ))
+        fig_corr.update_layout(
+            **_base_layout(height=240, margin=dict(l=40, r=10, t=10, b=10)),
+            xaxis=dict(side="bottom", tickfont=dict(size=8)),
+            yaxis=dict(tickfont=dict(size=8))
+        )
+        st.plotly_chart(fig_corr, use_container_width=True, config={"displayModeBar": False})
+
+        # Giải thích ngắn gọn về r
+        st.markdown(
+            f"<div style='font-size:0.68rem; color:#64748b; line-height:1.4'>"
+            f"• r &gt; 0: Đồng biến (cùng tăng)<br>"
+            f"• r &lt; 0: Nghịch biến<br>"
+            f"• |r| &gt; 0.5: Tương quan mạnh"
+            f"</div>", unsafe_allow_html=True
+        )
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
+
 # CHART: MULTIVARIATE — Nhiệt độ, Độ ẩm có kéo theo mưa không?
 # Câu hỏi: Khi nhiệt độ & độ ẩm tăng cao, lượng mưa có tăng theo không?
 # Mark: Point (Bubble) | Channel: X (Temp), Y (Humidity), Size (Rain), Color (Region)
@@ -797,7 +991,7 @@ def _render_layer1(df: pd.DataFrame):
         _kpi_row(kpis)
 
     # ── Section A: Xu hướng + Boxplot ───────────────────────────────────────────
-    _section("Chu kỳ khí hậu & Phân bổ vùng miền")
+
     col_trend, col_box = st.columns([1.35, 1], gap="large")
 
     with col_trend:
@@ -907,7 +1101,7 @@ def _render_layer1(df: pd.DataFrame):
         # Nút Dự báo đã được chuyển lên Header
 
     # ── Section C: Phân tích đa biến (Nhiệt độ + Độ ẩm -> Mưa) ───────────────────
-    _section("Tương quan nhiệt độ, độ ẩm & lượng mưa")
+
     _card_open(
         "Multivariate Analysis", "Nhiệt độ & Độ ẩm tăng có kéo theo mưa không?",
         "Bong bóng lớn = mưa nhiều · X: Nhiệt độ · Y: Độ ẩm · Màu: Vùng miền",
