@@ -13,12 +13,14 @@ OV_TIMEFRAME_DELTAS = {
     "7 ngày": pd.Timedelta(days=7),
     "30 ngày": pd.Timedelta(days=30),
     "3 tháng": pd.Timedelta(days=90),
+    "Năm 2025": pd.Timedelta(days=365),
 }
 OV_TIMEFRAME_LABELS = {
     "24h": "24 giờ",
     "7 ngày": "7 ngày",
     "30 ngày": "30 ngày",
     "3 tháng": "3 tháng",
+    "Năm 2025": "Năm 2025",
 }
 
 POLLUTANT_LEVEL_BANDS = {
